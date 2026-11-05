@@ -68,7 +68,8 @@ struct DesktopFrames {
 [[nodiscard]] QImage composeAllOutputs(const DesktopFrames &frames,
                                        qreal targetScale, QString &error);
 /** Wraps a composed image as CaptureData for the editor. */
-[[nodiscard]] CaptureData editorCaptureFromImage(QImage image,
-                                                 const QRectF &logicalRect,
-                                                 qreal scale,
-                                                 const QString &outputName);
+[[nodiscard]] CaptureData
+editorCaptureFromImage(QImage image, const QRectF &logicalRect, qreal scale,
+                       const QString &outputName,
+                       const QPointF &screenOrigin = {},
+                       bool anchorToScreen = false);

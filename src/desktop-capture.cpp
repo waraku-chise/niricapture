@@ -381,9 +381,13 @@ QImage composeAllOutputs(const DesktopFrames &frames, qreal targetScale,
 }
 
 CaptureData editorCaptureFromImage(QImage image, const QRectF &logicalRect,
-                                   qreal scale, const QString &outputName) {
+                                   qreal scale, const QString &outputName,
+                                   const QPointF &screenOrigin,
+                                   bool anchorToScreen) {
   CaptureData capture;
   capture.source = std::move(image);
+  capture.screenOrigin = screenOrigin;
+  capture.anchorToScreen = anchorToScreen;
   capture.previewSize = QSize(std::max(1, qRound(logicalRect.width())),
                               std::max(1, qRound(logicalRect.height())));
   capture.monitor.name = outputName;

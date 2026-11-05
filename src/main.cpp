@@ -109,6 +109,8 @@ struct CaptureResult {
   QImage image;
   QRectF logicalRect;
   qreal scale = 1.0;
+  QPointF screenOrigin;
+  bool anchorToScreen = false;
   QString outputName;
   QString title;
 };
@@ -203,7 +205,18 @@ bool selectAndComposeRegion(DesktopFrames frames, CaptureResult &result,
   // captured again after the overlays are shown.
   const DesktopFrames &frozen = selector.frames();
   const QString outputName = largestOutputForRect(frozen, selection);
-  return composeCapture(frozen, selection, scale, outputName, result, error);
+  if (!composeCapture(frozen, selection, scale, outputName, result, error))
+    return false;
+  // Keep the selected image exactly over the pixels it came from. This only
+  // applies when the selection belongs to one output; a cross-output capture
+  // is fitted and centred because it has no single editor-space origin.
+  const OutputFrame *owner = frozen.find(outputName);
+  if (owner && QRectF(owner->monitor.geometry).contains(selection)) {
+    result.screenOrigin =
+        selection.topLeft() - owner->monitor.geometry.topLeft();
+    result.anchorToScreen = true;
+  }
+  return true;
 }
 
 bool prepareFileImage(const QString &filePath, bool clipboardInput,
@@ -327,7 +340,8 @@ bool prepareWindowImage(const QString &windowId, CaptureResult &result,
 
 CaptureData toCaptureData(CaptureResult result) {
   return editorCaptureFromImage(std::move(result.image), result.logicalRect,
-                                result.scale, cleanName(result.outputName));
+                                result.scale, cleanName(result.outputName),
+                                result.screenOrigin, result.anchorToScreen);
 }
 
 void configureEditorLayer(CaptureEditor &editor, QScreen *screen) {
@@ -702,6 +716,10 @@ int main(int argc, char **argv) {
   if (!composeCapture(frames, QRectF(frame.monitor.geometry),
                       frame.monitor.scale, frame.monitor.name, result, error))
     return failCapture(error);
+  // A single-output fullscreen capture has an exact screen origin: keep it at
+  // 1:1 under the floating toolbar instead of centring a shrunken copy.
+  result.anchorToScreen = true;
+  result.screenOrigin = QPointF(0, 0);
   const QString outputName = result.outputName;
   return openEditor(toCaptureData(std::move(result)), quickOutputMode,
                     outputName, terminationRequested);

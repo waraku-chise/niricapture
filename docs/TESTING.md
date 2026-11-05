@@ -57,6 +57,17 @@ The real layer surfaces were driven with `wtype`:
 - `niricapture --capture-fullscreen --copy` then `wl-paste --type image/png`
   returned a valid 1920×1080 RGBA PNG.
 
+## Editor anchoring
+
+A regression check compares a frozen desktop capture with the editor image at
+the same screen coordinates. For a 1100×700 selection at (350,180), the
+difference bounding box is empty (`None`), proving the editor image is not
+centred or resampled.
+
+The offscreen suite also constructs a 300×200 capture anchored at (120,90) and
+asserts that the white source starts at that point while the surrounding area
+stays dimmed.
+
 ## Live Niri native window tests
 
 ### Off-workspace window

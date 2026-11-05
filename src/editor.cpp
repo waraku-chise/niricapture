@@ -819,6 +819,21 @@ QRectF CaptureEditor::editImageRect() const {
   const qreal scale = std::min<qreal>({1.0, available.width() / framed.width(),
                                        available.height() / framed.height()});
   const QSizeF shown = selection_.size() * scale;
+  if (capture_.anchorToScreen && backgroundStyle_ == BackgroundStyle::None) {
+    // Keep the captured pixels where they were on screen. The scale is based
+    // on the full capture, not the current crop, so cropping does not make the
+    // image jump or change scale.
+    const QSizeF preview = QSizeF(capture_.previewSize);
+    const qreal fit =
+        preview.isEmpty()
+            ? 1.0
+            : std::min<qreal>({1.0,
+                               std::max(1, width()) / preview.width(),
+                               std::max(1, height()) / preview.height()});
+    const QPointF origin =
+        capture_.screenOrigin + selection_.topLeft() * fit;
+    return {origin, selection_.size() * fit};
+  }
   return {available.center().x() - shown.width() / 2.0,
           available.center().y() - shown.height() / 2.0, shown.width(),
           shown.height()};

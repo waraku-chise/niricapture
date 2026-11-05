@@ -33,6 +33,13 @@ struct CaptureData {
   QImage source;
   /** Logical size the native source image is presented at. */
   QSize previewSize;
+  /**
+   * When anchorToScreen is set, the image keeps the screen position it had
+   * when captured instead of being centred in the editor. Coordinates are
+   * local to the editor's output.
+   */
+  QPointF screenOrigin;
+  bool anchorToScreen = false;
   QVector<WindowTarget> windows;
 };
 

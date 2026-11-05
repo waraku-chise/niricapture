@@ -47,6 +47,8 @@ shown with `Q` / `G`.
 - Non-destructive annotations: select/move/resize, pen, arrow, line, outlined
   or filled rectangle, outlined or filled ellipse, text, highlighter, truly
   pixelated mosaic, real Gaussian blur, numbered markers, undo/redo.
+- The editor keeps a region capture at its exact original screen position and
+  scale, so it lines up with the frozen desktop instead of jumping to centre.
 - Compact Material-inspired toolbar near the image with shape, colour and line
   width popups; works on dark and light desktops.
 - Copy/save with `wl-copy`; offline OCR through Tesseract with selectable text.

@@ -33,6 +33,13 @@ First Niri/DMS-focused release.
 - Automatic `eng+chi_sim` when the Chinese model is installed; environment
   override.
 
+### Fixed
+
+- Region capture no longer jumps to the centre of the editor. The captured
+  image stays at its original logical screen position, so its pixels line up
+  with the dimmed desktop behind it. Single-output fullscreen captures are
+  also presented at 1:1 instead of being shrunken and centred.
+
 ### Packaging
 
 - Arch CMake build, local installer/uninstaller, PKGBUILD and Niri bindings.
