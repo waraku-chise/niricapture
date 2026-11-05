@@ -48,7 +48,7 @@ Recommends: grim, wl-clipboard, libnotify-bin, tesseract-ocr, tesseract-ocr-eng,
 Homepage: https://github.com/waraku-chise/niricapture
 Description: Native Niri screenshot tool with DMS frozen-frame selection
  NiriCapture freezes outputs through the DMS screenshot backend, provides a
- multi-output region selection overlay, and opens a standalone annotation editor.
+ multi-output region selection overlay, and edits annotations in place.
  Window capture uses Niri's compositor-side screenshot-window action, so
  occluded windows are rendered independently of the desktop.
 CONTROL

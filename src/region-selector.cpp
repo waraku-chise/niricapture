@@ -1,5 +1,6 @@
 /** @fileoverview Multi-output frozen-frame region selection. */
 #include "region-selector.hpp"
+#include "i18n.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -176,7 +177,7 @@ protected:
       painter.drawRect(QRect(right, top, width() - right, bottom - top));
     }
 
-    if (!selector_->hasSelection())
+    if (!selector_->hasSelection() || selector_->chromeHidden_)
       return;
 
     painter.setBrush(Qt::NoBrush);
@@ -214,8 +215,10 @@ protected:
       painter.setFont(hintFont);
       const QString hint =
           selector_->hasSelection()
-              ? QStringLiteral("Enter to edit  ·  Esc to cancel  ·  drag handles to resize")
-              : QStringLiteral("Drag to select a region  ·  Esc to cancel");
+              ? ui("Drag handles to adjust  ·  Esc to cancel",
+                   "拖动控制点调整选区 · Esc 取消")
+              : ui("Drag to select a region  ·  Esc to cancel",
+                   "拖动选择区域 · Esc 取消");
       const qreal width = QFontMetricsF(hintFont).horizontalAdvance(hint) + 28;
       drawPill(painter, QRectF((this->width() - width) / 2.0,
                                this->height() - 46, width, 30),
@@ -263,6 +266,7 @@ protected:
     if (event->key() == Qt::Key_F) {
       selector_->selection_ = selector_->frames_.logicalBounds;
       selector_->selectionChanged();
+      selector_->beginSelectionReady();
       event->accept();
       return;
     }
@@ -290,6 +294,10 @@ protected:
   }
 
   void mousePressEvent(QMouseEvent *event) override {
+    if (selector_->chromeHidden_) {
+      event->ignore();
+      return;
+    }
     if (event->button() == Qt::RightButton) {
       selector_->cancel();
       event->accept();
@@ -319,6 +327,10 @@ protected:
   }
 
   void mouseMoveEvent(QMouseEvent *event) override {
+    if (selector_->chromeHidden_) {
+      event->ignore();
+      return;
+    }
     const QPointF global = toGlobal(event->position());
     switch (selector_->dragMode_) {
     case RegionSelector::DragMode::None:
@@ -344,12 +356,17 @@ protected:
   }
 
   void mouseReleaseEvent(QMouseEvent *event) override {
+    if (selector_->chromeHidden_) {
+      event->ignore();
+      return;
+    }
     if (event->button() != Qt::LeftButton) {
       QWidget::mouseReleaseEvent(event);
       return;
     }
-    if (selector_->dragMode_ == RegionSelector::DragMode::New &&
-        selector_->selection_.width() < kMinSelection &&
+    const bool wasNew =
+        selector_->dragMode_ == RegionSelector::DragMode::New;
+    if (wasNew && selector_->selection_.width() < kMinSelection &&
         selector_->selection_.height() < kMinSelection) {
       selector_->selection_ = {};
       selector_->selectionChanged();
@@ -357,6 +374,8 @@ protected:
     selector_->dragMode_ = RegionSelector::DragMode::None;
     selector_->resizeHandle_.clear();
     updateCursor(toGlobal(event->position()));
+    if (wasNew && selector_->hasSelection())
+      selector_->beginSelectionReady();
     event->accept();
   }
 
@@ -456,7 +475,6 @@ void RegionSelector::resizeTo(const QString &handle, const QPointF &global) {
 }
 
 void RegionSelector::setKeyboardOverlay(RegionOverlay *overlay) {
-  ownerOutput_ = overlay->outputName();
   for (RegionOverlay *candidate : overlays_)
     candidate->setKeyboardOwner(candidate == overlay);
 }
@@ -464,12 +482,52 @@ void RegionSelector::setKeyboardOverlay(RegionOverlay *overlay) {
 void RegionSelector::accept() {
   if (finished_ || !hasSelection())
     return;
-  finished_ = true;
-  const QRectF chosen = selection_;
-  const qreal scale = selectedScale();
+  beginSelectionReady();
+}
+
+void RegionSelector::beginSelectionReady() {
+  if (selectionReadyEmitted_ || !hasSelection())
+    return;
+  selectionReadyEmitted_ = true;
+  updateOwnerOutput();
+  emit selectionReady(selection_, selectedScale());
+}
+
+void RegionSelector::updateOwnerOutput() {
+  if (frames_.outputs.isEmpty())
+    return;
+  qreal bestArea = -1.0;
+  QString best = frames_.outputs.first().monitor.name;
+  for (const OutputFrame &frame : frames_.outputs) {
+    const QRectF intersection =
+        selection_.intersected(QRectF(frame.monitor.geometry));
+    const qreal area = intersection.isEmpty()
+                           ? 0.0
+                           : intersection.width() * intersection.height();
+    if (area > bestArea) {
+      bestArea = area;
+      best = frame.monitor.name;
+    }
+  }
+  ownerOutput_ = best;
+}
+
+void RegionSelector::hideChrome() {
+  chromeHidden_ = true;
+  selectionChanged();
+}
+
+QWidget *RegionSelector::ownerWidget() const {
+  for (RegionOverlay *overlay : overlays_) {
+    if (overlay->outputName() == ownerOutput_)
+      return overlay;
+  }
+  return overlays_.isEmpty() ? nullptr : overlays_.first();
+}
+
+void RegionSelector::hideOverlays() {
   for (RegionOverlay *overlay : overlays_)
     overlay->hide();
-  emit accepted(chosen, scale);
 }
 
 void RegionSelector::cancel() {
@@ -481,10 +539,14 @@ void RegionSelector::cancel() {
   emit cancelled();
 }
 
-void RegionSelector::start() {
+void RegionSelector::start(const QRectF &initialSelection) {
   if (started_ || frames_.outputs.isEmpty())
     return;
   started_ = true;
+  if (!initialSelection.isEmpty()) {
+    selection_ = initialSelection.normalized();
+    hasInitialSelection_ = true;
+  }
   QString focused;
   QString focusError;
   if (!probeFocusedOutputName(focused, focusError))
@@ -502,6 +564,13 @@ void RegionSelector::start() {
     overlay->setKeyboardOwner(overlay->outputName() == focused);
   selectionChanged();
 
+  if (hasInitialSelection_) {
+    QTimer::singleShot(0, this, [this] {
+      updateOwnerOutput();
+      beginSelectionReady();
+    });
+  }
+
   // Test hook: lets the integration suite exercise the real layer surfaces
   // without a pointer-injection daemon.
   const QString testSelection =
@@ -514,7 +583,7 @@ void RegionSelector::start() {
       const int delay = qEnvironmentVariableIntValue("NIRICAPTURE_TEST_SELECT_DELAY");
       QTimer::singleShot(delay > 0 ? delay : 250, this, [this] {
         selectionChanged();
-        accept();
+        beginSelectionReady();
       });
     }
   }

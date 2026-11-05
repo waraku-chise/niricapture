@@ -1835,6 +1835,38 @@ bool runAnchoredEditorCheck(QApplication &application, QString &error) {
   return true;
 }
 
+bool runEmbeddedEditorCheck(QApplication &application, QString &error) {
+  QWidget host;
+  host.resize(800, 600);
+  host.show();
+  CaptureData capture;
+  capture.monitor.scale = 1.0;
+  capture.monitor.pixelSize = {300, 200};
+  capture.monitor.geometry = {0, 0, 300, 200};
+  capture.source = QImage(300, 200, QImage::Format_ARGB32_Premultiplied);
+  capture.source.fill(QColor(QStringLiteral("#f2f2f2")));
+  capture.previewSize = capture.source.size();
+  capture.screenOrigin = QPointF(120, 90);
+  capture.anchorToScreen = true;
+  CaptureEditor editor(capture, CaptureEditor::CaptureMode::File,
+                       QuickOutputMode::None, nullptr, &host, true);
+  editor.setGeometry(host.rect());
+  editor.show();
+  application.processEvents();
+  const QImage shot = editor.grab().toImage();
+  if (shot.pixelColor(122, 92) != QColor(QStringLiteral("#f2f2f2"))) {
+    error = QStringLiteral("Embedded editor lost the anchored image");
+    return false;
+  }
+  if (shot.pixelColor(20, 20).alpha() != 0) {
+    error = QStringLiteral("Embedded editor painted an opaque backdrop");
+    return false;
+  }
+  editor.close();
+  host.close();
+  return true;
+}
+
 bool showsSecretRed(const QColor &color) {
   return color.red() > 180 && color.green() < 70 && color.blue() < 70;
 }
@@ -2724,6 +2756,11 @@ int main(int argc, char **argv) {
     qWarning().noquote() << snapshotError;
     fprintf(stderr, "SMOKE 126: %s\n", snapshotError.toUtf8().constData());
     return 126;
+  }
+  if (!runEmbeddedEditorCheck(application, snapshotError)) {
+    qWarning().noquote() << snapshotError;
+    fprintf(stderr, "SMOKE 131: %s\n", snapshotError.toUtf8().constData());
+    return 131;
   }
   if (!runAnchoredEditorCheck(application, snapshotError)) {
     qWarning().noquote() << snapshotError;

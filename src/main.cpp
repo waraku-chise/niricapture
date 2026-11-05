@@ -18,6 +18,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLockFile>
+#include <QPointer>
 #include <QProcess>
 #include <QScreen>
 #include <QSocketNotifier>
@@ -115,6 +116,8 @@ struct CaptureResult {
   QString title;
 };
 
+CaptureData toCaptureData(CaptureResult result);
+
 struct WindowInfo {
   QString id;
   QString title;
@@ -164,24 +167,96 @@ bool composeCapture(const DesktopFrames &frames, const QRectF &selection,
   result.logicalRect = selection.normalized();
   result.scale = scale;
   result.outputName = outputName;
+  result.screenOrigin = {};
+  result.anchorToScreen = false;
+  const OutputFrame *owner = frames.find(outputName);
+  if (owner && QRectF(owner->monitor.geometry).contains(selection)) {
+    result.screenOrigin =
+        selection.topLeft() - owner->monitor.geometry.topLeft();
+    result.anchorToScreen = true;
+  }
   return true;
 }
 
-bool selectAndComposeRegion(DesktopFrames frames, CaptureResult &result,
-                            std::atomic_bool &termination, QString &error) {
+bool exportQuick(const DesktopFrames &frames, const QRectF &selection,
+                 qreal scale, const QString &outputName,
+                 QuickOutputMode mode, QString &error) {
+  CaptureResult result;
+  if (!composeCapture(frames, selection, scale, outputName, result, error))
+    return false;
+  CaptureData capture = toCaptureData(std::move(result));
+  const QImage image =
+      renderCapture(capture, QRectF(QPointF(), capture.previewSize), {},
+                    BackgroundStyle::None);
+  return !image.isNull() && quickOutput(image, mode, error);
+}
+
+int runInlineCapture(DesktopFrames frames, const QRectF &initialSelection,
+                    QuickOutputMode quickMode,
+                    std::atomic_bool &termination, QString &error) {
   RegionSelector selector(std::move(frames));
   QEventLoop loop;
-  bool accepted = false;
+  bool ok = false;
   bool cancelled = false;
-  QRectF selection;
-  qreal scale = 1.0;
-  QObject::connect(&selector, &RegionSelector::accepted, &loop,
-                   [&](QRectF rect, qreal selectedScale) {
-                     selection = rect;
-                     scale = selectedScale;
-                     accepted = true;
-                     loop.quit();
-                   });
+  bool editorStarted = false;
+  QPointer<CaptureEditor> editor;
+
+  QObject::connect(&selector, &RegionSelector::selectionReady, &loop, [&] {
+    if (editorStarted)
+      return;
+    editorStarted = true;
+    const QRectF selection = selector.selection();
+    if (selection.isEmpty()) {
+      loop.quit();
+      return;
+    }
+    const QString outputName =
+        largestOutputForRect(selector.frames(), selection);
+    CaptureResult result;
+    if (!composeCapture(selector.frames(), selection,
+                        selector.selectedScale(), outputName, result, error)) {
+      selector.cancel();
+      return;
+    }
+
+    if (quickMode != QuickOutputMode::None) {
+      CaptureData capture = toCaptureData(std::move(result));
+      const QImage image = renderCapture(
+          capture, QRectF(QPointF(), capture.previewSize), {},
+          BackgroundStyle::None);
+      if (image.isNull() || !quickOutput(image, quickMode, error)) {
+        selector.hideOverlays();
+        loop.quit();
+        return;
+      }
+      ok = true;
+      selector.hideOverlays();
+      loop.quit();
+      return;
+    }
+
+    QWidget *host = selector.ownerWidget();
+    if (!host) {
+      error = QStringLiteral("No overlay is available for the editor");
+      selector.cancel();
+      return;
+    }
+    CaptureData capture = toCaptureData(std::move(result));
+    editor = new CaptureEditor(std::move(capture),
+                               CaptureEditor::CaptureMode::File,
+                               QuickOutputMode::None, &termination, host, true);
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->setGeometry(host->rect());
+    QObject::connect(editor, &QObject::destroyed, &loop, [&] {
+      ok = true;
+      selector.hideOverlays();
+      loop.quit();
+    });
+    selector.hideChrome();
+    editor->show();
+    editor->raise();
+    editor->setFocus(Qt::ActiveWindowFocusReason);
+  });
   QObject::connect(&selector, &RegionSelector::cancelled, &loop, [&] {
     cancelled = true;
     loop.quit();
@@ -195,28 +270,12 @@ bool selectAndComposeRegion(DesktopFrames frames, CaptureResult &result,
     }
   });
   poll.start(100);
-  selector.start();
-  if (!accepted && !cancelled)
+  selector.start(initialSelection);
+  if (!cancelled)
     loop.exec();
-  if (!accepted || selection.isEmpty())
-    return false;
-
-  // Compose from the selector's original frozen frames. The desktop is never
-  // captured again after the overlays are shown.
-  const DesktopFrames &frozen = selector.frames();
-  const QString outputName = largestOutputForRect(frozen, selection);
-  if (!composeCapture(frozen, selection, scale, outputName, result, error))
-    return false;
-  // Keep the selected image exactly over the pixels it came from. This only
-  // applies when the selection belongs to one output; a cross-output capture
-  // is fitted and centred because it has no single editor-space origin.
-  const OutputFrame *owner = frozen.find(outputName);
-  if (owner && QRectF(owner->monitor.geometry).contains(selection)) {
-    result.screenOrigin =
-        selection.topLeft() - owner->monitor.geometry.topLeft();
-    result.anchorToScreen = true;
-  }
-  return true;
+  if (cancelled)
+    return error.isEmpty() ? 0 : 1;
+  return ok ? 0 : 1;
 }
 
 bool prepareFileImage(const QString &filePath, bool clipboardInput,
@@ -683,12 +742,11 @@ int main(int argc, char **argv) {
       return failCapture(error);
     if (terminationRequested.load(std::memory_order_acquire))
       return 0;
-    if (!selectAndComposeRegion(std::move(frames), result, terminationRequested,
-                                error))
-      return error.isEmpty() ? 0 : failCapture(error);
-    const QString outputName = result.outputName;
-    return openEditor(toCaptureData(std::move(result)), quickOutputMode,
-                      outputName, terminationRequested);
+    const int status = runInlineCapture(std::move(frames), {}, quickOutputMode,
+                                        terminationRequested, error);
+    if (status != 0 && !error.isEmpty())
+      return failCapture(error);
+    return status;
   }
 
   DesktopFrames frames;
@@ -701,26 +759,29 @@ int main(int argc, char **argv) {
       scale = std::max(scale, frame.monitor.scale);
     if (scale <= 0.0)
       scale = 1.0;
-    if (!composeCapture(frames, all, scale,
-                        largestOutputForRect(frames, all), result, error))
-      return failCapture(error);
-    const QString outputName = result.outputName;
-    return openEditor(toCaptureData(std::move(result)), quickOutputMode,
-                      outputName, terminationRequested);
+    if (quickOutputMode != QuickOutputMode::None) {
+      if (!exportQuick(frames, all, scale,
+                       largestOutputForRect(frames, all), quickOutputMode,
+                       error))
+        return failCapture(error);
+      return 0;
+    }
+    return runInlineCapture(std::move(frames), all, quickOutputMode,
+                            terminationRequested, error);
   }
 
   const QString requestedOutput = parser.value(outputOption);
   if (!captureSingleOutputFrame(frames, requestedOutput, error))
     return failCapture(error);
   const OutputFrame &frame = frames.outputs.first();
-  if (!composeCapture(frames, QRectF(frame.monitor.geometry),
-                      frame.monitor.scale, frame.monitor.name, result, error))
-    return failCapture(error);
-  // A single-output fullscreen capture has an exact screen origin: keep it at
-  // 1:1 under the floating toolbar instead of centring a shrunken copy.
-  result.anchorToScreen = true;
-  result.screenOrigin = QPointF(0, 0);
-  const QString outputName = result.outputName;
-  return openEditor(toCaptureData(std::move(result)), quickOutputMode,
-                    outputName, terminationRequested);
+  if (quickOutputMode != QuickOutputMode::None) {
+    if (!exportQuick(frames, QRectF(frame.monitor.geometry),
+                     frame.monitor.scale, frame.monitor.name,
+                     quickOutputMode, error))
+      return failCapture(error);
+    return 0;
+  }
+  return runInlineCapture(std::move(frames),
+                          QRectF(frame.monitor.geometry), quickOutputMode,
+                          terminationRequested, error);
 }

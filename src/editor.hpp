@@ -23,7 +23,8 @@ public:
   explicit CaptureEditor(
       CaptureData capture, CaptureMode mode = CaptureMode::Region,
       QuickOutputMode quickOutput = QuickOutputMode::None,
-      const std::atomic_bool *termination = nullptr, QWidget *parent = nullptr);
+      const std::atomic_bool *termination = nullptr, QWidget *parent = nullptr,
+      bool embedded = false);
   ~CaptureEditor() override;
 
 signals:
@@ -288,6 +289,7 @@ private:
   QString snapshotPath_;
   QuickOutputMode quickOutputMode_ = QuickOutputMode::None;
   const std::atomic_bool *termination_ = nullptr;
+  bool embedded_ = false;
   int pinCount_ = 0;
   QString status_ =
       QStringLiteral("Drag to select an area · Space selects a window");

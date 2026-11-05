@@ -57,6 +57,19 @@ The real layer surfaces were driven with `wtype`:
 - `niricapture --capture-fullscreen --copy` then `wl-paste --type image/png`
   returned a valid 1920×1080 RGBA PNG.
 
+## Embedded editor
+
+The live flow was verified with the real DMS freeze path:
+
+- `NIRICAPTURE_TEST_SELECT=350,180,1100,700 niricapture --capture-region`
+  mapped the frozen overlay, created the embedded editor child and displayed
+  the toolbar next to the selection without a second window.
+- The image area at `(350,180)` was pixel-identical to the frozen frame crop;
+  the remainder stayed dimmed.
+- `Ctrl+C` copied a 1100×700 PNG and exited; `Ctrl+S` saved a 1100×700 PNG.
+- `Q` opened the colour/line-width panel with the Chinese status
+  `颜色 / 线宽`.
+
 ## Editor anchoring
 
 A regression check compares a frozen desktop capture with the editor image at

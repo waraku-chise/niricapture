@@ -24,16 +24,23 @@ public:
   ~RegionSelector() override;
 
   /** Maps the overlays and starts accepting input. */
-  void start();
+  void start(const QRectF &initialSelection = {});
   /** Whether a usable selection currently exists. */
   [[nodiscard]] bool hasSelection() const;
   [[nodiscard]] QRectF selection() const { return selection_; }
   [[nodiscard]] qreal selectedScale() const;
   [[nodiscard]] DesktopFrames &frames() { return frames_; }
   [[nodiscard]] const DesktopFrames &frames() const { return frames_; }
+  /** Widget that owns the toolbar/editor for the current selection. */
+  [[nodiscard]] QWidget *ownerWidget() const;
+  /** Hides the selection border/handles once an embedded editor is active. */
+  void hideChrome();
+  /** Hides all layer surfaces without emitting a cancellation. */
+  void hideOverlays();
 
 signals:
-  void accepted(QRectF selection, qreal scale);
+  /** Emitted once for a usable selection; the editor is embedded afterwards. */
+  void selectionReady(QRectF selection, qreal scale);
   void cancelled();
 
 private:
@@ -45,6 +52,8 @@ private:
   void moveBy(const QPointF &delta);
   void resizeTo(const QString &handle, const QPointF &global);
   void accept();
+  void beginSelectionReady();
+  void updateOwnerOutput();
 
 public:
   /** Cancels the active selection (also used by signal handlers). */
@@ -65,4 +74,7 @@ private:
   DragMode dragMode_ = DragMode::None;
   bool started_ = false;
   bool finished_ = false;
+  bool selectionReadyEmitted_ = false;
+  bool chromeHidden_ = false;
+  bool hasInitialSelection_ = false;
 };

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.1.0 LANGUAGES CXX)
+project(niricapture VERSION 0.2.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -30,6 +30,8 @@ qt_add_executable(niricapture
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  src/i18n.cpp
+  src/i18n.hpp
   src/editor.cpp
   src/editor.hpp
 )
@@ -78,6 +80,8 @@ qt_add_executable(niricapture-smoke
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  src/i18n.cpp
+  src/i18n.hpp
   src/editor.cpp
   src/editor.hpp
   src/eyedropper.cpp

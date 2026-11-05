@@ -1,6 +1,7 @@
 /** @fileoverview Handles screenshot selection, annotation, and editor drawing.
  */
 #include "editor.hpp"
+#include "i18n.hpp"
 #include "icons.hpp"
 #include "eyedropper.hpp"
 
@@ -122,8 +123,8 @@ QString toolAction(CaptureEditor::Tool tool) {
 }
 
 QString redactionStyleName(RedactionStyle style) {
-  return style == RedactionStyle::Solid ? QStringLiteral("Solid")
-                                        : QStringLiteral("Pixelate");
+  return style == RedactionStyle::Solid ? ui("Solid", "实心")
+                                        : ui("Pixelate", "像素化");
 }
 
 qreal constrainedRedactionCoordinate(qreal candidate, qreal fixed,
@@ -257,24 +258,31 @@ QPointF constrainedCreationEndpoint(CaptureEditor::Tool tool,
 CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
                              QuickOutputMode quickOutput,
                              const std::atomic_bool *termination,
-                             QWidget *parent)
+                             QWidget *parent, bool embedded)
     : QWidget(parent), capture_(std::move(capture)),
-      quickOutputMode_(quickOutput), termination_(termination) {
+      quickOutputMode_(quickOutput), termination_(termination),
+      embedded_(embedded) {
   setWindowTitle(QStringLiteral("NiriCapture"));
-  setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
-                 Qt::WindowStaysOnTopHint);
+  if (embedded_) {
+    setWindowFlags(Qt::Widget);
+  } else {
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
+                   Qt::WindowStaysOnTopHint);
+  }
   setAttribute(Qt::WA_TranslucentBackground);
   setFocusPolicy(Qt::StrongFocus);
   setMouseTracking(true);
 
-  for (QScreen *screen : QGuiApplication::screens()) {
-    if (screen->name() == capture_.monitor.name) {
-      setGeometry(screen->geometry());
-      break;
+  if (!embedded_) {
+    for (QScreen *screen : QGuiApplication::screens()) {
+      if (screen->name() == capture_.monitor.name) {
+        setGeometry(screen->geometry());
+        break;
+      }
     }
+    if (geometry().isEmpty())
+      setGeometry(QGuiApplication::primaryScreen()->geometry());
   }
-  if (geometry().isEmpty())
-    setGeometry(QGuiApplication::primaryScreen()->geometry());
   cursor_ = mapFromGlobal(QCursor::pos());
 
   textEditor_ = new QLineEdit(this);
@@ -306,8 +314,8 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
                      "border-radius: 10px; padding: 10px; "
                      "selection-background-color: #2f6fed; }"));
   ocrText_->setFont(QFontDatabase::systemFont(QFontDatabase::GeneralFont));
-  ocrCopyButton_ = new QPushButton(QStringLiteral("Copy text"), this);
-  ocrCloseButton_ = new QPushButton(QStringLiteral("Close"), this);
+  ocrCopyButton_ = new QPushButton(ui("Copy text", "复制文本"), this);
+  ocrCloseButton_ = new QPushButton(ui("Close", "关闭"), this);
   for (QPushButton *button : {ocrCopyButton_, ocrCloseButton_}) {
     button->hide();
     button->setCursor(Qt::PointingHandCursor);
@@ -323,8 +331,8 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
       setStatus(clipboardError);
       return;
     }
-    setStatus(QStringLiteral("OCR text copied to clipboard"));
-    sendCaptureNotification(QStringLiteral("Copied recognized text"));
+    setStatus(ui("OCR text copied to clipboard", "OCR 文本已复制到剪贴板"));
+    sendCaptureNotification(ui("Copied recognized text", "已复制识别文本"));
   });
   connect(ocrCloseButton_, &QPushButton::clicked, this, [this] {
     ocrText_->hide();
@@ -340,7 +348,8 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
       setStatus(result.error);
       return;
     }
-    setStatus(QStringLiteral("OCR ready · select text below and copy"));
+    setStatus(ui("OCR ready · select text below and copy",
+                   "OCR 完成 · 在下方选择文本并复制"));
     showOcrResult(result.text);
   });
 
@@ -418,7 +427,7 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
     if (image.isNull() || !saveTemporarySnapshot(image, path, error)) {
       --pinCount_;
       setStatus(error.isEmpty()
-                    ? QStringLiteral("Could not render pinned capture")
+                    ? ui("Could not render pinned capture", "无法渲染钉图")
                     : error);
       return;
     }
@@ -426,7 +435,7 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
                                  {QStringLiteral("--pin"), path})) {
       QFile::remove(path);
       --pinCount_;
-      setStatus(QStringLiteral("Could not start pinned capture"));
+      setStatus(ui("Could not start pinned capture", "无法启动钉图"));
       return;
     }
     close();
@@ -437,17 +446,17 @@ CaptureEditor::CaptureEditor(CaptureData capture, CaptureMode mode,
     // hidden.
     capturePending_ = true;
     pendingMode_ = mode;
-    setStatus(QStringLiteral("Capturing screen…"));
+    setStatus(ui("Capturing screen…", "正在抓取屏幕…"));
   } else if (mode == CaptureMode::Fullscreen || mode == CaptureMode::File) {
     selection_ = QRectF(QPointF(), capture_.previewSize);
     enterEdit(
         mode == CaptureMode::File
-            ? QStringLiteral("%1 × %2 · non-destructive annotations · "
-                             "Ctrl+C / Ctrl+S")
+            ? ui("%1 × %2 · non-destructive annotations · Ctrl+C / Ctrl+S",
+                 "%1 × %2 · 非破坏性标注 · Ctrl+C / Ctrl+S")
                   .arg(capture_.previewSize.width())
                   .arg(capture_.previewSize.height())
-            : QStringLiteral("Full screen selected · native resolution · "
-                             "outer handles crop"));
+            : ui("Full screen selected · native resolution · outer handles crop",
+                 "已选择全屏 · 原生分辨率 · 外侧手柄可裁剪"));
   } else if (mode == CaptureMode::Window) {
     windowMode_ = true;
     hoveredWindow_ = windowAt(cursor_);
@@ -671,7 +680,8 @@ void CaptureEditor::scaleSelectedAnnotation(qreal factor) {
   if (annotation.kind == Annotation::Kind::Spotlight) {
     annotation.magnification =
         std::clamp(annotation.magnification * factor, 1.0, 4.0);
-    setStatus(QStringLiteral("Spotlight magnification · %1× · wheel adjusts")
+    setStatus(ui("Spotlight magnification · %1× · wheel adjusts",
+                 "聚光灯放大 · %1× · 滚轮调整")
                   .arg(annotation.magnification, 0, 'f', 1));
     scheduleSnapshot();
     return;
@@ -707,7 +717,8 @@ void CaptureEditor::scaleSelectedAnnotation(qreal factor) {
     annotation.size = std::clamp(annotation.size * factor, 1.0, 24.0);
     annotation.start += center - annotationBounds(annotation).center();
   }
-  setStatus(QStringLiteral("Selected layer · wheel zoom %1%")
+  setStatus(ui("Selected layer · wheel zoom %1%",
+               "已选中标注 · 滚轮缩放 %1%")
                 .arg(qRound(factor * 100)));
   scheduleSnapshot();
 }
@@ -976,39 +987,39 @@ QVector<CaptureEditor::ToolbarButton> CaptureEditor::toolbarButtons() const {
   };
 
   add(36, QStringLiteral("tool-select"), {},
-      QStringLiteral("Select / move · V · wheel scales a selected layer"));
+      ui("Select / move · V · wheel scales a selected layer", "选择 / 移动 · V · 滚轮缩放选中标注"));
   add(36, QStringLiteral("tool-freehand"), {},
-      QStringLiteral("Pen · F · size %1 · wheel adjusts").arg(qRound(annotationSize_)));
+      ui("Pen · F · size %1 · wheel adjusts", "画笔 · F · 大小 %1 · 滚轮调整").arg(qRound(annotationSize_)));
   add(36, QStringLiteral("tool-arrow"), {},
-      QStringLiteral("Arrow · A · Shift snaps 45°"));
+      ui("Arrow · A · Shift snaps 45°", "箭头 · A · Shift 约束 45°"));
   add(36, QStringLiteral("shape-panel"), {},
-      QStringLiteral("Shapes · rectangle R · ellipse E · line L · fill"));
+      ui("Shapes · rectangle R · ellipse E · line L · fill", "形状 · 矩形 R · 椭圆 E · 直线 L · 填充"));
   add(36, QStringLiteral("tool-text"), {},
-      QStringLiteral("Text · T · size %1 · wheel adjusts")
+      ui("Text · T · size %1 · wheel adjusts", "文字 · T · 大小 %1 · 滚轮调整")
           .arg(QString::fromLatin1(
               kTextSizeNames.at(static_cast<std::size_t>(textSizeIndex_)))));
   add(36, QStringLiteral("tool-redact"), {},
-      QStringLiteral("Mosaic · D · %1 · D toggles")
+      ui("Mosaic · D · %1 · D toggles", "马赛克 · D · %1 · 再按 D 切换")
           .arg(redactionStyleName(redactionStyle_)));
   add(36, QStringLiteral("tool-blur"), {},
-      QStringLiteral("Gaussian blur · B · radius %1 px").arg(qRound(annotationSize_)));
+      ui("Gaussian blur · B · radius %1 px", "高斯模糊 · B · 半径 %1 px").arg(qRound(annotationSize_)));
   add(36, QStringLiteral("tool-highlighter"), {},
-      QStringLiteral("Highlighter · H · wheel adjusts"));
+      ui("Highlighter · H · wheel adjusts", "高亮 · H · 滚轮调整"));
   add(36, QStringLiteral("tool-marker"), {},
-      QStringLiteral("Numbered marker · C · wheel adjusts"));
-  add(36, QStringLiteral("palette"), {}, QStringLiteral("Color / line width"),
+      ui("Numbered marker · C · wheel adjusts", "序号标记 · C · 滚轮调整"));
+  add(36, QStringLiteral("palette"), {}, ui("Color / line width", "颜色 / 线宽"),
       annotationColor());
-  add(36, QStringLiteral("undo"), {}, QStringLiteral("Undo · Ctrl+Z"));
+  add(36, QStringLiteral("undo"), {}, ui("Undo · Ctrl+Z", "撤销 · Ctrl+Z"));
   add(36, QStringLiteral("redo"), {},
-      QStringLiteral("Redo · Ctrl+Shift+Z / Ctrl+Y"));
+      ui("Redo · Ctrl+Shift+Z / Ctrl+Y", "重做 · Ctrl+Shift+Z / Ctrl+Y"));
   add(36, QStringLiteral("tool-ocr"), {},
-      QStringLiteral("OCR region · O · selectable result"));
-  add(36, QStringLiteral("pin"), {}, QStringLiteral("Pin on screen · P"));
-  add(36, QStringLiteral("copy"), {}, QStringLiteral("Copy · Ctrl+C"));
-  add(36, QStringLiteral("save"), {}, QStringLiteral("Save · Ctrl+S"));
+      ui("OCR region · O · selectable result", "OCR 区域 · O · 可选择结果"));
+  add(36, QStringLiteral("pin"), {}, ui("Pin on screen · P", "钉在屏幕上 · P"));
+  add(36, QStringLiteral("copy"), {}, ui("Copy · Ctrl+C", "复制 · Ctrl+C"));
+  add(36, QStringLiteral("save"), {}, ui("Save · Ctrl+S", "保存 · Ctrl+S"));
   add(36, QStringLiteral("open-app"), {},
-      QStringLiteral("Open in default image app · saves PNG"));
-  add(36, QStringLiteral("close"), {}, QStringLiteral("Close · Esc"));
+      ui("Open in default image app · saves PNG", "用默认图片应用打开 · 保存 PNG"));
+  add(36, QStringLiteral("close"), {}, ui("Close · Esc", "关闭 · Esc"));
 
   if (shapePaletteOpen_) {
     const QRectF panel = shapePanelRect();
@@ -1016,10 +1027,10 @@ QVector<CaptureEditor::ToolbarButton> CaptureEditor::toolbarButtons() const {
     const qreal pad = 4 * scale;
     const qreal by = panel.top() + (panel.height() - 32 * scale) / 2.0;
     const std::array<QPair<QString, QString>, 4> items{{
-        {QStringLiteral("tool-rectangle"), QStringLiteral("Rectangle · R")},
-        {QStringLiteral("tool-ellipse"), QStringLiteral("Ellipse · E")},
-        {QStringLiteral("tool-line"), QStringLiteral("Line · L")},
-        {QStringLiteral("shape-fill"), QStringLiteral("Filled shapes")},
+        {QStringLiteral("tool-rectangle"), ui("Rectangle · R", "矩形 · R")},
+        {QStringLiteral("tool-ellipse"), ui("Ellipse · E", "椭圆 · E")},
+        {QStringLiteral("tool-line"), ui("Line · L", "直线 · L")},
+        {QStringLiteral("shape-fill"), ui("Filled shapes", "填充形状")},
     }};
     for (int index = 0; index < static_cast<int>(items.size()); ++index) {
       buttons.push_back({QRectF(panel.left() + pad + index * (button + 2 * scale),
@@ -1036,16 +1047,16 @@ QVector<CaptureEditor::ToolbarButton> CaptureEditor::toolbarButtons() const {
           {{palette.left() + 4 + index * 28, palette.top() + 4, 24, 26},
            QStringLiteral("color-%1").arg(index),
            {},
-           QStringLiteral("Color · %1").arg(index + 1),
+           ui("Color · %1", "颜色 · %1").arg(index + 1),
            QColor(QString::fromLatin1(
                kColorNames.at(static_cast<std::size_t>(index))))});
     }
     buttons.push_back({{palette.left() + 4 + 6 * 28, palette.top() + 4, 24, 26},
                        QStringLiteral("custom-color"), {},
-                       QStringLiteral("Custom color"), {}});
+                       ui("Custom color", "自定义颜色"), {}});
     buttons.push_back({{palette.left() + 4 + 7 * 28, palette.top() + 4, 24, 26},
                        QStringLiteral("tool-eyedropper"), {},
-                       QStringLiteral("Sample from image · I"), {}});
+                       ui("Sample from image · I", "从图像取样 · I"), {}});
     const std::array<QPair<QString, QString>, 4> sizes{{
         {QStringLiteral("size-2"), QStringLiteral("S")},
         {QStringLiteral("size-4"), QStringLiteral("M")},
@@ -1057,7 +1068,7 @@ QVector<CaptureEditor::ToolbarButton> CaptureEditor::toolbarButtons() const {
                                 palette.top() + 40, 56, 28),
                          sizes.at(static_cast<std::size_t>(index)).first,
                          sizes.at(static_cast<std::size_t>(index)).second,
-                         QStringLiteral("Line width"), {}});
+                         ui("Line width", "线宽"), {}});
     }
   }
   return buttons;
@@ -1134,25 +1145,25 @@ void CaptureEditor::recordEdit() { pushUndoState(editState()); }
 void CaptureEditor::undoEdit() {
   cancelActiveDragForHistory();
   if (undoStack_.isEmpty()) {
-    setStatus(QStringLiteral("Nothing to undo"));
+    setStatus(ui("Nothing to undo", "没有可撤销的操作"));
     return;
   }
   redoStack_.push_back(editState());
   applyEditState(undoStack_.takeLast());
   scheduleSnapshot();
-  setStatus(QStringLiteral("Undo · Ctrl+Shift+Z or Ctrl+Y to redo"));
+  setStatus(ui("Undo · Ctrl+Shift+Z or Ctrl+Y to redo", "已撤销 · Ctrl+Shift+Z 或 Ctrl+Y 重做"));
 }
 
 void CaptureEditor::redoEdit() {
   cancelActiveDragForHistory();
   if (redoStack_.isEmpty()) {
-    setStatus(QStringLiteral("Nothing to redo"));
+    setStatus(ui("Nothing to redo", "没有可重做的操作"));
     return;
   }
   undoStack_.push_back(editState());
   applyEditState(redoStack_.takeLast());
   scheduleSnapshot();
-  setStatus(QStringLiteral("Redo · Ctrl+Z to undo"));
+  setStatus(ui("Redo · Ctrl+Z to undo", "已重做 · Ctrl+Z 撤销"));
 }
 
 void CaptureEditor::scheduleSnapshot() {
@@ -1217,12 +1228,12 @@ void CaptureEditor::pinSnapshot() {
   const QString path = pinnedSnapshotPath(++pinCount_);
   if (path.isEmpty()) {
     --pinCount_;
-    setStatus(QStringLiteral("Could not create private runtime directory"));
+    setStatus(ui("Could not create private runtime directory", "无法创建私有运行时目录"));
     return;
   }
   pendingPinPath_ = path;
   pinPending_ = true;
-  setStatus(QStringLiteral("Preparing pinned capture…"));
+  setStatus(ui("Preparing pinned capture…", "正在准备钉图…"));
   const CaptureData captureCopy = capture_;
   const QVector<Annotation> annotations = annotations_;
   const QRectF selection = selection_;
@@ -1253,7 +1264,7 @@ void CaptureEditor::startWindowCleanCapture(int index) {
   if (windowPending_ || index < 0 || index >= capture_.windows.size())
     return;
   const WindowTarget target = capture_.windows.at(index);
-  setStatus(QStringLiteral("Capturing clean window surface…"));
+  setStatus(ui("Capturing clean window surface…", "正在抓取干净的窗口画面…"));
   QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
   windowPending_ = true;
   const std::atomic_bool *termination = termination_;
@@ -1341,14 +1352,14 @@ void CaptureEditor::cutout(const QPointF &end) {
   const QImage flattened =
       renderCapture(native, selection_, annotations_, BackgroundStyle::None);
   if (flattened.isNull()) {
-    setStatus(QStringLiteral("Could not render cutout"));
+    setStatus(ui("Could not render cutout", "无法渲染剪切结果"));
     return;
   }
   QImage joined(horizontal ? QSize(pixels.width(), extent - removed)
                            : QSize(extent - removed, pixels.height()),
                 QImage::Format_ARGB32_Premultiplied);
   if (joined.isNull()) {
-    setStatus(QStringLiteral("Could not allocate cutout"));
+    setStatus(ui("Could not allocate cutout", "无法分配剪切图像"));
     return;
   }
   QPainter painter(&joined);
@@ -1449,11 +1460,11 @@ void CaptureEditor::acceptText() {
       annotations_[editingAnnotation_] = std::move(annotation);
       selectedAnnotation_ = editingAnnotation_;
       tool_ = Tool::Select;
-      setStatus(QStringLiteral("Text updated · drag to move · handle resizes"));
+      setStatus(ui("Text updated · drag to move · handle resizes", "文字已更新 · 拖动移动 · 手柄缩放"));
     } else {
       annotations_.push_back(std::move(annotation));
       selectedAnnotation_ = -1;
-      setStatus(QStringLiteral("Text added · V selects layers · Esc closes"));
+      setStatus(ui("Text added · V selects layers · Esc closes", "文字已添加 · V 选择标注 · Esc 关闭"));
     }
     scheduleSnapshot();
   } else if (editingAnnotation_ >= 0) {
@@ -1491,7 +1502,7 @@ void CaptureEditor::runOcr(const QRectF &localSelection) {
   if (target.width() < 2 || target.height() < 2)
     return;
   busy_ = true;
-  setStatus(QStringLiteral("Reading selected text…"));
+  setStatus(ui("Reading selected text…", "正在识别选中文字…"));
 
   QVector<Annotation> ocrAnnotations;
   const QPointF offset = selection_.topLeft() - target.topLeft();
@@ -1515,7 +1526,7 @@ void CaptureEditor::runOcr(const QRectF &localSelection) {
     const QImage image = renderCapture(captureCopy, target, ocrAnnotations,
                                        BackgroundStyle::None);
     if (image.isNull())
-      result.error = QStringLiteral("Could not prepare image for OCR");
+      result.error = ui("Could not prepare image for OCR", "无法为 OCR 准备图像");
     else
       result.text = recognizeText(image, result.error);
     return result;
@@ -1551,19 +1562,19 @@ void CaptureEditor::finish(OutputMode mode) {
   if (busy_ || selection_.isEmpty())
     return;
   busy_ = true;
-  setStatus(QStringLiteral("Preparing screenshot…"));
+  setStatus(ui("Preparing screenshot…", "正在准备截图…"));
   snapshotOutputRequested_ = true;
   scheduleSnapshot();
   if (!waitForSnapshot()) {
     busy_ = false;
-    setStatus(QStringLiteral("Could not prepare screenshot snapshot"));
+    setStatus(ui("Could not prepare screenshot snapshot", "无法准备截图快照"));
     return;
   }
   const QFileInfo snapshotFile(snapshotPath_);
   if (snapshotPath_.isEmpty() || !snapshotFile.exists() ||
       snapshotFile.size() <= 0) {
     busy_ = false;
-    setStatus(QStringLiteral("Could not prepare screenshot snapshot"));
+    setStatus(ui("Could not prepare screenshot snapshot", "无法准备截图快照"));
     return;
   }
 
@@ -1651,7 +1662,7 @@ void CaptureEditor::handleToolbar(const QString &action) {
     if (annotationSize_ < 8)
       annotationSize_ = 18;
     selectedAnnotation_ = -1;
-    setStatus(QStringLiteral("Blur · real Gaussian pixels · wheel changes radius"));
+    setStatus(ui("Blur · real Gaussian pixels · wheel changes radius", "模糊 · 真实高斯像素 · 滚轮调整半径"));
   } else if (action == QStringLiteral("shape-fill")) {
     shapeFilled_ = !shapeFilled_;
     if (tool_ != Tool::Rectangle && tool_ != Tool::Ellipse)
@@ -1666,8 +1677,8 @@ void CaptureEditor::handleToolbar(const QString &action) {
         scheduleSnapshot();
       }
     }
-    setStatus(shapeFilled_ ? QStringLiteral("Filled shapes on")
-                           : QStringLiteral("Outlined shapes"));
+    setStatus(shapeFilled_ ? ui("Filled shapes on", "填充形状：开")
+                           : ui("Outlined shapes", "空心形状"));
   } else if (action == QStringLiteral("shape-panel")) {
     shapePaletteOpen_ = !shapePaletteOpen_;
     colorPaletteOpen_ = false;
@@ -1731,7 +1742,7 @@ void CaptureEditor::handleToolbar(const QString &action) {
         scheduleSnapshot();
       }
     }
-    setStatus(QStringLiteral("Line width %1 px").arg(width));
+    setStatus(ui("Line width %1 px", "线宽 %1 px").arg(width));
   } else if (action == QStringLiteral("custom-color")) {
     usingCustomColor_ = true;
     customColorPickerOpen_ = !customColorPickerOpen_;
@@ -1923,14 +1934,14 @@ void CaptureEditor::keyPressEvent(QKeyEvent *event) {
     colorPaletteOpen_ = !colorPaletteOpen_;
     shapePaletteOpen_ = false;
     customColorPickerOpen_ = false;
-    setStatus(colorPaletteOpen_ ? QStringLiteral("Color / line width")
-                                : QStringLiteral("Palette closed"));
+    setStatus(colorPaletteOpen_ ? ui("Color / line width", "颜色 / 线宽")
+                                : ui("Palette closed", "颜色面板已关闭"));
   } else if (event->key() == Qt::Key_G) {
     shapePaletteOpen_ = !shapePaletteOpen_;
     colorPaletteOpen_ = false;
     customColorPickerOpen_ = false;
-    setStatus(shapePaletteOpen_ ? QStringLiteral("Shapes · R rectangle · E ellipse · L line")
-                                : QStringLiteral("Shape panel closed"));
+    setStatus(shapePaletteOpen_ ? ui("Shapes · R rectangle · E ellipse · L line", "形状 · R 矩形 · E 椭圆 · L 直线")
+                                : ui("Shape panel closed", "形状面板已关闭"));
   } else if (event->key() == Qt::Key_T) {
     tool_ = Tool::Text;
   } else if (event->key() == Qt::Key_I) {
@@ -2201,7 +2212,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       } else if (tool_ != Tool::Select || selectedAnnotation_ >= 0) {
         tool_ = Tool::Select;
         selectedAnnotation_ = -1;
-        setStatus(QStringLiteral("Select/move · Esc closes"));
+        setStatus(ui("Select/move · Esc closes", "选择/移动 · Esc 关闭"));
         updatePointerCursor();
         update();
       }
@@ -2236,7 +2247,8 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       textSizePanelRect().contains(cursor_)) {
     const qreal localX = cursor_.x() - textSizePanelRect().left();
     textSizeIndex_ = std::clamp(static_cast<int>(localX / 34.0), 0, 2);
-    setStatus(QStringLiteral("Neucha · size %1 · wheel changes size")
+    setStatus(ui("Neucha · size %1 · wheel changes size",
+                 "Neucha · 大小 %1 · 滚轮调整")
                   .arg(QString::fromLatin1(kTextSizeNames.at(
                       static_cast<std::size_t>(textSizeIndex_)))));
     update();
@@ -2266,7 +2278,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       dragStartStateValid_ = true;
       dragChanged_ = false;
       dragging_ = true;
-      setStatus(QStringLiteral("Cropping screenshot · drag outer handle"));
+      setStatus(ui("Cropping screenshot · drag outer handle", "裁剪截图 · 拖动外侧手柄"));
       updatePointerCursor();
       update();
       return;
@@ -2299,7 +2311,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
     static_cast<void>(copyTextToClipboard(
         customColor_.name(QColor::HexRgb).toUpper(), clipboardError));
     tool_ = toolBeforeEyedropper_;
-    setStatus(QStringLiteral("Sampled %1").arg(
+    setStatus(ui("Sampled %1", "已取样 %1").arg(
         customColor_.name(QColor::HexRgb).toUpper()));
     updatePointerCursor();
     update();
@@ -2329,7 +2341,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       interaction_ = Interaction::None;
       dragging_ = false;
       setStatus(selectedAnnotations_.isEmpty()
-                    ? QStringLiteral("No layer selected")
+                    ? ui("No layer selected", "未选中标注")
                     : QStringLiteral("%1 layers selected · Ctrl-click toggles")
                           .arg(selectedAnnotations_.size()));
       updatePointerCursor();
@@ -2344,7 +2356,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       dragStart_ = point;
       dragging_ = true;
       interaction_ = Interaction::None;
-      setStatus(QStringLiteral("Drag to select layers"));
+      setStatus(ui("Drag to select layers", "拖动框选标注"));
       update();
       return;
     } else {
@@ -2378,7 +2390,7 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
       dragStartStateValid_ = false;
       dragChanged_ = false;
       dragging_ = false;
-      setStatus(QStringLiteral("No layer selected"));
+      setStatus(ui("No layer selected", "未选中标注"));
     }
     updatePointerCursor();
     update();
@@ -2394,7 +2406,8 @@ void CaptureEditor::mousePressEvent(QMouseEvent *event) {
     annotation.size = annotationSize_;
     annotations_.push_back(std::move(annotation));
     selectedAnnotation_ = -1;
-    setStatus(QStringLiteral("Marker %1 added · V selects layers · Esc closes")
+    setStatus(ui("Marker %1 added · V selects layers · Esc closes",
+                 "序号 %1 已添加 · V 选择标注 · Esc 关闭")
                   .arg(annotation.number));
     scheduleSnapshot();
     updatePointerCursor();
@@ -2603,7 +2616,8 @@ void CaptureEditor::wheelEvent(QWheelEvent *event) {
     scaleSelectedAnnotation(step > 0 ? 1.1 : 1.0 / 1.1);
   } else if (tool_ == Tool::Text) {
     textSizeIndex_ = std::clamp(textSizeIndex_ + step, 0, 2);
-    setStatus(QStringLiteral("Neucha · size %1 · wheel changes size")
+    setStatus(ui("Neucha · size %1 · wheel changes size",
+                 "Neucha · 大小 %1 · 滚轮调整")
                   .arg(QString::fromLatin1(kTextSizeNames.at(
                       static_cast<std::size_t>(textSizeIndex_)))));
   } else if (tool_ == Tool::Spotlight) {
@@ -2785,9 +2799,11 @@ void CaptureEditor::paintSelect(QPainter &painter) {
 }
 
 void CaptureEditor::paintEdit(QPainter &painter) {
-  painter.setCompositionMode(QPainter::CompositionMode_Source);
-  painter.fillRect(rect(), QColor(0, 0, 0, 160));
-  painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+  if (!embedded_) {
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.fillRect(rect(), QColor(0, 0, 0, 160));
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+  }
   const QRectF image = editImageRect();
   painter.save();
   if (dragging_ && interaction_ >= Interaction::CropTopLeft)

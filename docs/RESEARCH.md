@@ -197,8 +197,8 @@ This is unit-tested with synthetic 1.0 and 1.25 scale outputs.
 ## 5. Dependency and licence conclusions
 
 - Qt 6 Widgets + LayerShellQt is the smallest stack that can draw per-output
-  layer-shell surfaces, keep a standalone editor alive independently of DMS,
-  and render/export pixels without a compositor plugin.
+  layer-shell surfaces, keep the capture UI alive independently of DMS, and
+  render/export pixels without a compositor plugin.
 - Quickshell is not needed at runtime and its stock screencopy backend has a
   known crash; avoiding it is a deliberate reliability choice.
 - Tesseract is packaged in Arch and supports offline `eng+chi_sim`; OCR is
@@ -266,8 +266,8 @@ A single unprivileged Qt executable:
 1. probes Niri outputs/windows over JSON IPC;
 2. freezes outputs through the DMS CLI (region/fullscreen/all), or captures a
    window through Niri's native action;
-3. presents per-output layer surfaces for region selection or opens the editor
-   directly for window/fullscreen;
+3. presents per-output layer surfaces for region selection and embeds the
+   annotation editor in the frozen owner surface;
 4. stores annotations non-destructively and renders source effects at export;
 5. copies via `wl-copy`, saves via QImage PNG, and can pin the result.
 

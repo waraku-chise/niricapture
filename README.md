@@ -5,17 +5,17 @@
 A native screenshot tool for **Niri + DankMaterialShell (DMS)** on Arch Linux.
 
 NiriCapture freezes the desktop through DMS, draws a multi-output selection
-overlay, and then opens a standalone annotation editor with a compact floating
-toolbar. Window captures use **Niri's compositor-side window renderer**, not a
+overlay, then turns that frozen selection into an in-place annotation editor
+with a compact floating toolbar. Window captures use **Niri's compositor-side window renderer**, not a
 crop of the desktop, so occluded and off-workspace windows are captured
 completely.
 
-![NiriCapture editor](docs/screenshots/editor.png)
+![NiriCapture editor](docs/screenshots/inline-editor.png)
 
 ## UI preview
 
 The clip below is a real screen recording: DMS freezes the desktop, the
-region overlay appears, the editor opens, and the colour/shape panels are
+region overlay becomes the in-place editor, and the colour/shape panels are
 shown with `Q` / `G`.
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture UI preview" width="880">
@@ -27,7 +27,7 @@ shown with `Q` / `G`.
 
 | Region selection | Editor |
 |---|---|
-| <img src="docs/screenshots/region-selector.png" width="420" alt="Frozen region selection"> | <img src="docs/screenshots/editor.png" width="420" alt="Annotation editor"> |
+| <img src="docs/screenshots/region-selector.png" width="420" alt="Frozen region selection"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="Annotation editor"> |
 | **Colour / width** | **Shape panel** |
 | <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/shapes.png" width="420" alt="Shape popup"> |
 | **OCR result** | **Native window capture** |
@@ -47,8 +47,9 @@ shown with `Q` / `G`.
 - Non-destructive annotations: select/move/resize, pen, arrow, line, outlined
   or filled rectangle, outlined or filled ellipse, text, highlighter, truly
   pixelated mosaic, real Gaussian blur, numbered markers, undo/redo.
-- The editor keeps a region capture at its exact original screen position and
-  scale, so it lines up with the frozen desktop instead of jumping to centre.
+- Region and current-output fullscreen captures open the toolbar directly in
+  the frozen selection overlay. There is no second window and no image jump.
+- UI follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
 - Compact Material-inspired toolbar near the image with shape, colour and line
   width popups; works on dark and light desktops.
 - Copy/save with `wl-copy`; offline OCR through Tesseract with selectable text.
@@ -74,11 +75,12 @@ niri msg --json outputs          # geometry, scale, physical size
   composeSelection() at the owning output's scale
         │
         ▼
-  standalone CaptureEditor (no DMS shell dependency)
+  CaptureEditor embedded in the owner overlay (no new window)
 ```
 
-Nothing is recaptured after the overlays are mapped. The editor receives one
-composited still image. This is the same freeze mechanism DMS Screenshot+ uses
+Nothing is recaptured after the overlays are mapped. The editor is a child of
+the frozen selection overlay, so the toolbar appears in place and the captured
+image stays at its exact screen position. This is the same freeze mechanism DMS Screenshot+ uses
 (`dms screenshot output` before mapping its Quickshell overlay), but without
 the Quickshell `ScreencopyView` crash documented in
 [DMS Screenshot+](https://github.com/pcmid/dms-screenshot-plus#backends) and
@@ -201,7 +203,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.1.0_amd64.deb
+sudo apt install ./niricapture_0.2.0_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -393,6 +395,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.1.0`. The core acceptance path is implemented and tested on Niri
-26.04 + DMS 2.0. Multi-output composition has synthetic coverage; only one
-physical output was available during live testing.
+Version `0.2.0`. The core acceptance path is implemented and tested on Niri
+26.04 + DMS 2.0. Region/fullscreen editing is embedded in the frozen overlay;
+window/file editing uses the standalone editor. Multi-output composition has
+synthetic coverage; only one physical output was available during live testing.

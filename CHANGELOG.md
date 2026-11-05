@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.0] — 2026-11-05
+
+### Editing in the frozen selection
+
+- Region and current-output fullscreen captures now embed the editor directly in
+  the frozen selection overlay. The toolbar appears next to the selection and
+  there is no second editor window or image jump.
+- The embedded editor keeps the captured pixels at their original screen
+  coordinates; the area outside the selection remains the dimmed frozen frame.
+- Window, image-file and clipboard-image editing still use the standalone
+  editor.
+- `Q` / `G` toggle the colour and shape panels from the keyboard.
+
+### Chinese interface
+
+- UI language follows the system locale. Chinese is selected for
+  `zh_CN`/Chinese locales; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
+- Tooltips, status bar, OCR panel and selection hints are localized.
+
 ## [0.1.0] — 2026-11-05
 
 First Niri/DMS-focused release.

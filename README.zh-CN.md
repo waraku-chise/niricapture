@@ -5,15 +5,15 @@
 面向 **Niri + DankMaterialShell（DMS）** 的 Arch Linux 原生截图工具。
 
 NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖层，随后打开一个
-独立的标注编辑器，工具栏以紧凑的悬浮面板呈现。窗口截图使用 **Niri 合成器侧的
+直接在冻结选区上显示标注工具栏，工具栏以紧凑的悬浮面板呈现。窗口截图使用 **Niri 合成器侧的
 窗口独立渲染**，不是从桌面截图中裁剪，因此被其他窗口完全遮挡的窗口、以及位于
 非当前工作区的窗口，都能完整截取。
 
-![NiriCapture 编辑器](docs/screenshots/editor.png)
+![NiriCapture 编辑器](docs/screenshots/inline-editor.png)
 
 ## 界面预览
 
-下面的动图来自真实录屏：DMS 冻结桌面、区域覆盖层出现、编辑器打开，
+下面的动图来自真实录屏：DMS 冻结桌面、区域覆盖层直接进入编辑状态，
 并用 `Q` / `G` 展示颜色与形状弹出面板。
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture 界面预览" width="880">
@@ -25,7 +25,7 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
 
 | 区域选区 | 编辑器 |
 |---|---|
-| <img src="docs/screenshots/region-selector.png" width="420" alt="冻结画面区域选区"> | <img src="docs/screenshots/editor.png" width="420" alt="标注编辑器"> |
+| <img src="docs/screenshots/region-selector.png" width="420" alt="冻结画面区域选区"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="标注编辑器"> |
 | **颜色 / 线宽** | **形状面板** |
 | <img src="docs/screenshots/palette.png" width="420" alt="颜色与线宽弹出面板"> | <img src="docs/screenshots/shapes.png" width="420" alt="形状弹出面板"> |
 | **OCR 结果** | **Niri 原生窗口截图** |
@@ -43,8 +43,9 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
 - 非破坏性标注：选择/移动/缩放、画笔、箭头、直线、空心/填充矩形、
   空心/填充椭圆、文字、高亮、真正的像素化马赛克、真实高斯模糊、序号标记、
   撤销/重做。
-- 编辑器会保持区域截图在屏幕上的原始位置和比例，不会跳到屏幕中央，
-  因此图像与后面的冻结桌面严格对齐。
+- 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
+  窗口，也不会发生图像跳动。
+- 界面语言跟随系统；可用 `NIRICAPTURE_LANG=zh_CN` 或 `en` 强制指定。
 - 靠近图像的 Material 风格紧凑工具栏，提供形状、颜色、线宽弹出面板；
   在深色和浅色桌面上都能正常使用。
 - 通过 `wl-copy` 复制、保存 PNG；可选 Tesseract 离线 OCR，识别结果可选中复制。
@@ -70,10 +71,11 @@ niri msg --json outputs          # 逻辑几何、缩放、物理尺寸
   composeSelection()：按选区主要所属输出的缩放合成
         │
         ▼
-  独立的 CaptureEditor（不依赖 DMS Shell 生命周期）
+  嵌入 owner 覆盖层的 CaptureEditor（不新建窗口）
 ```
 
-覆盖层映射之后不会再重新抓屏。编辑器拿到的是一张已经合成好的静态图像。这与
+覆盖层映射之后不会再重新抓屏。编辑器直接作为冻结选区覆盖层的子控件出现，
+工具栏就在选区旁，图像保持原来的屏幕位置，不会跳到另一个窗口。这与
 DMS Screenshot+ 使用的冻结机制相同（先 `dms screenshot output`，再映射
 Quickshell 覆盖层），但没有使用后者存在崩溃风险的 Quickshell
 `ScreencopyView`。相关记录见
@@ -192,7 +194,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.1.0_amd64.deb
+sudo apt install ./niricapture_0.2.0_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -344,6 +346,8 @@ DMS Screenshot+、HyprCapture 和 Niri 26.04 的源码级分析、协议/API 限
 - 当前实现中 DMS 输出是逐个抓取的；其他 DMS 截图选择器共享同一时间只能有
   一个的限制。
 - 区域截图和合成支持跨输出选区。窗口截图始终是一个 Niri 窗口，即使它跨输出。
+- 内嵌编辑器宿主在选区面积最大的输出上；跨输出选区会合成到该宿主，
+  编辑期间不会在副输出上重复绘制标注。
 - 滚动截图、GIF/视频录制、结果缩略图弹窗、以及基于滚动布局的像素级窗口
   hover 覆盖层**尚未实现**。
 - 没有 xdg-desktop-portal/PipeWire 回退。Niri 原生窗口动作已经足够精确；
@@ -374,6 +378,7 @@ make check
 
 ## 状态
 
-版本 `0.1.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
-多输出合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏
-端到端测试。
+版本 `0.2.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+区域/全屏编辑内嵌在冻结覆盖层中；窗口/文件编辑仍使用独立编辑器。多输出
+合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
+测试。
