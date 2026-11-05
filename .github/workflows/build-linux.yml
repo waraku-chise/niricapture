@@ -73,8 +73,9 @@ jobs:
           ./packaging/make-deb.sh build dist
           deb="$(find dist -maxdepth 1 -name 'niricapture_*.deb' -print -quit)"
           test -n "$deb"
+          cp -- "$deb" .
           echo "CAPTURE_ARCHIVE=${archive}" >> "$GITHUB_ENV"
-          echo "CAPTURE_DEB=${deb}" >> "$GITHUB_ENV"
+          echo "CAPTURE_DEB=$(basename -- "$deb")" >> "$GITHUB_ENV"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
