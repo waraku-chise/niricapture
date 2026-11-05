@@ -1694,7 +1694,8 @@ bool runTextClickAwayCommitCheck(QApplication &application, QString &error) {
   return true;
 }
 
-bool runOcrPanelCheck(QApplication &application, QString &error) {
+bool runOcrPanelCheck(QApplication &application, QString &error,
+                      const QString &outputRoot) {
   CaptureData capture;
   capture.monitor.scale = 1.0;
   capture.monitor.pixelSize = {600, 200};
@@ -1734,6 +1735,11 @@ bool runOcrPanelCheck(QApplication &application, QString &error) {
   }
   if (!panel) {
     error = QStringLiteral("OCR result panel did not appear");
+    return false;
+  }
+  if (!editor.grab().save(outputRoot + QStringLiteral("-ocr-panel.png"),
+                          "PNG")) {
+    error = QStringLiteral("Could not save OCR panel screenshot");
     return false;
   }
   if (!panel->toPlainText().contains(QStringLiteral("42"))) {
@@ -2566,6 +2572,10 @@ int main(int argc, char **argv) {
     return runInstanceLockHolder(heldLockPath);
 
   QApplication application(argc, argv);
+  const QString outputRoot =
+      argc > 1 ? QString::fromLocal8Bit(argv[1])
+               : QDir(QDir::tempPath())
+                     .filePath(QStringLiteral("niricapture-native-smoke"));
   if (!loadCaptureFonts())
     return 17;
   // Exercise production Open dispatch, then exit without an event-loop turn.
@@ -2686,7 +2696,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "SMOKE 87: %s\n", snapshotError.toUtf8().constData());
     return 87;
   }
-  if (!runOcrPanelCheck(application, snapshotError)) {
+  if (!runOcrPanelCheck(application, snapshotError, outputRoot)) {
     qWarning().noquote() << snapshotError;
     fprintf(stderr, "SMOKE 126: %s\n", snapshotError.toUtf8().constData());
     return 126;
@@ -2716,10 +2726,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "SMOKE 95: %s\n", snapshotError.toUtf8().constData());
     return 95;
   }
-  const QString outputRoot =
-      argc > 1 ? QString::fromLocal8Bit(argv[1])
-               : QDir(QDir::tempPath())
-                     .filePath(QStringLiteral("niricapture-native-smoke"));
   const QString snapshotPath = temporarySnapshotPath();
   QFile::remove(snapshotPath);
   const QString savedRoot = QDir(outputRoot).filePath(QStringLiteral("saved"));

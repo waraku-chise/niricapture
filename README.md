@@ -1,5 +1,7 @@
 # NiriCapture
 
+[**English**](README.md) | [简体中文](README.zh-CN.md)
+
 A native screenshot tool for **Niri + DankMaterialShell (DMS)** on Arch Linux.
 
 NiriCapture freezes the desktop through DMS, draws a multi-output selection
@@ -9,6 +11,29 @@ crop of the desktop, so occluded and off-workspace windows are captured
 completely.
 
 ![NiriCapture editor](docs/screenshots/editor.png)
+
+## UI preview
+
+The clip below is a real screen recording: DMS freezes the desktop, the
+region overlay appears, the editor opens, and the colour/shape panels are
+shown with `Q` / `G`.
+
+<img src="docs/screenshots/preview.gif" alt="NiriCapture UI preview" width="880">
+
+[MP4](docs/screenshots/preview.mp4) · [WebM](docs/screenshots/preview.webm) ·
+[poster](docs/screenshots/preview-poster.png)
+
+### More screenshots
+
+| Region selection | Editor |
+|---|---|
+| <img src="docs/screenshots/region-selector.png" width="420" alt="Frozen region selection"> | <img src="docs/screenshots/editor.png" width="420" alt="Annotation editor"> |
+| **Colour / width** | **Shape panel** |
+| <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/shapes.png" width="420" alt="Shape popup"> |
+| **OCR result** | **Native window capture** |
+| <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
+| **Annotation export** | |
+| <img src="docs/screenshots/annotations.png" width="420" alt="Rendered annotations"> | |
 
 ## What works
 
@@ -239,6 +264,7 @@ scrolling layout. The compositor picker is the reliable selection surface.
 | `A` / `L` | Arrow / line |
 | `R` / `E` | Rectangle / ellipse |
 | `T` | Text |
+| `Q` / `G` | Colour / shape popups |
 | `H` | Highlighter |
 | `C` | Numbered marker |
 | `D` | Mosaic (D toggles solid/pixelate) |

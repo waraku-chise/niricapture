@@ -1904,6 +1904,18 @@ void CaptureEditor::keyPressEvent(QKeyEvent *event) {
           QStringLiteral("Redact: %1 · drag sensitive content · D toggles")
               .arg(redactionStyleName(redactionStyle_)));
     }
+  } else if (event->key() == Qt::Key_Q) {
+    colorPaletteOpen_ = !colorPaletteOpen_;
+    shapePaletteOpen_ = false;
+    customColorPickerOpen_ = false;
+    setStatus(colorPaletteOpen_ ? QStringLiteral("Color / line width")
+                                : QStringLiteral("Palette closed"));
+  } else if (event->key() == Qt::Key_G) {
+    shapePaletteOpen_ = !shapePaletteOpen_;
+    colorPaletteOpen_ = false;
+    customColorPickerOpen_ = false;
+    setStatus(shapePaletteOpen_ ? QStringLiteral("Shapes · R rectangle · E ellipse · L line")
+                                : QStringLiteral("Shape panel closed"));
   } else if (event->key() == Qt::Key_T) {
     tool_ = Tool::Text;
   } else if (event->key() == Qt::Key_I) {
