@@ -1,0 +1,308 @@
+#pragma once
+
+#include "capture.hpp"
+
+#include <QFutureWatcher>
+#include <QLineEdit>
+#include <QPixmap>
+#include <QWidget>
+
+class QKeyEvent;
+class QMouseEvent;
+class QPaintEvent;
+class QWheelEvent;
+
+class QPainter;
+class QPlainTextEdit;
+class QPushButton;
+class CaptureEditor final : public QWidget {
+  Q_OBJECT
+public:
+  enum class CaptureMode { Region, Window, Fullscreen, File };
+
+  explicit CaptureEditor(
+      CaptureData capture, CaptureMode mode = CaptureMode::Region,
+      QuickOutputMode quickOutput = QuickOutputMode::None,
+      const std::atomic_bool *termination = nullptr, QWidget *parent = nullptr);
+  ~CaptureEditor() override;
+
+signals:
+  /** Emitted (GUI thread) after a background monitor capture finishes. */
+  void captureReady(bool ok, const QString &error);
+
+public:
+  /**
+   * Kicks off the monitor pixel capture in the background. The overlay stays
+   * interactive (showing a "Capturing…" state) until it lands, then emits
+   * captureReady. Safe to call once, before entering the event loop. Window
+   * discovery runs alongside the grab and is skipped when `includeWindows` is
+   * false, for callers that never show the overlay.
+   */
+  void startCapture(CaptureMode mode, bool includeWindows);
+  /**
+   * Blocks until the in-flight snapshot persistence has drained, letting the
+   * event loop run meanwhile. Returns whether the last write succeeded.
+   * Used by finish() and the headless smoke suite.
+   */
+  bool waitForSnapshot();
+  /** Center of a toolbar action, for accessible/keyboard-free automation. */
+  [[nodiscard]] QPoint toolbarActionCenter(const QString &action) const;
+  /** Renders the current selection and layer data for headless verification. */
+  [[nodiscard]] QImage renderCurrentOutput() const;
+  /** Current monitor data (background capture may be in flight). */
+  const CaptureData &captureData() const { return capture_; }
+
+  /**
+   * Disables working-snapshot persistence. The hidden editor behind instant
+   * fullscreen quick output has no overlay to check, so persisting a snapshot
+   * for it would render the full capture for nothing and stall process exit.
+   */
+  void setSuppressSnapshots(bool suppress) { suppressSnapshots_ = suppress; }
+
+protected:
+  bool eventFilter(QObject *watched, QEvent *event) override;
+  void keyPressEvent(QKeyEvent *event) override;
+  void keyReleaseEvent(QKeyEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseDoubleClickEvent(QMouseEvent *event) override;
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  void paintEvent(QPaintEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
+
+public:
+  enum class Tool {
+    Select,
+    Arrow,
+    Line,
+    Freehand,
+    Highlighter,
+    Spotlight,
+    Marker,
+    Rectangle,
+    Ellipse,
+    Redact,
+    Blur,
+    Text,
+    Ocr,
+    Eyedropper,
+    Cutout
+  };
+
+private:
+  enum class Phase { Select, Edit };
+  enum class OutputMode { Copy, Save, Both, Open };
+  enum class Interaction {
+    None,
+    Move,
+    ResizeStart,
+    ResizeEnd,
+    CropTopLeft,
+    CropTop,
+    CropTopRight,
+    CropRight,
+    CropBottomRight,
+    CropBottom,
+    CropBottomLeft,
+    CropLeft
+  };
+
+  struct ToolbarButton {
+    QRectF rect;
+    QString action;
+    QString label;
+    QString tooltip;
+    QColor color;
+  };
+
+  struct OcrResult {
+    QString text;
+    QString error;
+  };
+
+  struct EditState {
+    CaptureData capture;
+    QVector<Annotation> annotations;
+    BackgroundStyle backgroundStyle = BackgroundStyle::None;
+    QRectF selection;
+    int selectedAnnotation = -1;
+    QVector<int> selectedAnnotations;
+    int nextMarker = 1;
+  };
+
+  [[nodiscard]] QRectF annotationBounds(const Annotation &annotation) const;
+  [[nodiscard]] QRectF selectedAnnotationsBounds() const;
+  [[nodiscard]] bool annotationSelected(int index) const;
+  [[nodiscard]] Qt::KeyboardModifiers
+  heldModifiers(Qt::KeyboardModifiers reported) const {
+    return modifiersSeen_ ? reported : Qt::KeyboardModifiers(Qt::NoModifier);
+  }
+  [[nodiscard]] Interaction selectedHandleAt(const QPointF &point) const;
+  [[nodiscard]] int annotationAt(const QPointF &point) const;
+  [[nodiscard]] int hoveredSpotlightAt(const QPointF &position) const;
+  [[nodiscard]] QRectF normalizedSelection(const QPointF &first,
+                                           const QPointF &second) const;
+  [[nodiscard]] QRectF colorPaletteRect() const;
+  [[nodiscard]] QRectF customColorPanelRect() const;
+  [[nodiscard]] QRectF textSizePanelRect() const;
+  [[nodiscard]] QRectF shapePanelRect() const;
+  [[nodiscard]] QVector<QRectF> cropHandleRects() const;
+  [[nodiscard]] int cropHandleAt(const QPointF &point) const;
+  [[nodiscard]] QRectF editImageRect() const;
+  [[nodiscard]] QRectF editFrameRect() const;
+  [[nodiscard]] qreal editScale() const;
+  [[nodiscard]] QPointF toAnnotationPoint(const QPointF &position) const;
+  [[nodiscard]] QPointF
+  toUnclampedAnnotationPoint(const QPointF &position) const;
+  [[nodiscard]] QRectF sourceRect(const QRectF &logicalRect) const;
+  [[nodiscard]] int windowAt(const QPointF &position) const;
+  [[nodiscard]] int windowInDirection(int current, int key) const;
+  [[nodiscard]] QVector<ToolbarButton> toolbarButtons() const;
+  [[nodiscard]] QColor annotationColor() const;
+
+  [[nodiscard]] QRect cutoutStrip(const QPointF &end) const;
+  void cutout(const QPointF &end);
+  void acceptText();
+  void applyCustomColor(const QPointF &position);
+  void applyEditState(const EditState &state);
+  void cancelActiveDragForHistory();
+  void beginText(const QPointF &point, int annotationIndex = -1);
+  void chooseWindow(int index);
+  [[nodiscard]] EditState editState() const;
+  void enterEdit(QString status);
+  void scheduleSnapshot();
+  void startSnapshotRender();
+  void pinSnapshot();
+  void startWindowCleanCapture(int index);
+  void pushUndoState(const EditState &state);
+  void recordEdit();
+  void redoEdit();
+  void selectWindowInDirection(int key);
+  void finish(OutputMode mode);
+  void handleEscape();
+  void handleToolbar(const QString &action);
+  void paintEdit(QPainter &painter);
+  void paintSelect(QPainter &painter);
+  void refreshBackdropCache();
+  void runOcr(const QRectF &localSelection = {});
+  void showOcrResult(const QString &text);
+  void setStatus(QString status);
+  void scaleSelectedAnnotation(qreal factor);
+  void undoEdit();
+  void updatePointerCursor();
+
+  CaptureData capture_;
+  Phase phase_ = Phase::Select;
+  Tool tool_ = Tool::Select;
+  Tool toolBeforeEyedropper_ = Tool::Select;
+  // Launch-chord releases may go to compositor; trust pointers after a key
+  // event.
+  bool modifiersSeen_ = false;
+  QRectF selection_;
+  QPointF dragStart_;
+  QRectF originalSelection_;
+  QRectF cropDragImageRect_;
+  QRectF marqueeRect_;
+  QPointF cursor_;
+  bool dragging_ = false;
+  bool creationConstraintActive_ = false;
+  bool marqueeSelecting_ = false;
+  bool marqueeAdditive_ = false;
+  Interaction interaction_ = Interaction::None;
+  QVector<QPointF> freehandPoints_;
+  bool windowMode_ = false;
+  BackgroundStyle backgroundStyle_ = BackgroundStyle::None;
+  bool busy_ = false;
+  bool colorPaletteOpen_ = false;
+  bool shapePaletteOpen_ = false;
+  bool shapeFilled_ = false;
+  bool customColorPickerOpen_ = false;
+  bool usingCustomColor_ = false;
+  int hoveredWindow_ = -1;
+  int colorIndex_ = 0;
+  QColor customColor_ = QColor(QStringLiteral("#ff375f"));
+  qreal customHue_ = 0.98;
+  int nextMarker_ = 1;
+  qreal annotationSize_ = 4.0;
+  int textSizeIndex_ = 1;
+  qreal spotlightMagnification_ = 2.0;
+  SpotlightShape spotlightShape_ = SpotlightShape::Ellipse;
+  RedactionStyle redactionStyle_ = RedactionStyle::Pixelate;
+  quint32 activeRedactionSeed_ = 0;
+  QRectF cachedRedactionSelection_;
+  QVector<Annotation> cachedCommittedRedactions_;
+  // Committed redaction layer at display resolution. Live drag paints the
+  // in-progress rect on a copy so committed blocks are not rebuilt per move.
+  QImage redactionLayerCache_;
+  // Display-resolution selection image reused across redaction drag frames.
+  QImage redactionBase_;
+  QSize redactionBaseSize_;
+  bool redactionBaseStale_ = true;
+  // Select-phase capture scaled once per source, widget size, and DPR.
+  QPixmap backdrop_;
+  QPixmap dimmedBackdrop_;
+  QSize backdropSize_;
+  qreal backdropRatio_ = 0.0;
+  qint64 backdropKey_ = 0;
+  // Background/gui-thread snapshot persistence with latest-wins coalescing.
+  QFutureWatcher<bool> snapshotWatcher_;
+  bool snapshotBusy_ = false;
+  bool snapshotDirty_ = false;
+  bool snapshotWriteOk_ = true;
+  // Set once finish() runs: the working snapshot becomes the exported file and
+  // is written at default PNG compression instead of the fast edit encoding.
+  bool snapshotOutputRequested_ = false;
+  bool suppressSnapshots_ = false;
+  // Background monitor capture fed to CaptureEditor::CaptureMode dispatch.
+  struct CaptureJob {
+    bool ok = false;
+    CaptureData capture;
+    QString error;
+  };
+  QFutureWatcher<CaptureJob> captureWatcher_;
+  bool capturePending_ = false;
+  bool captureStarted_ = false;
+  CaptureMode pendingMode_ = CaptureMode::Region;
+  // Background clean window surface capture.
+  struct WindowJob {
+    CaptureOutcome outcome = CaptureOutcome::Error;
+    QImage image;
+    QSize scaledSize;
+    QString error;
+  };
+  QFutureWatcher<WindowJob> windowWatcher_;
+  bool windowPending_ = false;
+  // Background render for --pin.
+  QFutureWatcher<QImage> pinWatcher_;
+  bool pinPending_ = false;
+  QString pendingPinPath_;
+  QVector<Annotation> annotations_;
+  int selectedAnnotation_ = -1;
+  int editingAnnotation_ = -1;
+  Annotation originalAnnotation_;
+  QVector<EditState> undoStack_;
+  QVector<EditState> redoStack_;
+  EditState dragStartState_;
+  bool dragStartStateValid_ = false;
+  bool dragChanged_ = false;
+  QString snapshotPath_;
+  QuickOutputMode quickOutputMode_ = QuickOutputMode::None;
+  const std::atomic_bool *termination_ = nullptr;
+  int pinCount_ = 0;
+  QString status_ =
+      QStringLiteral("Drag to select an area · Space selects a window");
+  QLineEdit *textEditor_ = nullptr;
+  QPlainTextEdit *ocrText_ = nullptr;
+  QPushButton *ocrCopyButton_ = nullptr;
+  QPushButton *ocrCloseButton_ = nullptr;
+  QPointF textPoint_;
+  QVector<Annotation> originalSelectedAnnotations_;
+  QVector<int> selectedAnnotations_;
+  qreal textSize_ = 4.0;
+  QColor textColor_;
+  QFutureWatcher<OcrResult> ocrWatcher_;
+};
+
+[[nodiscard]] QPointF constrainedCreationEndpoint(CaptureEditor::Tool tool,
+                                                  const QPointF &start,
+                                                  const QPointF &end);

@@ -1,0 +1,29 @@
+NiriCapture
+===========
+
+Copyright (C) 2026 NiriCapture contributors
+SPDX-License-Identifier: AGPL-3.0-only
+
+NiriCapture is distributed under the GNU Affero General Public License v3.0
+(see LICENSE). It is an independent Niri/DMS application, not a DMS plugin.
+
+Portions of the native Qt capture engine, annotation editor, pin surfaces,
+instance lock and offline OCR plumbing are derived from Nirisnap
+(https://github.com/itc-steve/nirisnap), Copyright (c) 2026 Tobi Lütke,
+licensed under the MIT License. The MIT notice is reproduced in
+LICENSES/MIT-nirisnap.txt. Those portions remain available under MIT; the
+combined NiriCapture work is distributed under AGPL-3.0-only.
+
+Architectural research was performed on:
+
+* DMS Screenshot+ (https://github.com/pcmid/dms-screenshot-plus),
+  Copyright (c) 2026 pcmid, MIT License. Its frozen-frame workflow and
+  Quickshell screencopy findings informed the DMS backend. No source file is
+  copied verbatim.
+* HyprCapture (https://github.com/gfhdhytghd/HyprCapture), GPL-3.0.
+  Only its public UI/interaction design was studied as a reference. No
+  HyprCapture code is included, and NiriCapture does not link against or
+  depend on Hyprland.
+
+NiriCapture talks to Niri through its documented JSON IPC and compositor
+actions. It does not modify Niri, DMS, Quickshell or their source trees.

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=NiriCapture
+Comment=Capture and annotate a screenshot
+Exec=niricapture
+Icon=camera-photo
+Terminal=false
+NoDisplay=true
+Categories=Graphics;
+StartupNotify=false

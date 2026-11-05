@@ -1,0 +1,87 @@
+name: Build Linux
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  archlinux:
+    name: Arch Linux x86_64
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    steps:
+      - name: Install build and runtime dependencies
+        run: >-
+          pacman -Syu --noconfirm --needed
+          base-devel cmake ninja pkgconf qt6-base layer-shell-qt
+          tesseract tesseract-data-eng tesseract-data-chi_sim python
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure release build
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compile
+        run: cmake --build build --parallel
+
+      - name: Check scripts and contracts
+        run: |
+          bash -n packaging/install-local.sh
+          bash -n packaging/uninstall-local.sh
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- python3 -m unittest discover -s tests -p 'test_*.py' -v
+          runuser -u builder -- env \
+            HOME=/home/builder \
+            XDG_CONFIG_HOME=/home/builder/.config \
+            XDG_CACHE_HOME=/home/builder/.cache \
+            NIRICAPTURE_PREFIX=/home/builder/.local \
+            ./packaging/install-local.sh --check
+
+      - name: Run interaction and composition smoke
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ./build/niricapture-smoke /tmp/niricapture-smoke
+          ./build/niricapture-desktop-smoke
+
+      - name: Stage installation
+        run: cmake --install build --prefix "$PWD/stage/usr"
+
+      - name: Package Linux artifact
+        run: |
+          version="$(QT_QPA_PLATFORM=offscreen ./build/niricapture --version | awk 'NR == 1 {print $2}')"
+          archive="niricapture-${version}-archlinux-x86_64.tar.gz"
+          tar -C stage -czf "$archive" .
+          echo "CAPTURE_ARCHIVE=${archive}" >> "$GITHUB_ENV"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: niricapture-archlinux-x86_64
+          path: ${{ env.CAPTURE_ARCHIVE }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: archlinux
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: niricapture-archlinux-x86_64
+
+      - name: Attach artifact to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: niricapture-*.tar.gz

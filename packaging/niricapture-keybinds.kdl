@@ -1,0 +1,19 @@
+// NiriCapture example bindings. Append these to your existing Niri binds
+// block, or include this file. Do not replace existing binds.
+//
+// These are examples, not installed automatically. If DMS already owns
+// Print/Ctrl+Print, comment those DMS lines out or choose different keys.
+binds {
+    Mod+Shift+S repeat=false hotkey-overlay-title="Screenshot: NiriCapture region" {
+        spawn "niricapture" "--capture-region";
+    }
+    Mod+Shift+W repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
+        spawn "niricapture" "--capture-window";
+    }
+    Mod+Shift+A repeat=false hotkey-overlay-title="Screenshot: NiriCapture all outputs" {
+        spawn "niricapture" "--capture-all";
+    }
+    Ctrl+Shift+S repeat=false hotkey-overlay-title="Screenshot: NiriCapture focused output" {
+        spawn "niricapture" "--capture-fullscreen";
+    }
+}

@@ -1,0 +1,50 @@
+# Maintainer: NiriCapture contributors
+pkgname=niricapture-git
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Native Niri screenshot tool with DMS frozen-frame selection and annotations"
+arch=('x86_64')
+url="https://github.com/waraku-chise/niricapture"
+license=('AGPL-3.0-only')
+depends=(
+  'qt6-base'
+  'layer-shell-qt'
+  'grim'
+  'wl-clipboard'
+  'libnotify'
+  'tesseract'
+)
+makedepends=('cmake' 'ninja' 'git')
+optdepends=(
+  'dux-shell: DMS frozen-frame backend (grim is the fallback)'
+  'tesseract-data-chi_sim: Simplified Chinese OCR'
+  'tesseract-data-chi_tra: Traditional Chinese OCR'
+)
+provides=('niricapture')
+conflicts=('niricapture')
+source=("${pkgname}::git+${url}.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/${pkgname}"
+  printf '0.1.0.r%s.g%s' \
+    "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cmake -S "${srcdir}/${pkgname}" -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build --parallel
+  QT_QPA_PLATFORM=offscreen ./build/niricapture-smoke \
+    ./build/niricapture-smoke-output
+  QT_QPA_PLATFORM=offscreen ./build/niricapture-desktop-smoke
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+  install -Dm644 "${srcdir}/${pkgname}/packaging/niricapture-keybinds.kdl" \
+    "${pkgdir}/usr/share/niricapture/niricapture-keybinds.kdl"
+  install -Dm644 "${srcdir}/${pkgname}/LICENSES/MIT-nirisnap.txt" \
+    "${pkgdir}/usr/share/licenses/niricapture/MIT-nirisnap.txt"
+}
