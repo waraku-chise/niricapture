@@ -21,6 +21,7 @@ jobs:
           pacman -Syu --noconfirm --needed
           base-devel cmake ninja pkgconf qt6-base layer-shell-qt
           tesseract tesseract-data-eng tesseract-data-chi_sim python dpkg git
+          noto-fonts noto-fonts-cjk ttf-dejavu
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -49,8 +50,17 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          ./build/niricapture-smoke /tmp/niricapture-smoke
-          ./build/niricapture-desktop-smoke
+          set -o pipefail
+          ./build/niricapture-smoke /tmp/niricapture-smoke 2>&1 | tee /tmp/smoke.log
+          ./build/niricapture-desktop-smoke 2>&1 | tee -a /tmp/smoke.log
+
+      - name: Upload smoke diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-diagnostics
+          path: /tmp/smoke.log
+          if-no-files-found: ignore
 
       - name: Stage installation
         run: cmake --install build --prefix "$PWD/stage/usr"

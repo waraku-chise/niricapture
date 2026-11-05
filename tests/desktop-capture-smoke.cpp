@@ -161,11 +161,15 @@ int main(int argc, char **argv) {
     return fail("spanning output composition is incorrect");
   if (!testEllipseAndBlur())
     return fail("ellipse/blur rendering is incorrect");
+  const QStringList fontFamilies = QFontDatabase::families();
+  const bool haveCjkFont =
+      fontFamilies.contains(QStringLiteral("Noto Sans CJK SC")) ||
+      fontFamilies.contains(QStringLiteral("Noto Sans CJK JP"));
   const bool haveChineseModel =
       QFileInfo::exists(QStringLiteral("/usr/share/tessdata/chi_sim.traineddata")) ||
       QFileInfo::exists(QStringLiteral(
           "/usr/share/tesseract-ocr/5/tessdata/chi_sim.traineddata"));
-  if (haveChineseModel &&
+  if (haveCjkFont && haveChineseModel &&
       !QStandardPaths::findExecutable(QStringLiteral("tesseract")).isEmpty() &&
       !testChineseOcr())
     return fail("Chinese/English OCR failed");

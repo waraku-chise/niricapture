@@ -1459,7 +1459,7 @@ QString recognizeText(const QImage &image, QString &error) {
        QStringLiteral("-l"), languages,
        QStringLiteral("--dpi"), QStringLiteral("300"),
        QStringLiteral("-c"), QStringLiteral("preserve_interword_spaces=1")},
-      payload, 30000, environment);
+      payload, 60000, environment);
   if (!result.finished || result.exitCode != 0) {
     error = QStringLiteral("OCR failed for languages %1: %2")
                 .arg(languages, QString::fromUtf8(result.error).trimmed());

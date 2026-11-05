@@ -1721,7 +1721,7 @@ bool runOcrPanelCheck(QApplication &application, QString &error,
   QElapsedTimer timer;
   timer.start();
   QPlainTextEdit *panel = nullptr;
-  while (timer.elapsed() < 20000 && !panel) {
+  while (timer.elapsed() < 60000 && !panel) {
     application.processEvents();
     for (QPlainTextEdit *candidate :
          editor.findChildren<QPlainTextEdit *>()) {
