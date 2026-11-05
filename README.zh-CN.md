@@ -14,7 +14,7 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
 ## 界面预览
 
 下面的动图来自真实录屏：DMS 冻结桌面、区域覆盖层直接进入编辑状态，
-并用 `Q` / `G` 展示颜色与形状弹出面板。
+并用 `Q` 展示颜色 / 线宽面板。
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture 界面预览" width="880">
 
@@ -26,7 +26,7 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
 | 区域选区 | 编辑器 |
 |---|---|
 | <img src="docs/screenshots/region-selector.png" width="420" alt="冻结画面区域选区"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="标注编辑器"> |
-| **颜色 / 线宽** | **形状面板** |
+| **颜色 / 线宽** | **独立编辑器：形状面板** |
 | <img src="docs/screenshots/palette.png" width="420" alt="颜色与线宽弹出面板"> | <img src="docs/screenshots/shapes.png" width="420" alt="形状弹出面板"> |
 | **OCR 结果** | **Niri 原生窗口截图** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="可选中的 OCR 结果面板"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri 原生窗口截图"> |
@@ -45,6 +45,7 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
   撤销/重做。
 - 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
   窗口，也不会发生图像跳动。
+- 选区手柄基于完整冻结画面调整：缩小时不是裁剪，之后仍可重新放大。
 - 界面语言跟随系统；可用 `NIRICAPTURE_LANG=zh_CN` 或 `en` 强制指定。
 - 靠近图像的 Material 风格紧凑工具栏，提供形状、颜色、线宽弹出面板；
   在深色和浅色桌面上都能正常使用。
@@ -74,8 +75,8 @@ niri msg --json outputs          # 逻辑几何、缩放、物理尺寸
   嵌入 owner 覆盖层的 CaptureEditor（不新建窗口）
 ```
 
-覆盖层映射之后不会再重新抓屏。编辑器直接作为冻结选区覆盖层的子控件出现，
-工具栏就在选区旁，图像保持原来的屏幕位置，不会跳到另一个窗口。这与
+覆盖层映射之后不会再重新抓屏。工具栏和标注直接由冻结选区覆盖层绘制，
+图像保持原来的屏幕位置，选区手柄可以随时放大或缩小选择范围。这与
 DMS Screenshot+ 使用的冻结机制相同（先 `dms screenshot output`，再映射
 Quickshell 覆盖层），但没有使用后者存在崩溃风险的 Quickshell
 `ScreencopyView`。相关记录见
@@ -194,7 +195,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.2.0_amd64.deb
+sudo apt install ./niricapture_0.3.0_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -269,7 +270,7 @@ niricapture --window-id 42 --save
 | `A` / `L` | 箭头 / 直线 |
 | `R` / `E` | 矩形 / 椭圆 |
 | `T` | 文字 |
-| `Q` / `G` | 颜色 / 形状弹出面板 |
+| `Q` | 颜色 / 线宽面板 |
 | `H` | 高亮 |
 | `C` | 序号标记 |
 | `D` | 马赛克（再按 D 切换实心/像素化） |
@@ -346,8 +347,8 @@ DMS Screenshot+、HyprCapture 和 Niri 26.04 的源码级分析、协议/API 限
 - 当前实现中 DMS 输出是逐个抓取的；其他 DMS 截图选择器共享同一时间只能有
   一个的限制。
 - 区域截图和合成支持跨输出选区。窗口截图始终是一个 Niri 窗口，即使它跨输出。
-- 内嵌编辑器宿主在选区面积最大的输出上；跨输出选区会合成到该宿主，
-  编辑期间不会在副输出上重复绘制标注。
+- 工具栏宿主在选区面积最大的输出上；标注会按输出裁剪绘制，
+  跨输出选区也能正确显示和导出。
 - 滚动截图、GIF/视频录制、结果缩略图弹窗、以及基于滚动布局的像素级窗口
   hover 覆盖层**尚未实现**。
 - 没有 xdg-desktop-portal/PipeWire 回退。Niri 原生窗口动作已经足够精确；
@@ -378,7 +379,7 @@ make check
 
 ## 状态
 
-版本 `0.2.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
-区域/全屏编辑内嵌在冻结覆盖层中；窗口/文件编辑仍使用独立编辑器。多输出
+版本 `0.3.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑仍使用独立编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
 测试。

@@ -266,8 +266,8 @@ A single unprivileged Qt executable:
 1. probes Niri outputs/windows over JSON IPC;
 2. freezes outputs through the DMS CLI (region/fullscreen/all), or captures a
    window through Niri's native action;
-3. presents per-output layer surfaces for region selection and embeds the
-   annotation editor in the frozen owner surface;
+3. presents per-output layer surfaces and paints the floating toolbar and
+   annotations directly on the frozen owner surface;
 4. stores annotations non-destructively and renders source effects at export;
 5. copies via `wl-copy`, saves via QImage PNG, and can pin the result.
 

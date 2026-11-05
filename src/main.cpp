@@ -194,69 +194,17 @@ bool exportQuick(const DesktopFrames &frames, const QRectF &selection,
 int runInlineCapture(DesktopFrames frames, const QRectF &initialSelection,
                     QuickOutputMode quickMode,
                     std::atomic_bool &termination, QString &error) {
-  RegionSelector selector(std::move(frames));
+  RegionSelector selector(std::move(frames), quickMode);
   QEventLoop loop;
-  bool ok = false;
+  bool success = false;
   bool cancelled = false;
-  bool editorStarted = false;
-  QPointer<CaptureEditor> editor;
-
-  QObject::connect(&selector, &RegionSelector::selectionReady, &loop, [&] {
-    if (editorStarted)
-      return;
-    editorStarted = true;
-    const QRectF selection = selector.selection();
-    if (selection.isEmpty()) {
-      loop.quit();
-      return;
-    }
-    const QString outputName =
-        largestOutputForRect(selector.frames(), selection);
-    CaptureResult result;
-    if (!composeCapture(selector.frames(), selection,
-                        selector.selectedScale(), outputName, result, error)) {
-      selector.cancel();
-      return;
-    }
-
-    if (quickMode != QuickOutputMode::None) {
-      CaptureData capture = toCaptureData(std::move(result));
-      const QImage image = renderCapture(
-          capture, QRectF(QPointF(), capture.previewSize), {},
-          BackgroundStyle::None);
-      if (image.isNull() || !quickOutput(image, quickMode, error)) {
-        selector.hideOverlays();
-        loop.quit();
-        return;
-      }
-      ok = true;
-      selector.hideOverlays();
-      loop.quit();
-      return;
-    }
-
-    QWidget *host = selector.ownerWidget();
-    if (!host) {
-      error = QStringLiteral("No overlay is available for the editor");
-      selector.cancel();
-      return;
-    }
-    CaptureData capture = toCaptureData(std::move(result));
-    editor = new CaptureEditor(std::move(capture),
-                               CaptureEditor::CaptureMode::File,
-                               QuickOutputMode::None, &termination, host, true);
-    editor->setAttribute(Qt::WA_DeleteOnClose);
-    editor->setGeometry(host->rect());
-    QObject::connect(editor, &QObject::destroyed, &loop, [&] {
-      ok = true;
-      selector.hideOverlays();
-      loop.quit();
-    });
-    selector.hideChrome();
-    editor->show();
-    editor->raise();
-    editor->setFocus(Qt::ActiveWindowFocusReason);
-  });
+  QObject::connect(&selector, &RegionSelector::finished, &loop,
+                   [&](bool ok, const QString &message) {
+                     success = ok;
+                     if (!ok)
+                       error = message;
+                     loop.quit();
+                   });
   QObject::connect(&selector, &RegionSelector::cancelled, &loop, [&] {
     cancelled = true;
     loop.quit();
@@ -275,7 +223,7 @@ int runInlineCapture(DesktopFrames frames, const QRectF &initialSelection,
     loop.exec();
   if (cancelled)
     return error.isEmpty() ? 0 : 1;
-  return ok ? 0 : 1;
+  return success ? 0 : 1;
 }
 
 bool prepareFileImage(const QString &filePath, bool clipboardInput,

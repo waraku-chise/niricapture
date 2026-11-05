@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.0] — 2026-11-05
+
+### True in-place toolbar
+
+- Region and current-output fullscreen capture now use a real toolbar painted
+  directly in the frozen selection overlay. The previous embedded `CaptureEditor`
+  child was removed from the region path.
+- The selection is not a fixed crop: its eight handles can enlarge it as well as
+  shrink it, using pixels from the original full frozen output.
+- Annotations are stored in global logical coordinates, painted across outputs
+  and translated into the current selection only at export.
+- Tools: select, pen, arrow, line, rectangle, ellipse, text, highlighter,
+  mosaic, blur, numbered marker; undo/redo; colour, width and fill; OCR;
+  copy/save/close.
+- Window, image-file and clipboard-image editing still use the standalone
+  editor.
+
+### Chinese interface
+
+- UI language follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en`
+  overrides it.
+- Selection hints, toolbar status, OCR panel and common editor messages are
+  localized.
+
 ## [0.2.0] — 2026-11-05
 
 ### Editing in the frozen selection
@@ -7,11 +31,11 @@
 - Region and current-output fullscreen captures now embed the editor directly in
   the frozen selection overlay. The toolbar appears next to the selection and
   there is no second editor window or image jump.
-- The embedded editor keeps the captured pixels at their original screen
+- The in-place editor keeps the captured pixels at their original screen
   coordinates; the area outside the selection remains the dimmed frozen frame.
 - Window, image-file and clipboard-image editing still use the standalone
   editor.
-- `Q` / `G` toggle the colour and shape panels from the keyboard.
+- `Q` toggles the colour / line-width panel from the keyboard.
 
 ### Chinese interface
 

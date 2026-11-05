@@ -57,29 +57,28 @@ The real layer surfaces were driven with `wtype`:
 - `niricapture --capture-fullscreen --copy` then `wl-paste --type image/png`
   returned a valid 1920×1080 RGBA PNG.
 
-## Embedded editor
+## In-place toolbar
 
 The live flow was verified with the real DMS freeze path:
 
 - `NIRICAPTURE_TEST_SELECT=350,180,1100,700 niricapture --capture-region`
-  mapped the frozen overlay, created the embedded editor child and displayed
-  the toolbar next to the selection without a second window.
+  mapped the frozen overlay and displayed the toolbar directly on the
+  selection, without a second window.
 - The image area at `(350,180)` was pixel-identical to the frozen frame crop;
   the remainder stayed dimmed.
+- Selection handles resize the global selection against the full frozen output,
+  so the region can be expanded again after shrinking; there is no crop-only
+  limit.
 - `Ctrl+C` copied a 1100×700 PNG and exited; `Ctrl+S` saved a 1100×700 PNG.
 - `Q` opened the colour/line-width panel with the Chinese status
   `颜色 / 线宽`.
 
-## Editor anchoring
+## Previous standalone-editor anchoring
 
-A regression check compares a frozen desktop capture with the editor image at
-the same screen coordinates. For a 1100×700 selection at (350,180), the
-difference bounding box is empty (`None`), proving the editor image is not
-centred or resampled.
-
-The offscreen suite also constructs a 300×200 capture anchored at (120,90) and
-asserts that the white source starts at that point while the surrounding area
-stays dimmed.
+The embedded `CaptureEditor` mode is no longer used for region/fullscreen
+capture. Its offscreen regression test remains: a 300×200 capture anchored at
+(120,90) starts at that point and the surrounding area stays transparent. This
+history is kept because window/file editing still uses the standalone editor.
 
 ## Live Niri native window tests
 

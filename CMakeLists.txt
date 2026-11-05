@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.2.0 LANGUAGES CXX)
+project(niricapture VERSION 0.3.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

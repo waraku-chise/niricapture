@@ -16,7 +16,7 @@ completely.
 
 The clip below is a real screen recording: DMS freezes the desktop, the
 region overlay becomes the in-place editor, and the colour/shape panels are
-shown with `Q` / `G`.
+shown with `Q`.
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture UI preview" width="880">
 
@@ -28,7 +28,7 @@ shown with `Q` / `G`.
 | Region selection | Editor |
 |---|---|
 | <img src="docs/screenshots/region-selector.png" width="420" alt="Frozen region selection"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="Annotation editor"> |
-| **Colour / width** | **Shape panel** |
+| **Colour / width** | **Standalone editor: shape panel** |
 | <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/shapes.png" width="420" alt="Shape popup"> |
 | **OCR result** | **Native window capture** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
@@ -49,6 +49,8 @@ shown with `Q` / `G`.
   pixelated mosaic, real Gaussian blur, numbered markers, undo/redo.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
+- Selection handles resize against the full frozen output: a region can be
+  enlarged again after shrinking, not just cropped smaller.
 - UI follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
 - Compact Material-inspired toolbar near the image with shape, colour and line
   width popups; works on dark and light desktops.
@@ -75,12 +77,13 @@ niri msg --json outputs          # geometry, scale, physical size
   composeSelection() at the owning output's scale
         │
         ▼
-  CaptureEditor embedded in the owner overlay (no new window)
+  in-place toolbar and annotations on the frozen owner overlay
 ```
 
-Nothing is recaptured after the overlays are mapped. The editor is a child of
-the frozen selection overlay, so the toolbar appears in place and the captured
-image stays at its exact screen position. This is the same freeze mechanism DMS Screenshot+ uses
+Nothing is recaptured after the overlays are mapped. The toolbar and
+annotations are painted by the frozen selection overlay itself, so the image
+stays at its exact screen position and selection handles can expand or shrink
+the region at any time. This is the same freeze mechanism DMS Screenshot+ uses
 (`dms screenshot output` before mapping its Quickshell overlay), but without
 the Quickshell `ScreencopyView` crash documented in
 [DMS Screenshot+](https://github.com/pcmid/dms-screenshot-plus#backends) and
@@ -203,7 +206,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.2.0_amd64.deb
+sudo apt install ./niricapture_0.3.0_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -281,7 +284,7 @@ scrolling layout. The compositor picker is the reliable selection surface.
 | `A` / `L` | Arrow / line |
 | `R` / `E` | Rectangle / ellipse |
 | `T` | Text |
-| `Q` / `G` | Colour / shape popups |
+| `Q` | Colour / line-width popup |
 | `H` | Highlighter |
 | `C` | Numbered marker |
 | `D` | Mosaic (D toggles solid/pixelate) |
@@ -395,7 +398,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.2.0`. The core acceptance path is implemented and tested on Niri
-26.04 + DMS 2.0. Region/fullscreen editing is embedded in the frozen overlay;
+Version `0.3.0`. The core acceptance path is implemented and tested on Niri
+26.04 + DMS 2.0. Region/fullscreen editing is in-place in the frozen overlay;
 window/file editing uses the standalone editor. Multi-output composition has
 synthetic coverage; only one physical output was available during live testing.
