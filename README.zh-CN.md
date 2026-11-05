@@ -187,6 +187,19 @@ cd packaging
 makepkg -si
 ```
 
+### Debian 软件包
+
+Release 中会附带 `niricapture_<version>_amd64.deb`：
+
+```bash
+sudo apt install ./niricapture_0.1.0_amd64.deb
+```
+
+该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
+testing/unstable 或提供 Qt 6.12 + LayerShellQt 的发行版。它是方便安装的
+附加产物；Arch/Niri/DMS 仍是主要目标。也可以用
+`./packaging/make-deb.sh build dist` 本地构建。
+
 ## Niri 快捷键
 
 安装过程**不会**改动你的配置。把下面内容加入已有的 `binds { ... }` 块，或者

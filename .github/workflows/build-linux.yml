@@ -20,7 +20,7 @@ jobs:
         run: >-
           pacman -Syu --noconfirm --needed
           base-devel cmake ninja pkgconf qt6-base layer-shell-qt
-          tesseract tesseract-data-eng tesseract-data-chi_sim python
+          tesseract tesseract-data-eng tesseract-data-chi_sim python dpkg git
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -60,13 +60,19 @@ jobs:
           version="$(QT_QPA_PLATFORM=offscreen ./build/niricapture --version | awk 'NR == 1 {print $2}')"
           archive="niricapture-${version}-archlinux-x86_64.tar.gz"
           tar -C stage -czf "$archive" .
+          ./packaging/make-deb.sh build dist
+          deb="$(find dist -maxdepth 1 -name 'niricapture_*.deb' -print -quit)"
+          test -n "$deb"
           echo "CAPTURE_ARCHIVE=${archive}" >> "$GITHUB_ENV"
+          echo "CAPTURE_DEB=${deb}" >> "$GITHUB_ENV"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: niricapture-archlinux-x86_64
-          path: ${{ env.CAPTURE_ARCHIVE }}
+          path: |
+            ${{ env.CAPTURE_ARCHIVE }}
+            ${{ env.CAPTURE_DEB }}
           if-no-files-found: error
 
   release:
@@ -84,4 +90,6 @@ jobs:
       - name: Attach artifact to release
         uses: softprops/action-gh-release@v2
         with:
-          files: niricapture-*.tar.gz
+          files: |
+            niricapture-*.tar.gz
+            niricapture_*.deb

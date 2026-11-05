@@ -196,6 +196,19 @@ cd packaging
 makepkg -si
 ```
 
+### Debian package
+
+Release assets include `niricapture_<version>_amd64.deb`:
+
+```bash
+sudo apt install ./niricapture_0.1.0_amd64.deb
+```
+
+The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
+testing/unstable or a distribution carrying Qt 6.12 and LayerShellQt. It is a
+convenience artifact; Arch/Niri/DMS remains the primary target. Build it
+locally with `./packaging/make-deb.sh build dist`.
+
 ## Niri bindings
 
 Install does **not** touch your config. Add these inside your existing
