@@ -212,6 +212,6 @@ install(FILES niricapture.desktop niricapture-editor.desktop
 install(FILES packaging/niricapture-keybinds.kdl
   DESTINATION "${CMAKE_INSTALL_DATADIR}/niricapture"
 )
-install(FILES README.md README.zh-CN.md
+install(FILES README.md README.en.md
   DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/niricapture"
 )
