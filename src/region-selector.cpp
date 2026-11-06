@@ -233,9 +233,8 @@ protected:
     const QPointF global = local + QPointF(frame_->monitor.geometry.topLeft());
     selector_->editorMove(this, global);
     selector_->setToolbarHover(this, local);
-    ToolBarHit hover;
     if (!(event->buttons() & Qt::LeftButton) &&
-        selector_->toolbarHit(this, local, &hover))
+        selector_->toolbarContains(this, local))
       setCursor(Qt::PointingHandCursor);
     else if (!selector_->hasSelection())
       setCursor(Qt::CrossCursor);
@@ -585,6 +584,16 @@ bool RegionSelector::toolbarHit(RegionOverlay *overlay, const QPointF &local,
   if (hit)
     *hit = result;
   return result.valid;
+}
+
+bool RegionSelector::toolbarContains(RegionOverlay *overlay,
+                                     const QPointF &local) const {
+  if (overlay->outputName() != ownerOutput_ || !hasSelection())
+    return false;
+  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
+  const QRectF selection = selection_.translated(-origin);
+  return toolBar_.contains(QRectF(0, 0, overlay->width(), overlay->height()),
+                           selection, local);
 }
 
 void RegionSelector::setToolbarHover(RegionOverlay *overlay,

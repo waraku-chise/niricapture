@@ -222,6 +222,13 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
   return result;
 }
 
+bool ToolBar::contains(const QRectF &viewport, const QRectF &selection,
+                       const QPointF &local) const {
+  if (rect(viewport, selection).adjusted(-4, -4, 4, 4).contains(local))
+    return true;
+  return paletteOpen_ && paletteRect(viewport, selection).contains(local);
+}
+
 ToolBarHit ToolBar::hitTest(const QRectF &viewport, const QRectF &selection,
                             const QPointF &local) const {
   for (const ToolButton &button : buttons(viewport, selection)) {

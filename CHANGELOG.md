@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.2] — 2026-11-06
+
+- The pointing-hand cursor now covers the whole toolbar panel and palette,
+  including gaps and separators, not only button hit areas.
+
 ## [0.6.1] — 2026-11-06
 
 - Selected palette colour now gets a visible accent ring.

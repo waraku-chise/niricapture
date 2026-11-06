@@ -209,7 +209,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.6.1_amd64.deb
+sudo apt install ./niricapture_0.6.2_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -426,7 +426,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.6.1`. The core acceptance path is implemented and tested on Niri
+Version `0.6.2`. The core acceptance path is implemented and tested on Niri
 26.04 + DMS 2.0. Region/fullscreen editing is in-place in the frozen overlay;
 window/file editing uses the new standalone New/Open editor. Multi-output composition has
 synthetic coverage; only one physical output was available during live testing.

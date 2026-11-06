@@ -332,7 +332,7 @@ protected:
       event->accept();
       return;
     }
-    if (bar_.hitTest(rect(), imageRect(), local).valid) {
+    if (bar_.contains(rect(), imageRect(), local)) {
       setCursor(Qt::PointingHandCursor);
       event->accept();
       return;

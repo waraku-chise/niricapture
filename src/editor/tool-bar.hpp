@@ -61,6 +61,9 @@ public:
   [[nodiscard]] ToolBarHit hitTest(const QRectF &viewport,
                                    const QRectF &selection,
                                    const QPointF &local) const;
+  [[nodiscard]] bool contains(const QRectF &viewport,
+                              const QRectF &selection,
+                              const QPointF &local) const;
   void paint(QPainter &painter, const QRectF &viewport,
              const QRectF &selection) const;
 

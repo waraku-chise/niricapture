@@ -192,6 +192,12 @@ bool runEditorToolSmoke(QString &error) {
     return false;
   if (!check(widthSelected, "Width selection is not marked", error))
     return false;
+  const QRectF barRect = paletteBar.rect(viewport, selection);
+  if (!check(paletteBar.contains(viewport, selection,
+                                 QPointF(barRect.left() + 2,
+                                         barRect.center().y())),
+             "Toolbar gaps are not part of the hand-cursor area", error))
+    return false;
 
   QImage image(400, 300, QImage::Format_ARGB32_Premultiplied);
   image.fill(Qt::transparent);
