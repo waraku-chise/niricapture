@@ -332,6 +332,11 @@ protected:
       event->accept();
       return;
     }
+    if (bar_.hitTest(rect(), imageRect(), local).valid) {
+      setCursor(Qt::PointingHandCursor);
+      event->accept();
+      return;
+    }
     if (imageRect().contains(local))
       setCursor(spaceDown_ ? Qt::OpenHandCursor : Qt::CrossCursor);
     else
@@ -525,6 +530,7 @@ private:
   void syncToolbar() {
     bar_.setCurrentTool(canvas_.currentToolId());
     bar_.setColors(canvas_.style().color, canvas_.style().filled);
+    bar_.setWidth(canvas_.style().width);
     bar_.setHistory(canvas_.document().canUndo(),
                     canvas_.document().canRedo());
   }

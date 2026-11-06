@@ -174,6 +174,25 @@ bool runEditorToolSmoke(QString &error) {
   if (!check(foundSwatch, "Palette buttons missing", error))
     return false;
 
+  ToolBar paletteBar(registry);
+  paletteBar.setPalette({QStringLiteral("#00ff00"), QStringLiteral("#ff00ff")},
+                        {3, 9});
+  paletteBar.setColors(QColor(QStringLiteral("#00ff00")), false);
+  paletteBar.setWidth(9);
+  paletteBar.setPaletteOpen(true);
+  bool colorSelected = false;
+  bool widthSelected = false;
+  for (const ToolButton &button : paletteBar.buttons(viewport, selection)) {
+    if (button.id == QStringLiteral("color-0"))
+      colorSelected = button.selected;
+    if (button.id == QStringLiteral("size-9"))
+      widthSelected = button.selected;
+  }
+  if (!check(colorSelected, "Colour selection is not marked", error))
+    return false;
+  if (!check(widthSelected, "Width selection is not marked", error))
+    return false;
+
   QImage image(400, 300, QImage::Format_ARGB32_Premultiplied);
   image.fill(Qt::transparent);
   QPainter painter(&image);

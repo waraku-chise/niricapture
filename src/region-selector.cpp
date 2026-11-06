@@ -233,7 +233,11 @@ protected:
     const QPointF global = local + QPointF(frame_->monitor.geometry.topLeft());
     selector_->editorMove(this, global);
     selector_->setToolbarHover(this, local);
-    if (!selector_->hasSelection())
+    ToolBarHit hover;
+    if (!(event->buttons() & Qt::LeftButton) &&
+        selector_->toolbarHit(this, local, &hover))
+      setCursor(Qt::PointingHandCursor);
+    else if (!selector_->hasSelection())
       setCursor(Qt::CrossCursor);
     else if (!handleAt(selector_->selection(), global).isEmpty())
       setCursor(Qt::SizeAllCursor);
@@ -564,6 +568,7 @@ void RegionSelector::closeAll() {
 void RegionSelector::syncToolbar() {
   toolBar_.setCurrentTool(canvas_.currentToolId());
   toolBar_.setColors(canvas_.style().color, canvas_.style().filled);
+  toolBar_.setWidth(canvas_.style().width);
   toolBar_.setHistory(canvas_.document().canUndo(),
                       canvas_.document().canRedo());
 }

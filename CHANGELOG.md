@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1] — 2026-11-06
+
+- Selected palette colour now gets a visible accent ring.
+- Line-width options are drawn as circles whose size reflects the width, with
+  the active width ringed.
+- The pointer becomes a pointing hand over the toolbar (including the palette)
+  instead of the crosshair used for drawing.
+- Added toolbar selection assertions to `tests/tool-smoke.cpp`.
+
 ## [0.6.0] — 2026-11-06
 
 ### Config-driven editor

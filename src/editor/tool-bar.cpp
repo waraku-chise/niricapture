@@ -97,6 +97,8 @@ void ToolBar::setColors(const QColor &color, bool filled) {
   color_ = color;
   filled_ = filled;
 }
+
+void ToolBar::setWidth(qreal width) { width_ = width; }
 void ToolBar::setHistory(bool canUndo, bool canRedo) {
   canUndo_ = canUndo;
   canRedo_ = canRedo;
@@ -195,6 +197,7 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
       button.rect = {panel.left() + 8 + index * 32, panel.top() + 7, 24, 24};
       button.id = QStringLiteral("color-%1").arg(index);
       button.swatch = QColor(paletteColors_.at(index));
+      button.selected = button.swatch.rgb() == color_.rgb();
       button.hovered = button.id == hovered_;
       button.pressed = button.id == pressed_;
       result.push_back(button);
@@ -204,6 +207,8 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
       button.rect = {panel.left() + 8 + index * 58, panel.top() + 40, 52, 26};
       button.id = QStringLiteral("size-%1").arg(paletteWidths_.at(index));
       button.tooltip = QString::number(paletteWidths_.at(index));
+      button.selected =
+          qFuzzyCompare(width_ + 1.0, paletteWidths_.at(index) + 1.0);
       result.push_back(button);
     }
     ToolButton fill;
@@ -242,7 +247,10 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
   QFont font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
   font.setPixelSize(11);
   for (const ToolButton &button : buttons(viewport, selection)) {
-    if (button.hovered || button.active || button.pressed) {
+    const bool paletteSwatch =
+        button.id.startsWith(QStringLiteral("color-")) ||
+        button.id.startsWith(QStringLiteral("size-"));
+    if (!paletteSwatch && (button.hovered || button.active || button.pressed)) {
       painter.setPen(Qt::NoPen);
       painter.setBrush(button.pressed ? QColor(255, 255, 255, 38)
                                      : button.hovered
@@ -255,11 +263,28 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
     if (button.id.startsWith(QStringLiteral("color-"))) {
       painter.setPen(QPen(QColor(255, 255, 255, 60), 1));
       painter.setBrush(button.swatch);
-      painter.drawEllipse(button.rect.adjusted(3, 3, -3, -3));
+      painter.drawEllipse(button.rect.adjusted(5, 5, -5, -5));
+      if (button.selected) {
+        painter.setPen(QPen(accentColor_, 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(button.rect.adjusted(1, 1, -1, -1));
+      }
       continue;
     }
-    if (button.id.startsWith(QStringLiteral("size-")) ||
-        button.id == QStringLiteral("fill")) {
+    if (button.id.startsWith(QStringLiteral("size-"))) {
+      const qreal diameter =
+          std::clamp(button.tooltip.toDouble() * 1.5, 4.0, 18.0);
+      painter.setPen(QPen(QColor(255, 255, 255, 110), 1));
+      painter.setBrush(QColor(240, 243, 248));
+      painter.drawEllipse(button.rect.center(), diameter / 2.0, diameter / 2.0);
+      if (button.selected) {
+        painter.setPen(QPen(accentColor_, 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(button.rect.adjusted(1, 1, -1, -1));
+      }
+      continue;
+    }
+    if (button.id == QStringLiteral("fill")) {
       painter.setPen(button.enabled ? QColor(240, 243, 248)
                                     : QColor(240, 243, 248, 70));
       painter.setFont(font);

@@ -198,7 +198,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.6.0_amd64.deb
+sudo apt install ./niricapture_0.6.1_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -405,7 +405,7 @@ make check
 
 ## 状态
 
-版本 `0.6.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+版本 `0.6.1`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
 区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑使用新的独立新建/打开编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
 测试。

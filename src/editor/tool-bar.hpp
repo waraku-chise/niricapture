@@ -21,6 +21,7 @@ struct ToolButton {
   bool isTool = false;
   bool enabled = true;
   bool active = false;
+  bool selected = false;
   bool hovered = false;
   bool pressed = false;
 };
@@ -46,6 +47,7 @@ public:
   void setPaletteOpen(bool open) { paletteOpen_ = open; }
   [[nodiscard]] bool paletteOpen() const { return paletteOpen_; }
   void setColors(const QColor &color, bool filled);
+  void setWidth(qreal width);
   void setHistory(bool canUndo, bool canRedo);
   void setHovered(const QString &id);
   void setPressed(const QString &id);
@@ -66,6 +68,7 @@ private:
   const ToolRegistry &registry_;
   QString currentTool_;
   QColor color_ = QColor(QStringLiteral("#ff375f"));
+  qreal width_ = 4.0;
   bool filled_ = false;
   bool paletteOpen_ = false;
   bool canUndo_ = false;
