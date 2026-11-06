@@ -52,8 +52,8 @@ shown with `Q`.
 - Selection handles resize against the full frozen output: a region can be
   enlarged again after shrinking, not just cropped smaller.
 - UI follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
-- Compact Material-inspired toolbar near the image with shape, colour and line
-  width popups; works on dark and light desktops.
+- Compact Material-inspired toolbar near the image with direct shape buttons
+  and a colour/line-width popup; works on dark and light desktops.
 - Copy/save with `wl-copy`; offline OCR through Tesseract with selectable text.
 - Image pinning, opening an image file or clipboard image in the editor.
 - No changes to Niri, DMS or Quickshell sources or configuration.
