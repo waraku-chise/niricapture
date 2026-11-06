@@ -1,4 +1,4 @@
-/** @fileoverview DMS-backed frozen desktop frames and coordinate composition. */
+/** @fileoverview Frozen desktop frames (optional DMS, grim fallback) and coordinate composition. */
 #include "desktop-capture.hpp"
 
 #include <QCoreApplication>

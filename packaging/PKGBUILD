@@ -2,7 +2,7 @@
 pkgname=niricapture-git
 pkgver=0.6.2
 pkgrel=1
-pkgdesc="Native Niri screenshot tool with DMS frozen-frame selection and annotations"
+pkgdesc="Native Niri screenshot tool with optional DMS frozen frames and annotations"
 arch=('x86_64')
 url="https://github.com/waraku-chise/niricapture"
 license=('AGPL-3.0-only')

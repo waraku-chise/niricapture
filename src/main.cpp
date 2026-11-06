@@ -389,11 +389,11 @@ int main(int argc, char **argv) {
 
   QCommandLineParser parser;
   parser.setApplicationDescription(QStringLiteral(
-      "Native Niri screenshot tool with DMS frozen-frame selection and a\n"
-      "non-destructive annotation editor.\n"
+      "Native Niri screenshot tool with frozen-frame selection, an optional\n"
+      "DMS backend (grim fallback) and a non-destructive annotation editor.\n"
       "\n"
-      "Region and fullscreen captures freeze every output through the DMS\n"
-      "screenshot backend before any overlay is mapped. Window captures use\n"
+      "Region and fullscreen captures freeze every output through DMS when\n"
+      "available, otherwise grim, before any overlay is mapped. Window captures use\n"
       "Niri's compositor-side screenshot-window action, so occluded and\n"
       "off-workspace windows are rendered independently of the desktop.\n"
       "\n"
