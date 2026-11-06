@@ -2,6 +2,7 @@
 #pragma once
 
 #include "capture.hpp"
+#include "config.hpp"
 
 #include <QFutureWatcher>
 #include <QImage>
@@ -20,7 +21,8 @@ class QStackedWidget;
  */
 class EditorWindow final : public QWidget {
 public:
-  explicit EditorWindow(QWidget *parent = nullptr);
+  explicit EditorWindow(const AppConfig &config = AppConfig::defaults(),
+                        QWidget *parent = nullptr);
   ~EditorWindow() override;
 
   void openImage(const QImage &image);
@@ -62,4 +64,5 @@ private:
   QFutureWatcher<OcrJob> ocrWatcher_;
   bool ocrRunning_ = false;
   int pinCount_ = 0;
+  AppConfig config_;
 };

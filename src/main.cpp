@@ -1,6 +1,7 @@
 #include "capture.hpp"
 #include "cli-path.hpp"
 #include "desktop-capture.hpp"
+#include "config.hpp"
 #include "editor-window.hpp"
 #include "instance-lock.hpp"
 #include "pin.hpp"
@@ -13,6 +14,7 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QEventLoop>
+#include <QFile>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -27,6 +29,7 @@
 #include <QWindow>
 
 #include <algorithm>
+#include <cstdio>
 #include <atomic>
 #include <utility>
 #include <csignal>
@@ -183,9 +186,9 @@ bool exportQuick(const DesktopFrames &frames, const QRectF &selection,
 }
 
 int runInlineCapture(DesktopFrames frames, const QRectF &initialSelection,
-                    QuickOutputMode quickMode,
+                    QuickOutputMode quickMode, const AppConfig &config,
                     std::atomic_bool &termination, QString &error) {
-  RegionSelector selector(std::move(frames), quickMode);
+  RegionSelector selector(std::move(frames), quickMode, config);
   QEventLoop loop;
   bool success = false;
   bool cancelled = false;
@@ -436,6 +439,13 @@ int main(int argc, char **argv) {
   const QCommandLineOption editorOption(
       QStringLiteral("editor"),
       QStringLiteral("Open the standalone editor start page (New / Open)."));
+  const QCommandLineOption configOption(
+      QStringLiteral("config"),
+      QStringLiteral("Use this JSON configuration file."),
+      QStringLiteral("path"));
+  const QCommandLineOption printConfigOption(
+      QStringLiteral("print-config"),
+      QStringLiteral("Print the active configuration file and exit."));
   const QCommandLineOption pinOption(
       QStringLiteral("pin"),
       QStringLiteral("Show an image as a pinned always-visible layer."),
@@ -452,6 +462,8 @@ int main(int argc, char **argv) {
   parser.addOption(fileOption);
   parser.addOption(clipboardOption);
   parser.addOption(editorOption);
+  parser.addOption(configOption);
+  parser.addOption(printConfigOption);
   parser.addOption(pinOption);
   parser.addPositionalArgument(
       QStringLiteral("target"),
@@ -601,11 +613,35 @@ int main(int argc, char **argv) {
     qCritical() << "--editor cannot be combined with capture/image/pin options";
     return 2;
   }
+  if (parser.isSet(configOption) && parser.value(configOption).trimmed().isEmpty()) {
+    qCritical() << "--config requires a non-empty path";
+    return 2;
+  }
+  if (parser.isSet(configOption))
+    qputenv("NIRICAPTURE_CONFIG", parser.value(configOption).trimmed().toUtf8());
   if (!loadCaptureFonts())
     return 1;
+  QString configError;
+  const AppConfig config = AppConfig::load(&configError);
+  if (!configError.isEmpty())
+    qWarning().noquote() << configError;
+  if (!config.ocrLanguages.isEmpty() &&
+      qEnvironmentVariableIsEmpty("NIRICAPTURE_OCR_LANGS"))
+    qputenv("NIRICAPTURE_OCR_LANGS", config.ocrLanguages.toUtf8());
+  if (!config.screenshotDir.isEmpty() &&
+      qEnvironmentVariableIsEmpty("NIRICAPTURE_SCREENSHOT_DIR"))
+    qputenv("NIRICAPTURE_SCREENSHOT_DIR", config.screenshotDir.toUtf8());
+  if (parser.isSet(printConfigOption)) {
+    QFile file(config.path);
+    if (file.open(QIODevice::ReadOnly))
+      fwrite(file.readAll().constData(), 1, static_cast<size_t>(file.size()),
+             stdout);
+    fprintf(stdout, "\n# %s\n", config.path.toUtf8().constData());
+    return 0;
+  }
   application.setQuitOnLastWindowClosed(true);
   if (parser.isSet(editorOption)) {
-    EditorWindow window;
+    EditorWindow window(config);
     window.showFullScreen();
     return QApplication::exec();
   }
@@ -638,7 +674,7 @@ int main(int argc, char **argv) {
   if (editingImage) {
     if (!prepareFileImage(filePath, clipboardInput, result, error))
       return failCapture(error);
-    EditorWindow window;
+    EditorWindow window(config);
     window.openImage(result.image);
     window.showFullScreen();
     return QApplication::exec();
@@ -659,7 +695,7 @@ int main(int argc, char **argv) {
         return failCapture(quickError);
       return 0;
     }
-    EditorWindow window;
+    EditorWindow window(config);
     window.openImage(result.image);
     window.showFullScreen();
     return QApplication::exec();
@@ -672,7 +708,7 @@ int main(int argc, char **argv) {
     if (terminationRequested.load(std::memory_order_acquire))
       return 0;
     const int status = runInlineCapture(std::move(frames), {}, quickOutputMode,
-                                        terminationRequested, error);
+                                        config, terminationRequested, error);
     if (status != 0 && !error.isEmpty())
       return failCapture(error);
     return status;
@@ -695,7 +731,7 @@ int main(int argc, char **argv) {
         return failCapture(error);
       return 0;
     }
-    return runInlineCapture(std::move(frames), all, quickOutputMode,
+    return runInlineCapture(std::move(frames), all, quickOutputMode, config,
                             terminationRequested, error);
   }
 
@@ -712,5 +748,5 @@ int main(int argc, char **argv) {
   }
   return runInlineCapture(std::move(frames),
                           QRectF(frame.monitor.geometry), quickOutputMode,
-                          terminationRequested, error);
+                          config, terminationRequested, error);
 }

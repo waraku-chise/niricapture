@@ -34,6 +34,7 @@ regression suite while the last standalone-only features are ported.
 ```
 src/editor/
 ├── tool.hpp                    IEditorTool, ToolContext, ToolEvent, EditorStyle
+├── config.hpp/cpp              JSON config: tools, shortcuts, palette, canvas, theme
 ├── annotation-document.*       annotations + selection + one undo/redo history
 ├── annotation-geometry.*       bounds, hit tests, endpoint handles, translation
 ├── tool-registry.*             owns tool instances, lookup by stable id
@@ -138,6 +139,10 @@ Owns `std::unique_ptr<IEditorTool>` instances and returns them by stable id.
 3. compile.
 
 No switch in `EditorCanvas` or `ToolBar` is required.
+
+`ToolRegistry::setVisibleTools()` and `ToolBar::setCommands()` / `setPalette()`
+are driven by `config.json`; `EditorCanvas::setToolShortcuts()` and
+`setDefaultStyle()` consume the same file. See `docs/CONFIGURATION.md`.
 
 ### ToolBar / ToolButton
 

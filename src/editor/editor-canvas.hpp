@@ -6,6 +6,7 @@
 
 #include <QPointF>
 #include <QRectF>
+#include <QHash>
 #include <QString>
 
 #include <functional>
@@ -29,6 +30,8 @@ public:
   [[nodiscard]] const ToolRegistry &registry() const { return registry_; }
   [[nodiscard]] EditorStyle &style() { return style_; }
   [[nodiscard]] const EditorStyle &style() const { return style_; }
+  void setDefaultStyle(const EditorStyle &style);
+  void setToolShortcuts(const QHash<QString, QString> &shortcuts);
 
   void setSelection(const QRectF &selection);
   [[nodiscard]] QRectF selection() const { return selection_; }
@@ -66,4 +69,5 @@ private:
   std::function<void(const QString &)> setStatus_;
   std::function<void()> repaint_;
   std::function<void(const QPointF &)> beginText_;
+  QHash<QString, QString> shortcuts_;
 };

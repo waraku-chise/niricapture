@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.5.0 LANGUAGES CXX)
+project(niricapture VERSION 0.6.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -8,6 +8,8 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core Gui Test Widgets)
 find_package(LayerShellQt REQUIRED)
 
 set(NIRICAPTURE_EDITOR_SOURCES
+  src/config.cpp
+  src/config.hpp
   src/editor/tool.hpp
   src/editor/annotation-document.cpp
   src/editor/annotation-document.hpp
@@ -120,6 +122,8 @@ qt_add_executable(niricapture-smoke
   tests/tool-smoke.hpp
   tests/editor-window-smoke.cpp
   tests/editor-window-smoke.hpp
+  tests/config-smoke.cpp
+  tests/config-smoke.hpp
   src/cli-path.cpp
   src/cli-path.hpp
   src/capture.cpp

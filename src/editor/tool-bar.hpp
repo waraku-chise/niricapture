@@ -7,6 +7,7 @@
 #include <QRectF>
 #include <QString>
 #include <QVector>
+#include <QStringList>
 
 class QPainter;
 class ToolRegistry;
@@ -36,6 +37,12 @@ public:
   explicit ToolBar(const ToolRegistry &registry);
 
   void setCurrentTool(const QString &id);
+  void setCommands(const QStringList &commands);
+  void setTheme(const QColor &panel, const QColor &border,
+                const QColor &accent);
+  void setPalette(const QStringList &colors, const QVector<int> &widths);
+  [[nodiscard]] QColor colorAt(int index) const;
+  [[nodiscard]] int widthAt(int index) const;
   void setPaletteOpen(bool open) { paletteOpen_ = open; }
   [[nodiscard]] bool paletteOpen() const { return paletteOpen_; }
   void setColors(const QColor &color, bool filled);
@@ -65,4 +72,10 @@ private:
   bool canRedo_ = false;
   QString hovered_;
   QString pressed_;
+  QStringList commands_;
+  QStringList paletteColors_;
+  QVector<int> paletteWidths_;
+  QColor panelColor_ = QColor(17, 19, 24, 246);
+  QColor borderColor_ = QColor(255, 255, 255, 30);
+  QColor accentColor_ = QColor(124, 196, 255);
 };

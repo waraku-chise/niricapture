@@ -48,6 +48,8 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
   窗口，也不会发生图像跳动。
 - 选区手柄基于完整冻结画面调整：缩小时不是裁剪，之后仍可重新放大。
 - 界面语言跟随系统；可用 `NIRICAPTURE_LANG=zh_CN` 或 `en` 强制指定。
+- JSON 配置 `~/.config/niricapture/config.json` 可控制工具、快捷键、调色板、
+  画布默认值、主题、OCR 语言和截图目录。
 - 靠近图像的 Material 风格紧凑工具栏，形状按钮直接可选，并提供颜色/线宽
   弹出面板；在深色和浅色桌面上都能正常使用。
 - 通过 `wl-copy` 复制、保存 PNG；可选 Tesseract 离线 OCR，识别结果可选中复制。
@@ -196,7 +198,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.5.0_amd64.deb
+sudo apt install ./niricapture_0.6.0_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -358,7 +360,9 @@ packaging/               Arch 安装/卸载脚本、PKGBUILD、快捷键
 ## 研究、许可证与明确限制
 
 DMS Screenshot+、HyprCapture 和 Niri 26.04 的源码级分析、协议/API 限制和
-编辑器工具模块与迁移映射见 [docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md)；
+配置文件（工具、快捷键、调色板、画布、主题、OCR）见
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md)；编辑器的工具模块与迁移映射见
+[docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md)；
 许可证分析见 [docs/RESEARCH.md](docs/RESEARCH.md)。
 
 重要限制：
@@ -401,7 +405,7 @@ make check
 
 ## 状态
 
-版本 `0.5.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+版本 `0.6.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
 区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑使用新的独立新建/打开编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
 测试。

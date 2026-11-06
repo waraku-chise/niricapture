@@ -10,6 +10,7 @@
 #include "transform-smoke.hpp"
 #include "tool-smoke.hpp"
 #include "editor-window-smoke.hpp"
+#include "config-smoke.hpp"
 #include "eyedropper.hpp"
 
 #include <QApplication>
@@ -2645,6 +2646,11 @@ int main(int argc, char **argv) {
   if (!runEditorWindowSmoke(editorWindowError)) {
     qWarning().noquote() << editorWindowError;
     return 141;
+  }
+  QString configError;
+  if (!runConfigSmoke(configError)) {
+    qWarning().noquote() << configError;
+    return 142;
   }
   // Exercise production Open dispatch, then exit without an event-loop turn.
   if (application.arguments().contains(QStringLiteral("--open-app-exit-helper"))) {

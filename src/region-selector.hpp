@@ -2,6 +2,7 @@
 #pragma once
 
 #include "capture.hpp"
+#include "config.hpp"
 #include "desktop-capture.hpp"
 #include "editor/editor-canvas.hpp"
 #include "editor/tool-bar.hpp"
@@ -31,7 +32,8 @@ class RegionSelector final : public QObject {
   Q_OBJECT
 public:
   explicit RegionSelector(DesktopFrames frames,
-                          QuickOutputMode quickMode = QuickOutputMode::None,
+                          QuickOutputMode quickMode,
+                          const AppConfig &config = AppConfig::defaults(),
                           QObject *parent = nullptr);
   ~RegionSelector() override;
 

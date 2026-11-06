@@ -18,5 +18,27 @@ IEditorTool *ToolRegistry::find(const QString &id) const {
 }
 
 QString ToolRegistry::defaultToolId() const {
-  return tools_.empty() ? QString() : tools_.front()->id();
+  const QStringList ids = visibleToolIds();
+  return ids.isEmpty() ? QString() : ids.first();
+}
+
+void ToolRegistry::setVisibleTools(const QStringList &ids) {
+  visibleIds_.clear();
+  for (const QString &id : ids) {
+    if (find(id) && !visibleIds_.contains(id))
+      visibleIds_.push_back(id);
+  }
+}
+
+QStringList ToolRegistry::visibleToolIds() const {
+  if (!visibleIds_.isEmpty())
+    return visibleIds_;
+  QStringList ids;
+  for (const auto &tool : tools_)
+    ids.push_back(tool->id());
+  return ids;
+}
+
+bool ToolRegistry::visible(const QString &id) const {
+  return visibleToolIds().contains(id);
 }

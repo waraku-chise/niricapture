@@ -248,3 +248,13 @@ Window capture uses `Ctrl+F1` in the example/user Niri bindings. The window
 image opens in the same modular editor, where canvas zoom/fit, padding/size,
 transparent/white/dark/gradient backgrounds, save/copy/pin and OCR are
 available.
+
+## Configuration checks
+
+`tests/config-smoke.cpp` parses a config with custom tools/commands/shortcuts,
+palette, canvas, theme, OCR and screenshot paths, and verifies each value is
+applied. `--print-config` creates the default file and prints its contents plus
+path. Live checks used `NIRICAPTURE_CONFIG=/tmp/nc-config.json` with a reduced
+toolbar (select/text/marker), green default style, two palette colors, padding
+24 and an Aurora canvas; the standalone editor and the in-place overlay both
+honored it.

@@ -49,12 +49,12 @@ QString imageFilter() {
   return QObject::tr("Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif);;All files (*)");
 }
 
-QImage checkerTile() {
+QImage checkerTile(const QColor &dark, const QColor &light) {
   QImage tile(16, 16, QImage::Format_RGB32);
-  tile.fill(QColor(QStringLiteral("#1b1f27")));
+  tile.fill(dark);
   QPainter painter(&tile);
-  painter.fillRect(QRect(0, 0, 8, 8), QColor(QStringLiteral("#242a35")));
-  painter.fillRect(QRect(8, 8, 8, 8), QColor(QStringLiteral("#242a35")));
+  painter.fillRect(QRect(0, 0, 8, 8), light);
+  painter.fillRect(QRect(8, 8, 8, 8), light);
   return tile;
 }
 
@@ -71,12 +71,24 @@ CaptureData captureForImage(const QImage &image) {
 
 class EditorWindow::CanvasView final : public QWidget {
 public:
-  explicit CanvasView(EditorWindow *owner)
-      : QWidget(owner), owner_(owner), bar_(canvas_.registry()) {
+  explicit CanvasView(EditorWindow *owner, const AppConfig &config)
+      : QWidget(owner), owner_(owner), config_(config),
+        bar_(canvas_.registry()) {
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setCursor(Qt::CrossCursor);
     setAttribute(Qt::WA_OpaquePaintEvent);
+    canvas_.registry().setVisibleTools(config_.tools);
+    canvas_.setToolShortcuts(config_.shortcuts);
+    EditorStyle style;
+    style.color = config_.theme.defaultColor;
+    style.width = config_.theme.defaultWidth;
+    canvas_.setDefaultStyle(style);
+    canvas_.setTool(canvas_.registry().defaultToolId());
+    bar_.setCommands(config_.commands);
+    bar_.setPalette(config_.palette.colors, config_.palette.widths);
+    bar_.setTheme(config_.theme.panel, QColor(255, 255, 255, 30),
+                  config_.theme.accent);
     canvas_.setStatusCallback(
         [this](const QString &text) { owner_->setStatus(text); });
     canvas_.setRepaintCallback([this] { update(); });
@@ -227,7 +239,7 @@ public:
 protected:
   void paintEvent(QPaintEvent *) override {
     QPainter painter(this);
-    painter.fillRect(rect(), QColor(QStringLiteral("#0f1116")));
+    painter.fillRect(rect(), config_.theme.background);
     if (capture_.source.isNull())
       return;
     painter.setRenderHints(QPainter::Antialiasing |
@@ -238,7 +250,10 @@ protected:
 
     painter.save();
     painter.setClipRect(canvas);
-    painter.fillRect(canvas, QBrush(QPixmap::fromImage(checkerTile())));
+    painter.fillRect(canvas,
+                     QBrush(QPixmap::fromImage(
+                         checkerTile(config_.theme.checkerDark,
+                                     config_.theme.checkerLight))));
     if (background_ != BackgroundStyle::None) {
       paintCaptureBackground(painter, canvas, background_);
     } else if (backgroundColor_.alpha() > 0) {
@@ -479,12 +494,10 @@ private:
     } else if (hit.id == QStringLiteral("close")) {
       owner_->showHome();
     } else if (hit.id.startsWith(QStringLiteral("color-"))) {
-      static const std::array<const char *, 8> colors{
-          "#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
-          "#0a84ff", "#bf5af2", "#ffffff", "#000000"};
       const int index = hit.id.sliced(6).toInt();
-      if (index >= 0 && index < 8) {
-        canvas_.style().color = QColor(QString::fromLatin1(colors[index]));
+      const QColor color = bar_.colorAt(index);
+      if (color.isValid()) {
+        canvas_.style().color = color;
         if (canvas_.document().selected() >= 0) {
           canvas_.document().pushUndo();
           canvas_.document().annotations()[canvas_.document().selected()]
@@ -543,6 +556,7 @@ private:
   }
 
   EditorWindow *owner_;
+  AppConfig config_;
   EditorCanvas canvas_;
   ToolBar bar_;
   CaptureData capture_;
@@ -562,11 +576,12 @@ private:
   QPointF textPoint_;
 };
 
-EditorWindow::EditorWindow(QWidget *parent) : QWidget(parent) {
+EditorWindow::EditorWindow(const AppConfig &config, QWidget *parent)
+    : QWidget(parent), config_(config) {
   setWindowTitle(QStringLiteral("NiriCapture"));
   resize(1200, 820);
   setMinimumSize(760, 520);
-  setStyleSheet(QStringLiteral(R"(
+  QString style = QStringLiteral(R"(
     QWidget { background: #0f1116; color: #eef1f7; }
     QLabel { background: transparent; }
     QLabel#title { font-size: 34px; font-weight: 700; color: #ffffff; }
@@ -585,7 +600,12 @@ EditorWindow::EditorWindow(QWidget *parent) : QWidget(parent) {
       border-radius: 7px; padding: 5px 7px; }
     QLabel#status { color: #9aa3b2; padding: 5px 12px; }
     QLabel#zoom { color: #cfd6e2; min-width: 52px; }
-  )"));
+  )");
+  style.replace(QStringLiteral("#0f1116"), config_.theme.background.name());
+  style.replace(QStringLiteral("#151922"), config_.theme.panel.name());
+  style.replace(QStringLiteral("#2f6fed"), config_.theme.accent.name());
+  style.replace(QStringLiteral("#3f7df7"), config_.theme.accent.lighter(115).name());
+  setStyleSheet(style);
   auto *layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
   stack_ = new QStackedWidget(this);
@@ -738,7 +758,7 @@ void EditorWindow::buildEditor() {
   addButton(ui("Close", "关闭"), [this] { close(); });
   layout->addWidget(bar);
 
-  view_ = new CanvasView(this);
+  view_ = new CanvasView(this, config_);
   layout->addWidget(view_, 1);
   status_ = new QLabel(editorPage_);
   status_->setObjectName(QStringLiteral("status"));
@@ -764,6 +784,8 @@ void EditorWindow::openImage(const QImage &image) {
   if (!view_)
     return;
   view_->setImage(image);
+  view_->setPadding(config_.canvas.padding);
+  view_->setBackground(config_.backgroundStyle(), config_.canvas.backgroundColor);
   showCanvas();
   setStatus(ui("Image opened · %1 × %2", "已打开图片 · %1 × %2")
                 .arg(image.width())
@@ -805,10 +827,10 @@ void EditorWindow::newFromDialog() {
   auto *layout = new QFormLayout(&dialog);
   auto *width = new QSpinBox(&dialog);
   width->setRange(1, 20000);
-  width->setValue(kDefaultCanvasWidth);
+  width->setValue(config_.canvas.width);
   auto *height = new QSpinBox(&dialog);
   height->setRange(1, 20000);
-  height->setValue(kDefaultCanvasHeight);
+  height->setValue(config_.canvas.height);
   layout->addRow(ui("Width", "宽度"), width);
   layout->addRow(ui("Height", "高度"), height);
   auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok |

@@ -24,6 +24,17 @@ EditorCanvas::EditorCanvas() {
 
 EditorCanvas::~EditorCanvas() = default;
 
+void EditorCanvas::setDefaultStyle(const EditorStyle &style) {
+  style_ = style;
+  if (repaint_)
+    repaint_();
+}
+
+void EditorCanvas::setToolShortcuts(
+    const QHash<QString, QString> &shortcuts) {
+  shortcuts_ = shortcuts;
+}
+
 void EditorCanvas::setSelection(const QRectF &selection) {
   selection_ = selection.normalized();
 }
@@ -134,9 +145,14 @@ bool EditorCanvas::keyPress(QKeyEvent *event) {
   if (!event->modifiers().testFlag(Qt::ControlModifier) &&
       !event->modifiers().testFlag(Qt::AltModifier) &&
       !event->modifiers().testFlag(Qt::MetaModifier)) {
-    for (const auto &tool : registry_.tools()) {
-      if (event->key() == QKeySequence(tool->shortcut())[0].key()) {
-        setTool(tool->id());
+    for (const QString &id : registry_.visibleToolIds()) {
+      IEditorTool *tool = registry_.find(id);
+      if (!tool)
+        continue;
+      const QString sequence = shortcuts_.value(id, tool->shortcut());
+      if (!sequence.isEmpty() &&
+          event->key() == QKeySequence(sequence)[0].key()) {
+        setTool(id);
         return true;
       }
     }

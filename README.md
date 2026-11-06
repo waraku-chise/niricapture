@@ -53,6 +53,8 @@ shown with `Q`.
 - Selection handles resize against the full frozen output: a region can be
   enlarged again after shrinking, not just cropped smaller.
 - UI follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
+- JSON config at `~/.config/niricapture/config.json` controls tools, shortcuts,
+  palette, canvas defaults, theme, OCR languages and screenshot paths.
 - Compact Material-inspired toolbar near the image with direct shape buttons
   and a colour/line-width popup; works on dark and light desktops.
 - Copy/save with `wl-copy`; offline OCR through Tesseract with selectable text.
@@ -207,7 +209,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.5.0_amd64.deb
+sudo apt install ./niricapture_0.6.0_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -375,7 +377,9 @@ through documented Niri IPC and the DMS CLI.
 
 ## Research, licences and deliberate limits
 
-See [docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md) for the tool
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the JSON config
+(tools, shortcuts, palette, canvas, theme, OCR), and
+[docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md) for the tool
 module map and [docs/RESEARCH.md](docs/RESEARCH.md) for the source-level review of DMS
 Screenshot+, HyprCapture and Niri 26.04, including the exact protocol/API
 limits and licence analysis.
@@ -422,7 +426,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.5.0`. The core acceptance path is implemented and tested on Niri
+Version `0.6.0`. The core acceptance path is implemented and tested on Niri
 26.04 + DMS 2.0. Region/fullscreen editing is in-place in the frozen overlay;
 window/file editing uses the new standalone New/Open editor. Multi-output composition has
 synthetic coverage; only one physical output was available during live testing.

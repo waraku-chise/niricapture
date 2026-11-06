@@ -16,9 +16,6 @@ constexpr qreal kButton = 34.0;
 constexpr qreal kGap = 4.0;
 constexpr qreal kGroupGap = 6.0;
 constexpr qreal kHeight = 38.0;
-const QColor kPanel(17, 19, 24, 246);
-const QColor kBorder(255, 255, 255, 30);
-const QColor kAccent(124, 196, 255);
 
 QVector<QString> commandIds() {
   return {QStringLiteral("palette"), QStringLiteral("undo"),
@@ -52,7 +49,48 @@ QString commandTooltip(const QString &id) {
 }
 } // namespace
 
-ToolBar::ToolBar(const ToolRegistry &registry) : registry_(registry) {}
+ToolBar::ToolBar(const ToolRegistry &registry) : registry_(registry) {
+  commands_ = commandIds();
+  paletteColors_ = {QStringLiteral("#ff375f"), QStringLiteral("#ff9f0a"),
+                    QStringLiteral("#ffd60a"), QStringLiteral("#30d158"),
+                    QStringLiteral("#0a84ff"), QStringLiteral("#bf5af2"),
+                    QStringLiteral("#ffffff"), QStringLiteral("#000000")};
+  paletteWidths_ = {2, 4, 8, 12};
+}
+
+void ToolBar::setCommands(const QStringList &commands) {
+  if (!commands.isEmpty())
+    commands_ = commands;
+}
+
+void ToolBar::setTheme(const QColor &panel, const QColor &border,
+                       const QColor &accent) {
+  if (panel.isValid())
+    panelColor_ = panel;
+  if (border.isValid())
+    borderColor_ = border;
+  if (accent.isValid())
+    accentColor_ = accent;
+}
+
+void ToolBar::setPalette(const QStringList &colors, const QVector<int> &widths) {
+  if (!colors.isEmpty())
+    paletteColors_ = colors;
+  if (!widths.isEmpty())
+    paletteWidths_ = widths;
+}
+
+QColor ToolBar::colorAt(int index) const {
+  if (index < 0 || index >= paletteColors_.size())
+    return {};
+  return QColor(paletteColors_.at(index));
+}
+
+int ToolBar::widthAt(int index) const {
+  if (index < 0 || index >= paletteWidths_.size())
+    return 4;
+  return paletteWidths_.at(index);
+}
 
 void ToolBar::setCurrentTool(const QString &id) { currentTool_ = id; }
 void ToolBar::setColors(const QColor &color, bool filled) {
@@ -67,11 +105,15 @@ void ToolBar::setHovered(const QString &id) { hovered_ = id; }
 void ToolBar::setPressed(const QString &id) { pressed_ = id; }
 
 QRectF ToolBar::rect(const QRectF &viewport, const QRectF &selection) const {
-  int count = static_cast<int>(registry_.tools().size()) +
-              static_cast<int>(commandIds().size());
+  const QStringList tools = registry_.visibleToolIds();
+  int count = static_cast<int>(tools.size()) +
+              static_cast<int>(commands_.size());
   int groups = 0;
   ToolGroup previous = ToolGroup::Select;
-  for (const auto &tool : registry_.tools()) {
+  for (const QString &id : tools) {
+    IEditorTool *tool = registry_.find(id);
+    if (!tool)
+      continue;
     if (tool->group() != previous) {
       ++groups;
       previous = tool->group();
@@ -92,7 +134,8 @@ QRectF ToolBar::rect(const QRectF &viewport, const QRectF &selection) const {
 QRectF ToolBar::paletteRect(const QRectF &viewport,
                             const QRectF &selection) const {
   const QRectF bar = rect(viewport, selection);
-  const qreal width = 300;
+  const qreal width =
+      std::max<qreal>(300, 16 + paletteWidths_.size() * 58);
   const qreal x = std::clamp(bar.center().x() - width / 2.0, 8.0,
                              std::max(8.0, viewport.width() - width - 8.0));
   qreal y = bar.bottom() + 6;
@@ -108,7 +151,10 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
   qreal x = bar.left();
   ToolGroup previous = ToolGroup::Select;
   bool first = true;
-  for (const auto &tool : registry_.tools()) {
+  for (const QString &toolId : registry_.visibleToolIds()) {
+    IEditorTool *tool = registry_.find(toolId);
+    if (!tool)
+      continue;
     if (!first && tool->group() != previous)
       x += kGroupGap;
     previous = tool->group();
@@ -125,7 +171,7 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
     result.push_back(button);
     x += kButton + kGap;
   }
-  for (const QString &id : commandIds()) {
+  for (const QString &id : commands_) {
     ToolButton button;
     button.rect = {x, bar.top(), kButton, bar.height()};
     button.id = id;
@@ -144,29 +190,25 @@ QVector<ToolButton> ToolBar::buttons(const QRectF &viewport,
 
   if (paletteOpen_) {
     const QRectF panel = paletteRect(viewport, selection);
-    const std::array<const char *, 8> colors{
-        "#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
-        "#0a84ff", "#bf5af2", "#ffffff", "#000000"};
-    for (int index = 0; index < 8; ++index) {
+    for (int index = 0; index < paletteColors_.size(); ++index) {
       ToolButton button;
       button.rect = {panel.left() + 8 + index * 32, panel.top() + 7, 24, 24};
       button.id = QStringLiteral("color-%1").arg(index);
-      button.swatch = QColor(QString::fromLatin1(colors[index]));
+      button.swatch = QColor(paletteColors_.at(index));
       button.hovered = button.id == hovered_;
       button.pressed = button.id == pressed_;
       result.push_back(button);
     }
-    const std::array<const char *, 4> sizes{"2", "4", "8", "12"};
-    const std::array<const char *, 4> labels{"S", "M", "L", "XL"};
-    for (int index = 0; index < 4; ++index) {
+    for (int index = 0; index < paletteWidths_.size(); ++index) {
       ToolButton button;
       button.rect = {panel.left() + 8 + index * 58, panel.top() + 40, 52, 26};
-      button.id = QStringLiteral("size-") + QString::fromLatin1(sizes[index]);
-      button.tooltip = QString::fromLatin1(labels[index]);
+      button.id = QStringLiteral("size-%1").arg(paletteWidths_.at(index));
+      button.tooltip = QString::number(paletteWidths_.at(index));
       result.push_back(button);
     }
     ToolButton fill;
-    fill.rect = {panel.left() + 8 + 4 * 58, panel.top() + 40, 52, 26};
+    fill.rect = {panel.left() + 8 + paletteWidths_.size() * 58,
+                 panel.top() + 40, 52, 26};
     fill.id = QStringLiteral("fill");
     fill.tooltip = filled_ ? ui("Fill: on", "填充：开")
                            : ui("Fill: off", "填充：关");
@@ -188,12 +230,12 @@ ToolBarHit ToolBar::hitTest(const QRectF &viewport, const QRectF &selection,
 void ToolBar::paint(QPainter &painter, const QRectF &viewport,
                     const QRectF &selection) const {
   const QRectF bar = rect(viewport, selection);
-  painter.setPen(QPen(kBorder, 1));
-  painter.setBrush(kPanel);
+  painter.setPen(QPen(borderColor_, 1));
+  painter.setBrush(panelColor_);
   painter.drawRoundedRect(bar.adjusted(-4, -4, 4, 4), 11, 11);
   if (paletteOpen_) {
-    painter.setPen(QPen(kBorder, 1));
-    painter.setBrush(kPanel);
+    painter.setPen(QPen(borderColor_, 1));
+    painter.setBrush(panelColor_);
     painter.drawRoundedRect(paletteRect(viewport, selection), 10, 10);
   }
 
@@ -205,8 +247,9 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
       painter.setBrush(button.pressed ? QColor(255, 255, 255, 38)
                                      : button.hovered
                                            ? QColor(255, 255, 255, 22)
-                                           : QColor(kAccent.red(), kAccent.green(),
-                                                    kAccent.blue(), 70));
+                                           : QColor(accentColor_.red(),
+                                                    accentColor_.green(),
+                                                    accentColor_.blue(), 70));
       painter.drawRoundedRect(button.rect, 7, 7);
     }
     if (button.id.startsWith(QStringLiteral("color-"))) {

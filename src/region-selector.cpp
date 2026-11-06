@@ -266,11 +266,22 @@ private:
 };
 
 RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
-                               QObject *parent)
+                               const AppConfig &config, QObject *parent)
     : QObject(parent),
       frames_(std::move(frames)),
       quickMode_(quickMode),
       toolBar_(canvas_.registry()) {
+  canvas_.registry().setVisibleTools(config.tools);
+  canvas_.setToolShortcuts(config.shortcuts);
+  EditorStyle style;
+  style.color = config.theme.defaultColor;
+  style.width = config.theme.defaultWidth;
+  canvas_.setDefaultStyle(style);
+  canvas_.setTool(canvas_.registry().defaultToolId());
+  toolBar_.setCommands(config.commands);
+  toolBar_.setPalette(config.palette.colors, config.palette.widths);
+  toolBar_.setTheme(config.theme.panel, QColor(255, 255, 255, 30),
+                    config.theme.accent);
   canvas_.setStatusCallback([this](const QString &status) { setStatus(status); });
   canvas_.setRepaintCallback([this] { selectionChanged(); });
   canvas_.setTextCallback([this](const QPointF &point) {
@@ -605,12 +616,10 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
   } else if (hit.id == QStringLiteral("close")) {
     cancel();
   } else if (hit.id.startsWith(QStringLiteral("color-"))) {
-    static const std::array<const char *, 8> colors{
-        "#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
-        "#0a84ff", "#bf5af2", "#ffffff", "#000000"};
     const int index = hit.id.sliced(6).toInt();
-    if (index >= 0 && index < 8) {
-      canvas_.style().color = QColor(QString::fromLatin1(colors[index]));
+    const QColor color = toolBar_.colorAt(index);
+    if (color.isValid()) {
+      canvas_.style().color = color;
       if (canvas_.document().selected() >= 0) {
         canvas_.document().pushUndo();
         Annotation &selected = canvas_.document().annotations()[
@@ -620,7 +629,7 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
     }
   } else if (hit.id.startsWith(QStringLiteral("size-"))) {
     canvas_.style().width =
-        std::clamp(hit.id.sliced(5).toInt(), 2, 64);
+        std::clamp(hit.id.sliced(5).toInt(), 1, 96);
     if (canvas_.document().selected() >= 0) {
       canvas_.document().pushUndo();
       Annotation &selected = canvas_.document().annotations()[

@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <vector>
+#include <QStringList>
 
 class ToolRegistry {
 public:
@@ -29,9 +30,14 @@ public:
     return tools_;
   }
   [[nodiscard]] QString defaultToolId() const;
+  /** Ordered, visible tool ids. Empty means all registered tools. */
+  void setVisibleTools(const QStringList &ids);
+  [[nodiscard]] QStringList visibleToolIds() const;
+  [[nodiscard]] bool visible(const QString &id) const;
 
 private:
   std::vector<std::unique_ptr<IEditorTool>> tools_;
+  QStringList visibleIds_;
 };
 
 /** Registers the built-in inline tools. New tools are added here only. */

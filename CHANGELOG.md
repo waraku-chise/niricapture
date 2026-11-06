@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0] — 2026-11-06
+
+### Config-driven editor
+
+- Added `~/.config/niricapture/config.json` (auto-created, documented in
+  `docs/CONFIGURATION.md`).
+- Toolbar tool order/visibility, command order, tool shortcuts, palette colors
+  and widths, default style, canvas size/padding/background, theme colors, OCR
+  languages and screenshot directory are configurable.
+- `--config PATH`, `NIRICAPTURE_CONFIG` and `--print-config` are supported.
+- Missing keys inherit defaults; malformed JSON falls back to defaults without
+  overwriting the user file.
+- Added `tests/config-smoke.cpp` for parsing and applying config.
+- Niri keybindings remain in the Niri config; window capture is `Ctrl+F1`.
+
 ## [0.5.0] — 2026-11-06
 
 ### Standalone editor
