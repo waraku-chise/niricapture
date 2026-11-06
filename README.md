@@ -170,15 +170,51 @@ cmake --build build --parallel
 ./build/niricapture --capture-fullscreen --save
 ```
 
-### 本地安装脚本
+### Arch Linux / CachyOS
+
+项目保留了完整的 Arch 打包与本地安装流程；这不代表项目只能运行在 Arch 上。
+
+```bash
+sudo pacman -S --needed \
+  base-devel cmake ninja pkgconf \
+  qt6-base layer-shell-qt \
+  grim wl-clipboard libnotify \
+  tesseract tesseract-data-eng
+# 中文 OCR 可选但推荐：
+sudo pacman -S --needed tesseract-data-chi_sim
+```
+
+本地安装：
+
+```bash
+./packaging/install-local.sh --check   # 只检查，不写文件
+./packaging/install-local.sh           # 只有 pacman 需要 sudo
+```
+
+脚本在 `~/.cache/niricapture/build` 中构建，默认安装到 `~/.local`，拒绝覆盖
+已有安装，并且不会修改 Niri 或 DMS 配置。
+
+卸载：
+
+```bash
+./packaging/uninstall-local.sh --prefix ~/.local --check
+./packaging/uninstall-local.sh --prefix ~/.local
+```
+
+也可以用 `packaging/PKGBUILD` 构建 `niricapture-git`：
+
+```bash
+cd packaging
+makepkg -si
+```
+
+### 通用 CMake 安装
+
+非 Arch 环境可先安装 Qt 6.8+、LayerShellQt 和可选运行时工具，然后：
 
 ```bash
 cmake --install build --prefix ~/.local
 ```
-
-安装过程不会修改 Niri 或 DMS 配置。卸载时删除对应的
-`~/.local/bin/niricapture`、desktop 文件、文档和许可证即可，也可以使用
-`packaging/uninstall-local.sh --prefix ~/.local`。
 
 ### Debian 软件包
 

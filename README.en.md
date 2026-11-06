@@ -178,22 +178,53 @@ cmake --build build --parallel
 ./build/niricapture --capture-fullscreen --save
 ```
 
-### Local installer
+### Arch Linux / CachyOS
+
+The repository ships complete Arch packaging and local-install flows; this does
+not mean NiriCapture only runs on Arch.
+
+```bash
+sudo pacman -S --needed \
+  base-devel cmake ninja pkgconf \
+  qt6-base layer-shell-qt \
+  grim wl-clipboard libnotify \
+  tesseract tesseract-data-eng
+# optional, recommended for Chinese OCR:
+sudo pacman -S --needed tesseract-data-chi_sim
+```
+
+Local installer:
 
 ```bash
 ./packaging/install-local.sh --check   # dry run, no writes
-./packaging/install-local.sh
+./packaging/install-local.sh           # asks sudo only for pacman
 ```
 
-The installer builds in `~/.cache/niricapture/build`, refuses to overwrite an
-existing installation, and never edits Niri or DMS configuration. It installs
-under `~/.local` by default (`NIRICAPTURE_PREFIX` overrides it).
+The installer builds in `~/.cache/niricapture/build`, installs under `~/.local`
+by default (`NIRICAPTURE_PREFIX` overrides it), refuses to overwrite an existing
+installation, and never edits Niri or DMS configuration.
 
 Remove it with:
 
 ```bash
 ./packaging/uninstall-local.sh --prefix ~/.local --check
 ./packaging/uninstall-local.sh --prefix ~/.local
+```
+
+Or build `niricapture-git` with `packaging/PKGBUILD`:
+
+```bash
+cd packaging
+makepkg -si
+```
+
+### Generic CMake install
+
+On non-Arch systems, install Qt 6.8+, LayerShellQt and the optional runtime
+tools first, then:
+
+```bash
+cmake --install build --prefix ~/.local
 ```
 
 ### Debian package
