@@ -67,12 +67,12 @@ niri msg --json outputs          # 逻辑几何、缩放、物理尺寸
         │
         ▼
   每个输出一个 layer-shell 覆盖层，共享同一个全局选区
-        │  Enter
+        │  松开鼠标
+        ▼
+  冻结 owner 覆盖层上的原位工具栏 + EditorCanvas
+        │  复制 / 保存
         ▼
   composeSelection()：按选区主要所属输出的缩放合成
-        │
-        ▼
-  嵌入 owner 覆盖层的 CaptureEditor（不新建窗口）
 ```
 
 覆盖层映射之后不会再重新抓屏。工具栏和标注直接由冻结选区覆盖层绘制，
@@ -195,7 +195,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.3.0_amd64.deb
+sudo apt install ./niricapture_0.4.0_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -322,7 +322,8 @@ src/main.cpp             命令行、单实例锁、模式分发、layer-shell �
 src/capture.*            剪贴板、OCR、渲染、矢量/源像素标注
 src/desktop-capture.*    Niri 输出发现、DMS 冻结帧、合成数学
 src/region-selector.*    每个输出一个 layer surface，共享冻结选区
-src/editor.*             标注编辑器、工具栏、导出、OCR 面板
+src/editor/             模块化工具、注册表、工具栏、画布、文档
+src/editor.cpp          独立窗口/文件编辑器（旧路径）
 src/surface-capture.cpp  Niri 原生窗口渲染 + 异步文件等待
 src/pin.*                固定在屏幕上的截图
 src/instance-lock.*      单实例交接与残留锁恢复
@@ -337,6 +338,7 @@ packaging/               Arch 安装/卸载脚本、PKGBUILD、快捷键
 ## 研究、许可证与明确限制
 
 DMS Screenshot+、HyprCapture 和 Niri 26.04 的源码级分析、协议/API 限制和
+编辑器工具模块与迁移映射见 [docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md)；
 许可证分析见 [docs/RESEARCH.md](docs/RESEARCH.md)。
 
 重要限制：
@@ -379,7 +381,7 @@ make check
 
 ## 状态
 
-版本 `0.3.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+版本 `0.4.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
 区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑仍使用独立编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
 测试。

@@ -1,11 +1,53 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.3.0 LANGUAGES CXX)
+project(niricapture VERSION 0.4.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core Gui Test Widgets)
 find_package(LayerShellQt REQUIRED)
+
+set(NIRICAPTURE_EDITOR_SOURCES
+  src/editor/tool.hpp
+  src/editor/annotation-document.cpp
+  src/editor/annotation-document.hpp
+  src/editor/annotation-geometry.cpp
+  src/editor/annotation-geometry.hpp
+  src/editor/tool-registry.cpp
+  src/editor/tool-registry.hpp
+  src/editor/editor-canvas.cpp
+  src/editor/editor-canvas.hpp
+  src/editor/tool-bar.cpp
+  src/editor/tool-bar.hpp
+  src/editor/tools/builtin-tools.cpp
+  src/editor/tools/builtin-tools.hpp
+  src/editor/tools/two-point-tool.cpp
+  src/editor/tools/two-point-tool.hpp
+  src/editor/tools/freehand-tool.cpp
+  src/editor/tools/freehand-tool.hpp
+  src/editor/tools/select-tool.cpp
+  src/editor/tools/select-tool.hpp
+  src/editor/tools/pen-tool.cpp
+  src/editor/tools/pen-tool.hpp
+  src/editor/tools/highlighter-tool.cpp
+  src/editor/tools/highlighter-tool.hpp
+  src/editor/tools/arrow-tool.cpp
+  src/editor/tools/arrow-tool.hpp
+  src/editor/tools/line-tool.cpp
+  src/editor/tools/line-tool.hpp
+  src/editor/tools/rectangle-tool.cpp
+  src/editor/tools/rectangle-tool.hpp
+  src/editor/tools/ellipse-tool.cpp
+  src/editor/tools/ellipse-tool.hpp
+  src/editor/tools/text-tool.cpp
+  src/editor/tools/text-tool.hpp
+  src/editor/tools/marker-tool.cpp
+  src/editor/tools/marker-tool.hpp
+  src/editor/tools/mosaic-tool.cpp
+  src/editor/tools/mosaic-tool.hpp
+  src/editor/tools/blur-tool.cpp
+  src/editor/tools/blur-tool.hpp
+)
 
 qt_add_executable(niricapture
   src/main.cpp
@@ -30,6 +72,7 @@ qt_add_executable(niricapture
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
   src/editor.cpp
@@ -71,6 +114,8 @@ qt_add_executable(niricapture-smoke
   tests/instance-lock-smoke.hpp
   tests/transform-smoke.cpp
   tests/transform-smoke.hpp
+  tests/tool-smoke.cpp
+  tests/tool-smoke.hpp
   src/cli-path.cpp
   src/cli-path.hpp
   src/capture.cpp
@@ -80,6 +125,7 @@ qt_add_executable(niricapture-smoke
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
   src/editor.cpp

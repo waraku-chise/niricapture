@@ -199,3 +199,32 @@ A failing `niri` process returns exit code 1 and a visible error message.
 - PipeWire/portal window capture. The native action is the supported path.
 
 These are recorded instead of being claimed as complete.
+
+## Modular editor checks
+
+`niricapture-smoke` now includes `tests/tool-smoke.cpp`, which verifies:
+
+- all 11 built-in tools register exactly once;
+- document undo/redo and marker numbering;
+- every draw tool commits the expected `Annotation::Kind`;
+- select tool hit/move;
+- switching tools drops the previous preview without mutating the document;
+- text tool requests the host editor;
+- toolbar buttons and palette hit-testing.
+
+Live integration hooks used during this pass:
+
+```bash
+NIRICAPTURE_TEST_SELECT=350,180,1100,700 NIRICAPTURE_TEST_GEOMETRY=1 \
+  niricapture --capture-region
+NIRICAPTURE_TEST_SELECT=350,180,1100,700 NIRICAPTURE_TEST_DRAW=1 \
+  NIRICAPTURE_TEST_EXPORT=1 niricapture --capture-region
+NIRICAPTURE_TEST_SELECT=20,380,800,500 NIRICAPTURE_TEST_OCR=1 \
+  niricapture --capture-region
+```
+
+The geometry hook started with a 1100×700 region, dragged its bottom-right
+handle out and produced a 1350×820 selection, proving that a selection can be
+expanded again after shrinking. The draw hook produced a rectangle, arrow,
+numbered marker and pixelated redaction in the saved 1100×700 PNG. The OCR
+hook opened the real selectable result panel.

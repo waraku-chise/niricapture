@@ -1,8 +1,8 @@
 /** @fileoverview Frozen-frame selection overlay with an in-place toolbar. */
 #include "region-selector.hpp"
 
+#include "editor/annotation-geometry.hpp"
 #include "i18n.hpp"
-#include "icons.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -10,43 +10,31 @@
 #include <QFont>
 #include <QFontDatabase>
 #include <QFontMetricsF>
-#include <QHash>
-#include <QKeySequence>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLineEdit>
-#include <QLineF>
 #include <QMouseEvent>
-#include <QWheelEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPlainTextEdit>
-#include <QPointer>
 #include <QPushButton>
 #include <QScreen>
 #include <QTimer>
-#include <QWidget>
+#include <QWheelEvent>
 #include <QWindow>
 #include <QtConcurrent/QtConcurrentRun>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <limits>
 
 namespace {
 constexpr qreal kMinSelection = 4.0;
 constexpr qreal kHandleSize = 10.0;
 constexpr qreal kHandleHit = 16.0;
 constexpr int kDimAlpha = 120;
-constexpr qreal kButton = 34.0;
-constexpr qreal kButtonGap = 4.0;
-constexpr qreal kToolbarHeight = 38.0;
-constexpr int kToolbarButtons = 18;
 
 const QColor kPanel(17, 19, 24, 246);
 const QColor kPanelBorder(255, 255, 255, 30);
-const QColor kAccent(124, 196, 255);
 
 QString handleAt(const QRectF &selection, const QPointF &point) {
   if (selection.isEmpty())
@@ -86,62 +74,6 @@ void drawPill(QPainter &painter, const QRectF &rect, const QString &text) {
   painter.drawRoundedRect(rect, 9, 9);
   painter.setPen(QColor(245, 247, 250));
   painter.drawText(rect, Qt::AlignCenter, text);
-}
-
-qreal distanceToSegment(const QPointF &point, const QPointF &a,
-                        const QPointF &b) {
-  const QPointF ab = b - a;
-  const qreal lengthSquared = ab.x() * ab.x() + ab.y() * ab.y();
-  if (lengthSquared <= 0.0001)
-    return QLineF(point, a).length();
-  const QPointF ap = point - a;
-  const qreal t = std::clamp(
-      (ap.x() * ab.x() + ap.y() * ab.y()) / lengthSquared, 0.0, 1.0);
-  return QLineF(point, a + ab * t).length();
-}
-
-bool isDrawTool(RegionSelector::Tool tool) {
-  switch (tool) {
-  case RegionSelector::Tool::Pen:
-  case RegionSelector::Tool::Arrow:
-  case RegionSelector::Tool::Line:
-  case RegionSelector::Tool::Rectangle:
-  case RegionSelector::Tool::Ellipse:
-  case RegionSelector::Tool::Highlighter:
-  case RegionSelector::Tool::Mosaic:
-  case RegionSelector::Tool::Blur:
-    return true;
-  default:
-    return false;
-  }
-}
-
-QString toolName(RegionSelector::Tool tool) {
-  switch (tool) {
-  case RegionSelector::Tool::Select:
-    return ui("Select", "选择");
-  case RegionSelector::Tool::Pen:
-    return ui("Pen", "画笔");
-  case RegionSelector::Tool::Arrow:
-    return ui("Arrow", "箭头");
-  case RegionSelector::Tool::Line:
-    return ui("Line", "直线");
-  case RegionSelector::Tool::Rectangle:
-    return ui("Rectangle", "矩形");
-  case RegionSelector::Tool::Ellipse:
-    return ui("Ellipse", "椭圆");
-  case RegionSelector::Tool::Text:
-    return ui("Text", "文字");
-  case RegionSelector::Tool::Highlighter:
-    return ui("Highlighter", "高亮");
-  case RegionSelector::Tool::Mosaic:
-    return ui("Mosaic", "马赛克");
-  case RegionSelector::Tool::Blur:
-    return ui("Blur", "模糊");
-  case RegionSelector::Tool::Marker:
-    return ui("Marker", "序号");
-  }
-  return {};
 }
 } // namespace
 
@@ -218,13 +150,6 @@ public:
     }
   }
 
-  void setHoverAction(const QString &action) {
-    if (hoverAction_ == action)
-      return;
-    hoverAction_ = action;
-    update();
-  }
-
 protected:
   void paintEvent(QPaintEvent *) override {
     QPainter painter(this);
@@ -290,9 +215,9 @@ protected:
       QWidget::mousePressEvent(event);
       return;
     }
-    QString action;
-    if (selector_->toolbarHit(this, local, &action)) {
-      selector_->handleAction(action);
+    ToolBarHit hit;
+    if (selector_->toolbarHit(this, local, &hit)) {
+      selector_->handleToolbarHit(hit);
       event->accept();
       return;
     }
@@ -307,6 +232,7 @@ protected:
     const QPointF local = event->position();
     const QPointF global = local + QPointF(frame_->monitor.geometry.topLeft());
     selector_->editorMove(this, global);
+    selector_->setToolbarHover(this, local);
     if (!selector_->hasSelection())
       setCursor(Qt::CrossCursor);
     else if (!handleAt(selector_->selection(), global).isEmpty())
@@ -328,44 +254,28 @@ protected:
   }
 
   void wheelEvent(QWheelEvent *event) override {
-    if (!selector_->hasSelection()) {
+    if (selector_->editorWheel(event))
+      event->accept();
+    else
       event->ignore();
-      return;
-    }
-    const qreal delta = event->angleDelta().y() / 120.0;
-    if (qFuzzyIsNull(delta)) {
-      event->ignore();
-      return;
-    }
-    if (selector_->selected_ >= 0 &&
-        selector_->selected_ < selector_->annotations_.size()) {
-      selector_->pushUndo();
-      Annotation &annotation =
-          selector_->annotations_[selector_->selected_];
-      const qreal factor = delta > 0 ? 1.12 : 1.0 / 1.12;
-      annotation.size = std::clamp(annotation.size * factor, 2.0, 96.0);
-      selector_->setStatus(ui("Scale %1", "缩放 %1")
-                               .arg(qRound(annotation.size)));
-      selector_->selectionChanged();
-    } else if (selector_->tool_ == RegionSelector::Tool::Blur ||
-               selector_->tool_ == RegionSelector::Tool::Mosaic) {
-      selector_->width_ = std::clamp(selector_->width_ + delta * 3.0, 2.0, 64.0);
-      selector_->setStatus(ui("Effect size %1", "效果大小 %1")
-                               .arg(qRound(selector_->width_)));
-      selector_->selectionChanged();
-    }
-    event->accept();
   }
 
 private:
   RegionSelector *selector_;
   const OutputFrame *frame_;
-  QString hoverAction_;
 };
 
 RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
                                QObject *parent)
-    : QObject(parent), frames_(std::move(frames)), quickMode_(quickMode) {
+    : QObject(parent),
+      frames_(std::move(frames)),
+      quickMode_(quickMode),
+      toolBar_(canvas_.registry()) {
+  canvas_.setStatusCallback([this](const QString &status) { setStatus(status); });
+  canvas_.setRepaintCallback([this] { selectionChanged(); });
+  canvas_.setTextCallback([this](const QPointF &point) {
+    beginText(point, ownerOverlay());
+  });
   connect(&ocrWatcher_, &QFutureWatcher<OcrJob>::finished, this, [this] {
     const OcrJob result = ocrWatcher_.result();
     if (!result.error.isEmpty()) {
@@ -393,6 +303,14 @@ qreal RegionSelector::selectedScale() const {
   return scaleForSelection(frames_, selection_);
 }
 
+RegionOverlay *RegionSelector::ownerOverlay() const {
+  for (RegionOverlay *overlay : overlays_) {
+    if (overlay->outputName() == ownerOutput_)
+      return overlay;
+  }
+  return overlays_.isEmpty() ? nullptr : overlays_.first();
+}
+
 void RegionSelector::start(const QRectF &initialSelection) {
   if (started_ || frames_.outputs.isEmpty())
     return;
@@ -417,6 +335,7 @@ void RegionSelector::start(const QRectF &initialSelection) {
     selection_ = initialSelection.normalized();
     editing_ = true;
     updateOwnerOutput();
+    canvas_.setSelection(selection_);
     if (quickMode_ != QuickOutputMode::None)
       QTimer::singleShot(0, this, [this] { exportSelection(quickMode_); });
   }
@@ -431,14 +350,65 @@ void RegionSelector::start(const QRectF &initialSelection) {
                           parts.at(2).toDouble(), parts.at(3).toDouble());
       editing_ = true;
       updateOwnerOutput();
+      canvas_.setSelection(selection_);
       const int delay =
           qEnvironmentVariableIntValue("NIRICAPTURE_TEST_SELECT_DELAY");
       QTimer::singleShot(delay > 0 ? delay : 250, this, [this] {
         selectionChanged();
-        if (quickMode_ != QuickOutputMode::None)
+        if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_DRAW")) {
+          const QPointF base = selection_.topLeft();
+          canvas_.setTool(QStringLiteral("rectangle"));
+          ToolEvent press;
+          press.pos = base + QPointF(80, 80);
+          ToolEvent move = press;
+          move.pos = base + QPointF(300, 240);
+          canvas_.press(press);
+          canvas_.move(move);
+          canvas_.release(move);
+          canvas_.setTool(QStringLiteral("arrow"));
+          press.pos = base + QPointF(360, 120);
+          move = press;
+          move.pos = base + QPointF(520, 240);
+          canvas_.press(press);
+          canvas_.move(move);
+          canvas_.release(move);
+          canvas_.setTool(QStringLiteral("marker"));
+          press.pos = base + QPointF(600, 120);
+          canvas_.press(press);
+          canvas_.release(press);
+          canvas_.setTool(QStringLiteral("mosaic"));
+          press.pos = base + QPointF(700, 300);
+          move.pos = base + QPointF(820, 420);
+          canvas_.press(press);
+          canvas_.move(move);
+          canvas_.release(move);
+          selectionChanged();
+          if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_EXPORT"))
+            exportSelection(QuickOutputMode::Save);
+        }
+        if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_OCR"))
+          runOcr();
+        if (!qEnvironmentVariableIsSet("NIRICAPTURE_TEST_DRAW") &&
+            !qEnvironmentVariableIsSet("NIRICAPTURE_TEST_EXPORT") &&
+            quickMode_ != QuickOutputMode::None)
           exportSelection(quickMode_);
       });
     }
+  }
+  if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_GEOMETRY")) {
+    QTimer::singleShot(500, this, [this] {
+      beginSelection(QPointF(350, 180));
+      editorMove(ownerOverlay(), QPointF(1450, 880));
+      editorRelease(ownerOverlay(), QPointF(1450, 880));
+      if (ownerOverlay()) {
+        dragOriginalSelection_ = selection_;
+        drag_ = Drag::ResizeSelection;
+        resizeHandle_ = QStringLiteral("br");
+        editorMove(ownerOverlay(), QPointF(1700, 1000));
+        editorRelease(ownerOverlay(), QPointF(1700, 1000));
+      }
+      selectionChanged();
+    });
   }
   if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_CANCEL"))
     QTimer::singleShot(200, this, &RegionSelector::cancel);
@@ -455,14 +425,15 @@ QRectF clampSelectionToBounds(const QRectF &rect, const QRectF &bounds) {
     result.setWidth(bounds.width());
   if (result.height() > bounds.height())
     result.setHeight(bounds.height());
-  result.moveLeft(std::clamp(result.left(), bounds.left(),
-                             bounds.right() - result.width()));
-  result.moveTop(std::clamp(result.top(), bounds.top(),
-                            bounds.bottom() - result.height()));
+  result.moveLeft(
+      std::clamp(result.left(), bounds.left(), bounds.right() - result.width()));
+  result.moveTop(
+      std::clamp(result.top(), bounds.top(), bounds.bottom() - result.height()));
   return result;
 }
 
 void RegionSelector::selectionChanged() {
+  canvas_.setSelection(selection_);
   for (RegionOverlay *overlay : overlays_)
     overlay->update();
 }
@@ -473,16 +444,10 @@ void RegionSelector::setStatus(const QString &status) {
 }
 
 void RegionSelector::beginSelection(const QPointF &global) {
-  annotations_.clear();
-  undo_.clear();
-  redo_.clear();
-  selected_ = -1;
-  nextMarker_ = 1;
-  selection_ = QRectF(clampToBounds(global, frames_.logicalBounds),
-                      QSizeF(0, 0));
-  drag_ = Drag::NewSelection;
+  canvas_.document().clear();
+  selection_ = QRectF(clampPoint(global), QSizeF(0, 0));
   dragStart_ = global;
-  dragCurrent_ = global;
+  drag_ = Drag::NewSelection;
   editing_ = false;
   selectionChanged();
 }
@@ -490,8 +455,7 @@ void RegionSelector::beginSelection(const QPointF &global) {
 void RegionSelector::moveSelectionBy(const QPointF &delta) {
   if (!hasSelection())
     return;
-  selection_ = clampSelectionToBounds(selection_.translated(delta),
-                                      frames_.logicalBounds);
+  selection_ = clampSelection(selection_.translated(delta));
   selectionChanged();
 }
 
@@ -510,9 +474,8 @@ void RegionSelector::resizeSelectionTo(const QString &handle,
     top = std::min(global.y(), bottom - kMinSelection);
   if (handle.contains(QLatin1Char('b')))
     bottom = std::max(global.y(), top + kMinSelection);
-  selection_ = clampSelectionToBounds(
-      QRectF(QPointF(left, top), QPointF(right, bottom)).normalized(),
-      frames_.logicalBounds);
+  selection_ = clampSelection(
+      QRectF(QPointF(left, top), QPointF(right, bottom)).normalized());
   selectionChanged();
 }
 
@@ -524,6 +487,7 @@ void RegionSelector::finishSelection() {
   }
   editing_ = true;
   updateOwnerOutput();
+  canvas_.setSelection(selection_);
   if (quickMode_ != QuickOutputMode::None) {
     exportSelection(quickMode_);
     return;
@@ -586,539 +550,102 @@ void RegionSelector::closeAll() {
     overlay->hide();
 }
 
-void RegionSelector::pushUndo() {
-  undo_.push_back(annotations_);
-  if (undo_.size() > 100)
-    undo_.removeFirst();
-  redo_.clear();
-}
-
-void RegionSelector::undo() {
-  if (undo_.isEmpty() || finished_)
-    return;
-  redo_.push_back(annotations_);
-  annotations_ = undo_.takeLast();
-  selected_ = -1;
-  setStatus(ui("Undo", "已撤销"));
-}
-
-void RegionSelector::redo() {
-  if (redo_.isEmpty() || finished_)
-    return;
-  undo_.push_back(annotations_);
-  annotations_ = redo_.takeLast();
-  selected_ = -1;
-  setStatus(ui("Redo", "已重做"));
-}
-
-void RegionSelector::deleteSelected() {
-  if (selected_ < 0 || selected_ >= annotations_.size())
-    return;
-  pushUndo();
-  annotations_.removeAt(selected_);
-  selected_ = -1;
-  setStatus(ui("Annotation deleted", "已删除标注"));
-}
-
-QRectF RegionSelector::annotationBounds(const Annotation &annotation) const {
-  if (annotation.kind == Annotation::Kind::Marker) {
-    const qreal size = std::max<qreal>(6.0, annotation.size);
-    return QRectF(annotation.start.x() - size, annotation.start.y() - size,
-                  size * 2, size * 2);
-  }
-  if (annotation.kind == Annotation::Kind::Text) {
-    const QFont font = annotationTextFont(annotation.size);
-    const QFontMetricsF metrics(font);
-    const qreal width = metrics.horizontalAdvance(annotation.text);
-    const qreal height = metrics.height();
-    return QRectF(annotation.start.x(), annotation.start.y() - metrics.ascent(),
-                  std::max<qreal>(4.0, width), height);
-  }
-  if (annotation.kind == Annotation::Kind::Freehand ||
-      annotation.kind == Annotation::Kind::Highlighter) {
-    if (annotation.points.isEmpty())
-      return {};
-    QRectF bounds(annotation.points.first(), QSizeF(0, 0));
-    for (const QPointF &point : annotation.points)
-      bounds = bounds.united(QRectF(point, QSizeF(0, 0)));
-    const qreal pad = std::max<qreal>(5.0, annotation.size + 4.0);
-    return bounds.adjusted(-pad, -pad, pad, pad);
-  }
-  QRectF result = QRectF(annotation.start, annotation.end).normalized();
-  const qreal pad = std::max<qreal>(4.0, annotation.size + 2.0);
-  return result.adjusted(-pad, -pad, pad, pad);
-}
-
-int RegionSelector::annotationAt(const QPointF &point) const {
-  for (int index = annotations_.size() - 1; index >= 0; --index) {
-    const Annotation &annotation = annotations_.at(index);
-    if (annotation.kind == Annotation::Kind::Text ||
-        annotation.kind == Annotation::Kind::Marker ||
-        annotation.kind == Annotation::Kind::Redaction ||
-        annotation.kind == Annotation::Kind::Blur) {
-      if (annotationBounds(annotation).contains(point))
-        return index;
-      continue;
-    }
-    if (annotation.kind == Annotation::Kind::Freehand ||
-        annotation.kind == Annotation::Kind::Highlighter) {
-      for (int i = 1; i < annotation.points.size(); ++i) {
-        if (distanceToSegment(point, annotation.points.at(i - 1),
-                              annotation.points.at(i)) <=
-            std::max<qreal>(8.0, annotation.size + 3.0))
-          return index;
-      }
-      continue;
-    }
-    if (annotation.kind == Annotation::Kind::Line ||
-        annotation.kind == Annotation::Kind::Arrow) {
-      if (distanceToSegment(point, annotation.start, annotation.end) <=
-          std::max<qreal>(8.0, annotation.size + 3.0))
-        return index;
-      continue;
-    }
-    if (annotation.kind == Annotation::Kind::Ellipse) {
-      QRectF bounds = QRectF(annotation.start, annotation.end).normalized();
-      if (bounds.width() < 1 || bounds.height() < 1)
-        continue;
-      const qreal nx = (point.x() - bounds.center().x()) / (bounds.width() / 2);
-      const qreal ny = (point.y() - bounds.center().y()) / (bounds.height() / 2);
-      if (annotation.filled) {
-        if (nx * nx + ny * ny <= 1.05)
-          return index;
-      } else {
-        const qreal distance = std::abs(std::hypot(nx, ny) - 1.0);
-        if (distance <= std::max<qreal>(0.08, (annotation.size + 4.0) /
-                                                  std::max(bounds.width(),
-                                                           bounds.height())))
-          return index;
-      }
-      continue;
-    }
-    QRectF bounds = QRectF(annotation.start, annotation.end).normalized();
-    if (annotation.filled) {
-      if (bounds.contains(point))
-        return index;
-    } else {
-      const qreal tolerance = std::max<qreal>(7.0, annotation.size + 3.0);
-      const QRectF outer =
-          bounds.adjusted(-tolerance, -tolerance, tolerance, tolerance);
-      const QRectF inner =
-          bounds.adjusted(tolerance, tolerance, -tolerance, -tolerance);
-      if (outer.contains(point) && (inner.isEmpty() || !inner.contains(point)))
-        return index;
-    }
-  }
-  return -1;
-}
-
-QString RegionSelector::annotationHandleAt(const QPointF &point) const {
-  if (selected_ < 0 || selected_ >= annotations_.size())
-    return {};
-  const Annotation &annotation = annotations_.at(selected_);
-  if (annotation.kind == Annotation::Kind::Text ||
-      annotation.kind == Annotation::Kind::Marker ||
-      annotation.kind == Annotation::Kind::Freehand ||
-      annotation.kind == Annotation::Kind::Highlighter)
-    return {};
-  if (QLineF(point, annotation.start).length() <= kHandleHit)
-    return QStringLiteral("start");
-  if (QLineF(point, annotation.end).length() <= kHandleHit)
-    return QStringLiteral("end");
-  return {};
-}
-
-Annotation RegionSelector::previewAnnotation() const {
-  Annotation annotation;
-  annotation.kind = Annotation::Kind::Arrow;
-  annotation.color = color_;
-  annotation.size = width_;
-  annotation.filled = filled_;
-  switch (tool_) {
-  case Tool::Pen:
-    annotation.kind = Annotation::Kind::Freehand;
-    annotation.points = freehandPoints_;
-    annotation.start = freehandPoints_.isEmpty() ? dragStart_
-                                                 : freehandPoints_.first();
-    annotation.end =
-        freehandPoints_.isEmpty() ? dragStart_ : freehandPoints_.last();
-    break;
-  case Tool::Highlighter:
-    annotation.kind = Annotation::Kind::Highlighter;
-    annotation.color.setAlpha(110);
-    annotation.points = freehandPoints_;
-    annotation.start = freehandPoints_.isEmpty() ? dragStart_
-                                                 : freehandPoints_.first();
-    annotation.end =
-        freehandPoints_.isEmpty() ? dragStart_ : freehandPoints_.last();
-    break;
-  case Tool::Arrow:
-    annotation.kind = Annotation::Kind::Arrow;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    break;
-  case Tool::Line:
-    annotation.kind = Annotation::Kind::Line;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    break;
-  case Tool::Rectangle:
-    annotation.kind = Annotation::Kind::Rectangle;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    break;
-  case Tool::Ellipse:
-    annotation.kind = Annotation::Kind::Ellipse;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    break;
-  case Tool::Mosaic:
-    annotation.kind = Annotation::Kind::Redaction;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    annotation.redactionStyle = RedactionStyle::Pixelate;
-    annotation.redactionSeed = 1;
-    break;
-  case Tool::Blur:
-    annotation.kind = Annotation::Kind::Blur;
-    annotation.start = dragStart_;
-    annotation.end = dragCurrent_;
-    break;
-  default:
-    break;
-  }
-  return annotation;
-}
-
-void RegionSelector::paintAnnotations(QPainter &painter, RegionOverlay *overlay,
-                                      const QVector<Annotation> &extra) {
-  const OutputFrame *frame = overlay->frame();
-  const QPoint origin = frame->monitor.geometry.topLeft();
-  QVector<Annotation> all = annotations_;
-  all += extra;
-
-  // Source effects are painted from the frozen image preview.
-  for (const Annotation &annotation : all) {
-    if (annotation.kind != Annotation::Kind::Redaction &&
-        annotation.kind != Annotation::Kind::Blur)
-      continue;
-    const QRectF globalRect =
-        QRectF(annotation.start, annotation.end).normalized();
-    const QRectF intersection =
-        globalRect.intersected(selection_).intersected(
-            QRectF(frame->monitor.geometry));
-    if (intersection.isEmpty() || frame->image.isNull())
-      continue;
-    const QRectF local = intersection.translated(-origin);
-    const qreal sx =
-        frame->image.width() / std::max<qreal>(1, frame->monitor.geometry.width());
-    const qreal sy = frame->image.height() /
-                     std::max<qreal>(1, frame->monitor.geometry.height());
-    const QRect source(
-        qFloor((intersection.left() - frame->monitor.geometry.left()) * sx),
-        qFloor((intersection.top() - frame->monitor.geometry.top()) * sy),
-        std::max(1, qCeil(intersection.width() * sx)),
-        std::max(1, qCeil(intersection.height() * sy)));
-    const QImage patch = frame->image.copy(source);
-    painter.save();
-    painter.setClipRect(local);
-    if (annotation.kind == Annotation::Kind::Blur) {
-      const QSize small(std::max(1, qRound(local.width() / 14.0)),
-                        std::max(1, qRound(local.height() / 14.0)));
-      const QImage preview = patch.scaled(small, Qt::IgnoreAspectRatio,
-                                          Qt::SmoothTransformation)
-                                 .scaled(local.size().toSize(),
-                                         Qt::IgnoreAspectRatio,
-                                         Qt::SmoothTransformation);
-      painter.drawImage(local.topLeft(), preview);
-    } else {
-      const QImage preview =
-          patch.scaled(QSize(std::max(1, qRound(local.width() / 12.0)),
-                             std::max(1, qRound(local.height() / 12.0))),
-                       Qt::IgnoreAspectRatio, Qt::FastTransformation)
-              .scaled(local.size().toSize(), Qt::IgnoreAspectRatio,
-                      Qt::FastTransformation);
-      painter.drawImage(local.topLeft(), preview);
-    }
-    painter.restore();
-  }
-
-  painter.save();
-  painter.translate(-origin.x(), -origin.y());
-  painter.setClipRect(selection_);
-  for (const Annotation &annotation : all) {
-    if (annotation.kind == Annotation::Kind::Redaction ||
-        annotation.kind == Annotation::Kind::Blur)
-      continue;
-    paintAnnotation(painter, annotation);
-  }
-  painter.restore();
-
-  if (selected_ >= 0 && selected_ < annotations_.size()) {
-    const Annotation &annotation = annotations_.at(selected_);
-    if (annotation.kind != Annotation::Kind::Text &&
-        annotation.kind != Annotation::Kind::Marker &&
-        annotation.kind != Annotation::Kind::Freehand &&
-        annotation.kind != Annotation::Kind::Highlighter) {
-      painter.save();
-      painter.translate(-origin.x(), -origin.y());
-      painter.setPen(QPen(kAccent, 1.5, Qt::DashLine));
-      painter.setBrush(Qt::NoBrush);
-      const QRectF bounds =
-          QRectF(annotation.start, annotation.end).normalized();
-      painter.drawRect(bounds);
-      painter.setBrush(kAccent);
-      painter.setPen(Qt::NoPen);
-      for (const QPointF &point : {annotation.start, annotation.end})
-        painter.drawEllipse(point, 4, 4);
-      painter.restore();
-    }
-  }
-}
-
-void RegionSelector::paintSelectionChrome(QPainter &painter,
-                                          RegionOverlay *overlay) {
-  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
-  const QRectF local = selection_.translated(-origin);
-  painter.setBrush(Qt::NoBrush);
-  painter.setPen(QPen(QColor(0, 0, 0, 150), 3));
-  painter.drawRect(local.adjusted(-0.5, -0.5, 0.5, 0.5));
-  painter.setPen(QPen(QColor(255, 255, 255, 240), 1.5));
-  painter.drawRect(local);
-
-  const qreal x0 = local.left();
-  const qreal x1 = local.right();
-  const qreal y0 = local.top();
-  const qreal y1 = local.bottom();
-  const qreal cx = local.center().x();
-  const qreal cy = local.center().y();
-  const std::array<QPointF, 8> handles{
-      QPointF(x0, y0), QPointF(cx, y0), QPointF(x1, y0), QPointF(x1, cy),
-      QPointF(x1, y1), QPointF(cx, y1), QPointF(x0, y1), QPointF(x0, cy)};
-  for (const QPointF &handle : handles) {
-    if (!overlay->rect().adjusted(-8, -8, 8, 8).contains(handle.toPoint()))
-      continue;
-    painter.setPen(QPen(QColor(0, 0, 0, 130), 1));
-    painter.setBrush(QColor(250, 252, 255));
-    painter.drawRoundedRect(
-        QRectF(handle.x() - kHandleSize / 2.0,
-               handle.y() - kHandleSize / 2.0, kHandleSize, kHandleSize),
-        2.5, 2.5);
-  }
-
-  QFont sizeFont = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
-  sizeFont.setPixelSize(12);
-  sizeFont.setBold(true);
-  painter.setFont(sizeFont);
-  const QString sizeText =
-      QStringLiteral("%1 × %2").arg(qRound(selection_.width()))
-          .arg(qRound(selection_.height()));
-  const qreal width = QFontMetricsF(sizeFont).horizontalAdvance(sizeText) + 24;
-  QRectF label(std::clamp(local.left(), 8.0, overlay->width() - width - 8.0),
-               std::max<qreal>(8, local.top() - 36), width, 28);
-  drawPill(painter, label, sizeText);
-}
-
-QRectF RegionSelector::toolbarRect(RegionOverlay *overlay) const {
-  const qreal width =
-      kToolbarButtons * kButton + (kToolbarButtons - 1) * kButtonGap;
-  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
-  const QRectF local = selection_.translated(-origin);
-  qreal x = local.center().x() - width / 2.0;
-  x = std::clamp(x, 8.0, std::max(8.0, overlay->width() - width - 8.0));
-  qreal y = local.top() - kToolbarHeight - 10;
-  if (y < 8)
-    y = local.bottom() + 10;
-  if (y + kToolbarHeight > overlay->height() - 8)
-    y = std::clamp(local.top() + 8, 8.0,
-                   std::max(8.0, overlay->height() - kToolbarHeight - 8));
-  return {x, y, width, kToolbarHeight};
-}
-
-QRectF RegionSelector::popupRect(RegionOverlay *overlay) const {
-  const QRectF toolbar = toolbarRect(overlay);
-  const qreal width = 286;
-  qreal x = std::clamp(toolbar.center().x() - width / 2.0, 8.0,
-                       std::max(8.0, overlay->width() - width - 8.0));
-  qreal y = toolbar.bottom() + 6;
-  if (y + 76 > overlay->height() - 8)
-    y = toolbar.top() - 82;
-  return {x, std::max<qreal>(8, y), width, 76};
-}
-
-QVector<RegionSelector::Button>
-RegionSelector::toolbarButtons(RegionOverlay *overlay) const {
-  QVector<Button> buttons;
-  const QRectF bar = toolbarRect(overlay);
-  struct Item {
-    const char *action;
-    const char *icon;
-    const char *tipEn;
-    const char *tipZh;
-  };
-  const std::array<Item, 18> items{{
-      {"select", "tool-select", "Select", "选择"},
-      {"pen", "tool-freehand", "Pen", "画笔"},
-      {"arrow", "tool-arrow", "Arrow", "箭头"},
-      {"line", "tool-line", "Line", "直线"},
-      {"rectangle", "tool-rectangle", "Rectangle", "矩形"},
-      {"ellipse", "tool-ellipse", "Ellipse", "椭圆"},
-      {"text", "tool-text", "Text", "文字"},
-      {"highlighter", "tool-highlighter", "Highlighter", "高亮"},
-      {"mosaic", "tool-redact", "Mosaic", "马赛克"},
-      {"blur", "tool-blur", "Blur", "模糊"},
-      {"marker", "tool-marker", "Number", "序号"},
-      {"palette", "palette", "Colour / width", "颜色 / 线宽"},
-      {"undo", "undo", "Undo", "撤销"},
-      {"redo", "redo", "Redo", "重做"},
-      {"ocr", "tool-ocr", "OCR", "OCR"},
-      {"copy", "copy", "Copy", "复制"},
-      {"save", "save", "Save", "保存"},
-      {"close", "close", "Close", "关闭"},
-  }};
-  for (int index = 0; index < static_cast<int>(items.size()); ++index) {
-    QRectF rect(bar.left() + index * (kButton + kButtonGap), bar.top(),
-                kButton, bar.height());
-    buttons.push_back({rect, QString::fromLatin1(items[index].action),
-                       ui(items[index].tipEn, items[index].tipZh),
-                       items[index].action == QStringLiteral("palette") ? color_
-                                                                         : QColor()});
-  }
-  if (popup_ == Popup::Palette) {
-    const QRectF panel = popupRect(overlay);
-    for (int index = 0; index < 8; ++index) {
-      const std::array<const char *, 8> colors{
-          "#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
-          "#0a84ff", "#bf5af2", "#ffffff", "#000000"};
-      buttons.push_back(
-          {QRectF(panel.left() + 8 + index * 32, panel.top() + 7, 24, 24),
-           QStringLiteral("color-%1").arg(index), QString(),
-           QColor(QString::fromLatin1(colors[index]))});
-    }
-    const std::array<const char *, 4> sizes{"2", "4", "8", "12"};
-    const std::array<const char *, 4> labels{"S", "M", "L", "XL"};
-    for (int index = 0; index < 4; ++index) {
-      buttons.push_back(
-          {QRectF(panel.left() + 8 + index * 58, panel.top() + 40, 52, 26),
-           QStringLiteral("size-") + QString::fromLatin1(sizes[index]),
-           QString::fromLatin1(labels[index]), QColor()});
-    }
-    buttons.push_back(
-        {QRectF(panel.left() + 8 + 4 * 58, panel.top() + 40, 52, 26),
-         QStringLiteral("fill"), ui("Fill", "填充"), QColor()});
-    buttons.back().tooltip =
-        filled_ ? ui("Fill: on", "填充：开") : ui("Fill: off", "填充：关");
-  }
-  return buttons;
+void RegionSelector::syncToolbar() {
+  toolBar_.setCurrentTool(canvas_.currentToolId());
+  toolBar_.setColors(canvas_.style().color, canvas_.style().filled);
+  toolBar_.setHistory(canvas_.document().canUndo(),
+                      canvas_.document().canRedo());
 }
 
 bool RegionSelector::toolbarHit(RegionOverlay *overlay, const QPointF &local,
-                                QString *action) {
+                                ToolBarHit *hit) {
   if (overlay->outputName() != ownerOutput_ || !hasSelection())
     return false;
-  for (const Button &button : toolbarButtons(overlay)) {
-    if (button.rect.contains(local)) {
-      if (action)
-        *action = button.action;
-      return true;
-    }
-  }
-  return false;
+  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
+  const QRectF selection = selection_.translated(-origin);
+  const ToolBarHit result =
+      toolBar_.hitTest(QRectF(0, 0, overlay->width(), overlay->height()),
+                       selection, local);
+  if (hit)
+    *hit = result;
+  return result.valid;
 }
 
-void RegionSelector::handleAction(const QString &action) {
-  if (action == QStringLiteral("select")) {
-    tool_ = Tool::Select;
-    setStatus(ui("Select / move", "选择 / 移动"));
-  } else if (action == QStringLiteral("pen")) {
-    tool_ = Tool::Pen;
-    setStatus(ui("Pen", "画笔"));
-  } else if (action == QStringLiteral("arrow")) {
-    tool_ = Tool::Arrow;
-    setStatus(ui("Arrow", "箭头"));
-  } else if (action == QStringLiteral("line")) {
-    tool_ = Tool::Line;
-    setStatus(ui("Line", "直线"));
-  } else if (action == QStringLiteral("rectangle")) {
-    tool_ = Tool::Rectangle;
-    setStatus(ui("Rectangle", "矩形"));
-  } else if (action == QStringLiteral("ellipse")) {
-    tool_ = Tool::Ellipse;
-    setStatus(ui("Ellipse", "椭圆"));
-  } else if (action == QStringLiteral("text")) {
-    tool_ = Tool::Text;
-    setStatus(ui("Text · click inside the selection", "文字 · 在选区内点击"));
-  } else if (action == QStringLiteral("highlighter")) {
-    tool_ = Tool::Highlighter;
-    setStatus(ui("Highlighter", "高亮"));
-  } else if (action == QStringLiteral("mosaic")) {
-    tool_ = Tool::Mosaic;
-    setStatus(ui("Mosaic", "马赛克"));
-  } else if (action == QStringLiteral("blur")) {
-    tool_ = Tool::Blur;
-    if (width_ < 8)
-      width_ = 16;
-    setStatus(ui("Gaussian blur", "高斯模糊"));
-  } else if (action == QStringLiteral("marker")) {
-    tool_ = Tool::Marker;
-    setStatus(ui("Number marker · click inside", "序号 · 在选区内点击"));
-  } else if (action == QStringLiteral("palette")) {
-    popup_ = popup_ == Popup::Palette ? Popup::None : Popup::Palette;
-  } else if (action == QStringLiteral("undo")) {
-    undo();
-  } else if (action == QStringLiteral("redo")) {
-    redo();
-  } else if (action == QStringLiteral("ocr")) {
+void RegionSelector::setToolbarHover(RegionOverlay *overlay,
+                                     const QPointF &local) {
+  if (!hasSelection() || overlay->outputName() != ownerOutput_) {
+    toolBar_.setHovered({});
+    return;
+  }
+  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
+  const QRectF selection = selection_.translated(-origin);
+  const ToolBarHit hit = toolBar_.hitTest(
+      QRectF(0, 0, overlay->width(), overlay->height()), selection, local);
+  toolBar_.setHovered(hit.valid ? hit.id : QString());
+  overlay->update();
+}
+
+void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
+  if (!hit.valid)
+    return;
+  if (hit.isTool) {
+    canvas_.setTool(hit.id);
+  } else if (hit.id == QStringLiteral("palette")) {
+    toolBar_.setPaletteOpen(!toolBar_.paletteOpen());
+  } else if (hit.id == QStringLiteral("undo")) {
+    canvas_.document().undo();
+  } else if (hit.id == QStringLiteral("redo")) {
+    canvas_.document().redo();
+  } else if (hit.id == QStringLiteral("ocr")) {
     runOcr();
-  } else if (action == QStringLiteral("copy")) {
+  } else if (hit.id == QStringLiteral("copy")) {
     exportSelection(QuickOutputMode::Copy);
-  } else if (action == QStringLiteral("save")) {
+  } else if (hit.id == QStringLiteral("save")) {
     exportSelection(QuickOutputMode::Save);
-  } else if (action == QStringLiteral("close")) {
+  } else if (hit.id == QStringLiteral("close")) {
     cancel();
-  } else if (action.startsWith(QStringLiteral("color-"))) {
+  } else if (hit.id.startsWith(QStringLiteral("color-"))) {
     static const std::array<const char *, 8> colors{
         "#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
         "#0a84ff", "#bf5af2", "#ffffff", "#000000"};
-    const int index = action.sliced(6).toInt();
+    const int index = hit.id.sliced(6).toInt();
     if (index >= 0 && index < 8) {
-      color_ = QColor(QString::fromLatin1(colors[index]));
-      if (selected_ >= 0 && selected_ < annotations_.size()) {
-        pushUndo();
-        annotations_[selected_].color = color_;
+      canvas_.style().color = QColor(QString::fromLatin1(colors[index]));
+      if (canvas_.document().selected() >= 0) {
+        canvas_.document().pushUndo();
+        Annotation &selected = canvas_.document().annotations()[
+            canvas_.document().selected()];
+        selected.color = canvas_.style().color;
       }
     }
-  } else if (action.startsWith(QStringLiteral("size-"))) {
-    width_ = std::clamp(action.sliced(5).toInt(), 2, 64);
-    if (selected_ >= 0 && selected_ < annotations_.size()) {
-      pushUndo();
-      annotations_[selected_].size = width_;
+  } else if (hit.id.startsWith(QStringLiteral("size-"))) {
+    canvas_.style().width =
+        std::clamp(hit.id.sliced(5).toInt(), 2, 64);
+    if (canvas_.document().selected() >= 0) {
+      canvas_.document().pushUndo();
+      Annotation &selected = canvas_.document().annotations()[
+          canvas_.document().selected()];
+      selected.size = canvas_.style().width;
     }
-    setStatus(ui("Size %1", "大小 %1").arg(qRound(width_)));
-  } else if (action == QStringLiteral("fill")) {
-    filled_ = !filled_;
-    if (selected_ >= 0 && selected_ < annotations_.size()) {
-      pushUndo();
-      annotations_[selected_].filled = filled_;
+  } else if (hit.id == QStringLiteral("fill")) {
+    canvas_.style().filled = !canvas_.style().filled;
+    if (canvas_.document().selected() >= 0) {
+      canvas_.document().pushUndo();
+      Annotation &selected = canvas_.document().annotations()[
+          canvas_.document().selected()];
+      selected.filled = canvas_.style().filled;
     }
-    setStatus(filled_ ? ui("Fill: on", "填充：开")
-                      : ui("Fill: off", "填充：关"));
   }
+  canvas_.setSelection(selection_);
   selectionChanged();
 }
 
 bool RegionSelector::editorPress(RegionOverlay *overlay, const QPointF &global,
                                  const QPointF &local, Qt::MouseButton,
-                                 Qt::KeyboardModifiers) {
-  Q_UNUSED(local)
+                                 Qt::KeyboardModifiers modifiers) {
+  Q_UNUSED(overlay)
   if (!hasSelection() || !editing_) {
     beginSelection(global);
-    return true;
-  }
-  if (popup_ != Popup::None) {
-    // Clicking outside the popup closes it but never loses the selection.
-    popup_ = Popup::None;
-    selectionChanged();
     return true;
   }
   const QString selectionHandle = handleAt(selection_, global);
@@ -1128,71 +655,33 @@ bool RegionSelector::editorPress(RegionOverlay *overlay, const QPointF &global,
     resizeHandle_ = selectionHandle;
     return true;
   }
-  if (tool_ == Tool::Select) {
-    const QString annotationHandle = annotationHandleAt(global);
-    if (!annotationHandle.isEmpty() && selected_ >= 0) {
-      drag_ = Drag::ResizeAnnotation;
-      dragOriginalAnnotation_ = annotations_.at(selected_);
-      dragAnnotationIndex_ = selected_;
-      dragStart_ = global;
+  dragStart_ = global;
+  canvas_.setSelection(selection_);
+  ToolEvent event;
+  event.pos = global;
+  event.local = local;
+  event.modifiers = modifiers;
+  if (canvas_.currentToolId() == QStringLiteral("select")) {
+    if (canvas_.press(event))
       return true;
-    }
-    const int hit = annotationAt(global);
-    if (hit >= 0) {
-      selected_ = hit;
-      drag_ = Drag::MoveAnnotation;
-      dragOriginalAnnotation_ = annotations_.at(hit);
-      dragAnnotationIndex_ = hit;
-      dragStart_ = global;
-      selectionChanged();
-      return true;
-    }
-    selected_ = -1;
     if (selection_.contains(global)) {
-      drag_ = Drag::MoveSelection;
       dragOriginalSelection_ = selection_;
-      dragStart_ = global;
-    } else {
-      beginSelection(global);
+      drag_ = Drag::MoveSelection;
+      return true;
     }
+    beginSelection(global);
     return true;
   }
   if (!selection_.contains(global)) {
     setStatus(ui("Draw inside the selection", "请在选区内绘制"));
     return true;
   }
-  if (tool_ == Tool::Text) {
-    beginText(global, overlay);
+  if (canvas_.press(event))
     return true;
-  }
-  if (tool_ == Tool::Marker) {
-    pushUndo();
-    Annotation marker;
-    marker.kind = Annotation::Kind::Marker;
-    marker.start = global;
-    marker.color = color_;
-    marker.size = std::max<qreal>(12.0, width_ * 2.0);
-    marker.number = nextMarker_++;
-    annotations_.push_back(std::move(marker));
-    selected_ = annotations_.size() - 1;
-    setStatus(ui("Number %1", "序号 %1").arg(nextMarker_ - 1));
-    return true;
-  }
-  if (isDrawTool(tool_)) {
-    pushUndo();
-    drag_ = Drag::Draw;
-    dragStart_ = global;
-    dragCurrent_ = global;
-    freehandPoints_.clear();
-    freehandPoints_.push_back(global);
-    return true;
-  }
   return true;
 }
 
 void RegionSelector::editorMove(RegionOverlay *, const QPointF &global) {
-  if (drag_ == Drag::None)
-    return;
   if (drag_ == Drag::NewSelection) {
     selection_ = normalizedRect(dragStart_, clampPoint(global));
     selectionChanged();
@@ -1210,39 +699,12 @@ void RegionSelector::editorMove(RegionOverlay *, const QPointF &global) {
     updateOwnerOutput();
     return;
   }
-  if (drag_ == Drag::MoveAnnotation && dragAnnotationIndex_ >= 0 &&
-      dragAnnotationIndex_ < annotations_.size()) {
-    Annotation moved = dragOriginalAnnotation_;
-    const QPointF delta = global - dragStart_;
-    moved.start += delta;
-    moved.end += delta;
-    for (QPointF &point : moved.points)
-      point += delta;
-    annotations_[dragAnnotationIndex_] = std::move(moved);
-    selectionChanged();
-    return;
-  }
-  if (drag_ == Drag::ResizeAnnotation && dragAnnotationIndex_ >= 0 &&
-      dragAnnotationIndex_ < annotations_.size()) {
-    Annotation resized = annotations_.at(dragAnnotationIndex_);
-    if (QLineF(global, resized.start).length() <
-        QLineF(global, resized.end).length())
-      resized.start = global;
-    else
-      resized.end = global;
-    annotations_[dragAnnotationIndex_] = std::move(resized);
-    selectionChanged();
-    return;
-  }
-  if (drag_ == Drag::Draw) {
-    dragCurrent_ = global;
-    if (tool_ == Tool::Pen || tool_ == Tool::Highlighter)
-      freehandPoints_.push_back(global);
-    selectionChanged();
-  }
+  ToolEvent event;
+  event.pos = global;
+  canvas_.move(event);
 }
 
-void RegionSelector::editorRelease(RegionOverlay *, const QPointF &) {
+void RegionSelector::editorRelease(RegionOverlay *, const QPointF &global) {
   if (drag_ == Drag::NewSelection) {
     if (selection_.width() < kMinSelection &&
         selection_.height() < kMinSelection) {
@@ -1256,37 +718,84 @@ void RegionSelector::editorRelease(RegionOverlay *, const QPointF &) {
     finishSelection();
     return;
   }
-  if (drag_ == Drag::Draw) {
-    Annotation annotation = previewAnnotation();
-    bool valid = false;
-    if (annotation.kind == Annotation::Kind::Freehand ||
-        annotation.kind == Annotation::Kind::Highlighter) {
-      valid = annotation.points.size() > 1;
-    } else {
-      valid = std::abs(annotation.end.x() - annotation.start.x()) > 2 ||
-              std::abs(annotation.end.y() - annotation.start.y()) > 2;
-    }
-    if (valid) {
-      annotations_.push_back(std::move(annotation));
-      selected_ = annotations_.size() - 1;
-      setStatus(toolName(tool_));
-    } else if (!undo_.isEmpty()) {
-      undo_.removeLast();
-    }
+  if (drag_ == Drag::MoveSelection || drag_ == Drag::ResizeSelection) {
     drag_ = Drag::None;
-    freehandPoints_.clear();
+    resizeHandle_.clear();
     selectionChanged();
     return;
   }
-  drag_ = Drag::None;
-  dragAnnotationIndex_ = -1;
-  selectionChanged();
+  ToolEvent event;
+  event.pos = global;
+  canvas_.release(event);
+}
+
+bool RegionSelector::editorKey(QKeyEvent *event, RegionOverlay *) {
+  if (event->key() == Qt::Key_Escape) {
+    if (textEditor_) {
+      textEditor_->hide();
+      textEditor_->deleteLater();
+      textEditor_ = nullptr;
+    } else if (ocrText_) {
+      closeOcrPanel();
+    } else if (toolBar_.paletteOpen()) {
+      toolBar_.setPaletteOpen(false);
+      selectionChanged();
+    } else if (canvas_.document().selected() >= 0) {
+      canvas_.document().setSelected(-1);
+      selectionChanged();
+    } else if (canvas_.currentToolId() != QStringLiteral("select")) {
+      canvas_.setTool(QStringLiteral("select"));
+      selectionChanged();
+    } else {
+      cancel();
+    }
+    event->accept();
+    return true;
+  }
+  if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+    if (hasSelection())
+      exportSelection(QuickOutputMode::Both);
+    event->accept();
+    return true;
+  }
+  if (event->matches(QKeySequence::Copy)) {
+    exportSelection(QuickOutputMode::Copy);
+    event->accept();
+    return true;
+  }
+  if (event->matches(QKeySequence::Save)) {
+    exportSelection(QuickOutputMode::Save);
+    event->accept();
+    return true;
+  }
+  if (event->key() == Qt::Key_Q) {
+    toolBar_.setPaletteOpen(!toolBar_.paletteOpen());
+    selectionChanged();
+    event->accept();
+    return true;
+  }
+  if (canvas_.keyPress(event)) {
+    selectionChanged();
+    event->accept();
+    return true;
+  }
+  return false;
+}
+
+bool RegionSelector::editorWheel(QWheelEvent *event) {
+  if (canvas_.wheel(event)) {
+    selectionChanged();
+    return true;
+  }
+  return false;
 }
 
 void RegionSelector::beginText(const QPointF &global, RegionOverlay *overlay) {
   commitText();
   if (textEditor_)
     textEditor_->deleteLater();
+  if (!overlay)
+    return;
   textEditor_ = new QLineEdit(overlay);
   textOverlay_ = overlay;
   textPoint_ = global;
@@ -1297,7 +806,7 @@ void RegionSelector::beginText(const QPointF &global, RegionOverlay *overlay) {
       QStringLiteral("QLineEdit { color: %1; background: rgba(16,18,24,220); "
                      "border: 1px solid rgba(255,255,255,45); "
                      "border-radius: 5px; padding: 2px 4px; }")
-          .arg(color_.name()));
+          .arg(canvas_.style().color.name()));
   textEditor_->setFont(annotationTextFont(5.0));
   textEditor_->resize(240, 34);
   textEditor_->move(
@@ -1319,17 +828,16 @@ void RegionSelector::commitText() {
   committingText_ = true;
   const QString text = textEditor_->text().trimmed();
   if (!text.isEmpty()) {
-    pushUndo();
+    canvas_.document().pushUndo();
     Annotation annotation;
     annotation.kind = Annotation::Kind::Text;
     annotation.start = textPoint_;
     annotation.start.ry() +=
         QFontMetricsF(annotationTextFont(5.0)).ascent();
     annotation.text = text;
-    annotation.color = color_;
+    annotation.color = canvas_.style().color;
     annotation.size = 5.0;
-    annotations_.push_back(std::move(annotation));
-    selected_ = annotations_.size() - 1;
+    canvas_.document().add(std::move(annotation));
     setStatus(ui("Text added", "文字已添加"));
   }
   textEditor_->hide();
@@ -1353,14 +861,8 @@ void RegionSelector::runOcr() {
                   : composeError);
     return;
   }
-  ocrOverlay_ = nullptr;
-  for (RegionOverlay *overlay : overlays_) {
-    if (overlay->outputName() == outputName) {
-      ocrOverlay_ = overlay;
-      break;
-    }
-  }
-  QVector<Annotation> local = annotations_;
+  ocrOverlay_ = ownerOverlay();
+  QVector<Annotation> local = canvas_.document().annotations();
   for (Annotation &annotation : local) {
     annotation.start -= selection_.topLeft();
     annotation.end -= selection_.topLeft();
@@ -1446,7 +948,7 @@ void RegionSelector::exportSelection(QuickOutputMode mode) {
     emit finished(false, error);
     return;
   }
-  QVector<Annotation> local = annotations_;
+  QVector<Annotation> local = canvas_.document().annotations();
   for (Annotation &annotation : local) {
     annotation.start -= selection_.topLeft();
     annotation.end -= selection_.topLeft();
@@ -1470,94 +972,17 @@ void RegionSelector::exportSelection(QuickOutputMode mode) {
   emit finished(true, {});
 }
 
-bool RegionSelector::editorKey(QKeyEvent *event, RegionOverlay *) {
-  if (event->key() == Qt::Key_Escape) {
-    if (textEditor_) {
-      textEditor_->hide();
-      textEditor_->deleteLater();
-      textEditor_ = nullptr;
-    } else if (ocrText_) {
-      closeOcrPanel();
-    } else if (popup_ != Popup::None) {
-      popup_ = Popup::None;
-      selectionChanged();
-    } else if (selected_ >= 0) {
-      selected_ = -1;
-      selectionChanged();
-    } else if (tool_ != Tool::Select) {
-      tool_ = Tool::Select;
-      setStatus(ui("Select", "选择"));
-    } else {
-      cancel();
-    }
-    event->accept();
-    return true;
-  }
-  if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-    if (hasSelection())
-      exportSelection(QuickOutputMode::Both);
-    event->accept();
-    return true;
-  }
-  if (event->matches(QKeySequence::Copy)) {
-    exportSelection(QuickOutputMode::Copy);
-    event->accept();
-    return true;
-  }
-  if (event->matches(QKeySequence::Save)) {
-    exportSelection(QuickOutputMode::Save);
-    event->accept();
-    return true;
-  }
-  if (event->matches(QKeySequence::Undo)) {
-    undo();
-    event->accept();
-    return true;
-  }
-  if (event->matches(QKeySequence::Redo)) {
-    redo();
-    event->accept();
-    return true;
-  }
-  if (event->key() == Qt::Key_Delete) {
-    deleteSelected();
-    event->accept();
-    return true;
-  }
-  if (event->key() == Qt::Key_Q) {
-    popup_ = popup_ == Popup::Palette ? Popup::None : Popup::Palette;
-    selectionChanged();
-    event->accept();
-    return true;
-  }
-  const QHash<int, Tool> tools{
-      {Qt::Key_V, Tool::Select},       {Qt::Key_F, Tool::Pen},
-      {Qt::Key_A, Tool::Arrow},       {Qt::Key_L, Tool::Line},
-      {Qt::Key_R, Tool::Rectangle},   {Qt::Key_E, Tool::Ellipse},
-      {Qt::Key_T, Tool::Text},        {Qt::Key_H, Tool::Highlighter},
-      {Qt::Key_D, Tool::Mosaic},      {Qt::Key_B, Tool::Blur},
-      {Qt::Key_C, Tool::Marker},
-  };
-  if (tools.contains(event->key())) {
-    tool_ = tools.value(event->key());
-    setStatus(toolName(tool_));
-    event->accept();
-    return true;
-  }
-  return false;
-}
-
 void RegionSelector::editorRightClick() {
   if (textEditor_) {
     textEditor_->hide();
     textEditor_->deleteLater();
     textEditor_ = nullptr;
-  } else if (popup_ != Popup::None) {
-    popup_ = Popup::None;
-  } else if (selected_ >= 0) {
-    selected_ = -1;
-  } else if (tool_ != Tool::Select) {
-    tool_ = Tool::Select;
+  } else if (toolBar_.paletteOpen()) {
+    toolBar_.setPaletteOpen(false);
+  } else if (canvas_.document().selected() >= 0) {
+    canvas_.document().setSelected(-1);
+  } else if (canvas_.currentToolId() != QStringLiteral("select")) {
+    canvas_.setTool(QStringLiteral("select"));
   } else {
     cancel();
     return;
@@ -1565,15 +990,116 @@ void RegionSelector::editorRightClick() {
   selectionChanged();
 }
 
+void RegionSelector::paintSourceEffects(QPainter &painter,
+                                        RegionOverlay *overlay,
+                                        const QVector<Annotation> &extra) {
+  const OutputFrame *frame = overlay->frame();
+  const QPoint origin = frame->monitor.geometry.topLeft();
+  QVector<Annotation> all = canvas_.document().annotations();
+  all += extra;
+  for (const Annotation &annotation : all) {
+    if (annotation.kind != Annotation::Kind::Redaction &&
+        annotation.kind != Annotation::Kind::Blur)
+      continue;
+    const QRectF globalRect =
+        QRectF(annotation.start, annotation.end).normalized();
+    const QRectF intersection =
+        globalRect.intersected(selection_).intersected(
+            QRectF(frame->monitor.geometry));
+    if (intersection.isEmpty() || frame->image.isNull())
+      continue;
+    const QRectF local = intersection.translated(-origin);
+    const qreal sx = frame->image.width() /
+                     std::max<qreal>(1, frame->monitor.geometry.width());
+    const qreal sy = frame->image.height() /
+                     std::max<qreal>(1, frame->monitor.geometry.height());
+    const QRect source(
+        qFloor((intersection.left() - frame->monitor.geometry.left()) * sx),
+        qFloor((intersection.top() - frame->monitor.geometry.top()) * sy),
+        std::max(1, qCeil(intersection.width() * sx)),
+        std::max(1, qCeil(intersection.height() * sy)));
+    const QImage patch = frame->image.copy(source);
+    painter.save();
+    painter.setClipRect(local);
+    if (annotation.kind == Annotation::Kind::Blur) {
+      const QSize small(std::max(1, qRound(local.width() / 14.0)),
+                        std::max(1, qRound(local.height() / 14.0)));
+      const QImage preview =
+          patch.scaled(small, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+              .scaled(local.size().toSize(), Qt::IgnoreAspectRatio,
+                      Qt::SmoothTransformation);
+      painter.drawImage(local.topLeft(), preview);
+    } else {
+      const QImage preview =
+          patch.scaled(QSize(std::max(1, qRound(local.width() / 12.0)),
+                             std::max(1, qRound(local.height() / 12.0))),
+                       Qt::IgnoreAspectRatio, Qt::FastTransformation)
+              .scaled(local.size().toSize(), Qt::IgnoreAspectRatio,
+                      Qt::FastTransformation);
+      painter.drawImage(local.topLeft(), preview);
+    }
+    painter.restore();
+  }
+}
+
+void RegionSelector::paintSelectionChrome(QPainter &painter,
+                                          RegionOverlay *overlay) {
+  const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
+  const QRectF local = selection_.translated(-origin);
+  painter.setBrush(Qt::NoBrush);
+  painter.setPen(QPen(QColor(0, 0, 0, 150), 3));
+  painter.drawRect(local.adjusted(-0.5, -0.5, 0.5, 0.5));
+  painter.setPen(QPen(QColor(255, 255, 255, 240), 1.5));
+  painter.drawRect(local);
+
+  const qreal x0 = local.left();
+  const qreal x1 = local.right();
+  const qreal y0 = local.top();
+  const qreal y1 = local.bottom();
+  const qreal cx = local.center().x();
+  const qreal cy = local.center().y();
+  const std::array<QPointF, 8> handles{
+      QPointF(x0, y0), QPointF(cx, y0), QPointF(x1, y0), QPointF(x1, cy),
+      QPointF(x1, y1), QPointF(cx, y1), QPointF(x0, y1), QPointF(x0, cy)};
+  for (const QPointF &handle : handles) {
+    if (!overlay->rect().adjusted(-8, -8, 8, 8).contains(handle.toPoint()))
+      continue;
+    painter.setPen(QPen(QColor(0, 0, 0, 130), 1));
+    painter.setBrush(QColor(250, 252, 255));
+    painter.drawRoundedRect(
+        QRectF(handle.x() - kHandleSize / 2.0,
+               handle.y() - kHandleSize / 2.0, kHandleSize, kHandleSize),
+        2.5, 2.5);
+  }
+
+  QFont sizeFont = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+  sizeFont.setPixelSize(12);
+  sizeFont.setBold(true);
+  painter.setFont(sizeFont);
+  const QString sizeText =
+      QStringLiteral("%1 × %2").arg(qRound(selection_.width()))
+          .arg(qRound(selection_.height()));
+  const qreal width = QFontMetricsF(sizeFont).horizontalAdvance(sizeText) + 24;
+  QRectF label(std::clamp(local.left(), 8.0, overlay->width() - width - 8.0),
+               std::max<qreal>(8, local.top() - 36), width, 28);
+  drawPill(painter, label, sizeText);
+}
+
 void RegionSelector::paintEditor(QPainter &painter, RegionOverlay *overlay) {
   if (!hasSelection())
     return;
-  paintAnnotations(painter, overlay, drag_ == Drag::Draw
-                                          ? QVector<Annotation>{previewAnnotation()}
-                                          : QVector<Annotation>{});
+  canvas_.setSelection(selection_);
+  QVector<Annotation> extra;
+  if (const auto preview = canvas_.preview())
+    extra.push_back(*preview);
+  paintSourceEffects(painter, overlay, extra);
+  canvas_.paintVectors(painter, overlay->frame()->monitor.geometry.topLeft());
   paintSelectionChrome(painter, overlay);
   if (overlay->outputName() == ownerOutput_) {
-    paintToolbar(painter, overlay);
+    syncToolbar();
+    const QPoint origin = overlay->frame()->monitor.geometry.topLeft();
+    toolBar_.paint(painter, QRectF(0, 0, overlay->width(), overlay->height()),
+                   selection_.translated(-origin));
     QFont font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
     font.setPixelSize(12);
     painter.setFont(font);
@@ -1584,96 +1110,5 @@ void RegionSelector::paintEditor(QPainter &painter, RegionOverlay *overlay) {
     drawPill(painter, QRectF((overlay->width() - width) / 2.0,
                              overlay->height() - 46, width, 30),
              text);
-  }
-}
-
-void RegionSelector::paintToolbar(QPainter &painter, RegionOverlay *overlay) {
-  const QRectF bar = toolbarRect(overlay);
-  painter.setPen(QPen(kPanelBorder, 1));
-  painter.setBrush(kPanel);
-  painter.drawRoundedRect(bar.adjusted(-4, -4, 4, 4), 11, 11);
-
-  if (popup_ == Popup::Palette) {
-    const QRectF panel = popupRect(overlay);
-    painter.setPen(QPen(kPanelBorder, 1));
-    painter.setBrush(kPanel);
-    painter.drawRoundedRect(panel, 10, 10);
-  }
-
-  for (const Button &button : toolbarButtons(overlay)) {
-    const bool isTool =
-        (button.action == QStringLiteral("select") && tool_ == Tool::Select) ||
-        (button.action == QStringLiteral("pen") && tool_ == Tool::Pen) ||
-        (button.action == QStringLiteral("arrow") && tool_ == Tool::Arrow) ||
-        (button.action == QStringLiteral("line") && tool_ == Tool::Line) ||
-        (button.action == QStringLiteral("rectangle") &&
-         tool_ == Tool::Rectangle) ||
-        (button.action == QStringLiteral("ellipse") && tool_ == Tool::Ellipse) ||
-        (button.action == QStringLiteral("text") && tool_ == Tool::Text) ||
-        (button.action == QStringLiteral("highlighter") &&
-         tool_ == Tool::Highlighter) ||
-        (button.action == QStringLiteral("mosaic") && tool_ == Tool::Mosaic) ||
-        (button.action == QStringLiteral("blur") && tool_ == Tool::Blur) ||
-        (button.action == QStringLiteral("marker") && tool_ == Tool::Marker);
-    if (isTool) {
-      painter.setPen(Qt::NoPen);
-      painter.setBrush(QColor(kAccent.red(), kAccent.green(), kAccent.blue(),
-                              70));
-      painter.drawRoundedRect(button.rect, 7, 7);
-    }
-    if (button.action.startsWith(QStringLiteral("color-"))) {
-      painter.setPen(QPen(QColor(255, 255, 255, 60), 1));
-      painter.setBrush(button.color);
-      painter.drawEllipse(button.rect.adjusted(3, 3, -3, -3));
-      continue;
-    }
-    if (button.action.startsWith(QStringLiteral("size-")) ||
-        button.action == QStringLiteral("fill")) {
-      painter.setPen(QColor(240, 243, 248));
-      QFont f = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
-      f.setPixelSize(11);
-      painter.setFont(f);
-      painter.drawText(button.rect, Qt::AlignCenter, button.tooltip);
-      continue;
-    }
-    QString icon = button.action;
-    if (button.action == QStringLiteral("select"))
-      icon = QStringLiteral("tool-select");
-    else if (button.action == QStringLiteral("pen"))
-      icon = QStringLiteral("tool-freehand");
-    else if (button.action == QStringLiteral("arrow"))
-      icon = QStringLiteral("tool-arrow");
-    else if (button.action == QStringLiteral("line"))
-      icon = QStringLiteral("tool-line");
-    else if (button.action == QStringLiteral("rectangle"))
-      icon = QStringLiteral("tool-rectangle");
-    else if (button.action == QStringLiteral("ellipse"))
-      icon = QStringLiteral("tool-ellipse");
-    else if (button.action == QStringLiteral("text"))
-      icon = QStringLiteral("tool-text");
-    else if (button.action == QStringLiteral("highlighter"))
-      icon = QStringLiteral("tool-highlighter");
-    else if (button.action == QStringLiteral("mosaic"))
-      icon = QStringLiteral("tool-redact");
-    else if (button.action == QStringLiteral("blur"))
-      icon = QStringLiteral("tool-blur");
-    else if (button.action == QStringLiteral("marker"))
-      icon = QStringLiteral("tool-marker");
-    else if (button.action == QStringLiteral("ocr"))
-      icon = QStringLiteral("tool-ocr");
-    if (button.action == QStringLiteral("palette")) {
-      painter.setPen(QPen(QColor(255, 255, 255, 70), 1));
-      painter.setBrush(color_);
-      painter.drawEllipse(QRectF(button.rect.center().x() - 8,
-                                 button.rect.center().y() - 8, 16, 16));
-      continue;
-    }
-    const bool disabled =
-        (button.action == QStringLiteral("undo") && undo_.isEmpty()) ||
-        (button.action == QStringLiteral("redo") && redo_.isEmpty());
-    drawToolbarIcon(painter, button.rect,
-                    disabled ? QString() : icon, {},
-                    disabled ? QColor(245, 245, 247, 70)
-                             : QColor(245, 245, 247));
   }
 }

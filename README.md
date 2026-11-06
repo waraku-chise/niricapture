@@ -72,12 +72,12 @@ niri msg --json outputs          # geometry, scale, physical size
         │
         ▼
   one layer-shell overlay per output, shared global selection
-        │  Enter
+        │  drag release
+        ▼
+  in-place toolbar + EditorCanvas on the frozen owner overlay
+        │  copy / save
         ▼
   composeSelection() at the owning output's scale
-        │
-        ▼
-  in-place toolbar and annotations on the frozen owner overlay
 ```
 
 Nothing is recaptured after the overlays are mapped. The toolbar and
@@ -206,7 +206,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.3.0_amd64.deb
+sudo apt install ./niricapture_0.4.0_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -338,7 +338,8 @@ src/main.cpp             CLI, instance lock, mode dispatch, layer shell setup
 src/capture.*            clipboard, OCR, rendering, vector/source annotations
 src/desktop-capture.*    Niri output discovery, DMS frames, composition math
 src/region-selector.*    one layer surface per output, global frozen selection
-src/editor.*             annotation editor, toolbar, export, OCR panel
+src/editor/             modular tools, registry, toolbar, canvas, document
+src/editor.cpp          standalone window/file editor (legacy path)
 src/surface-capture.cpp  Niri-native window rendering + async file handling
 src/pin.*                always-visible pinned images
 src/instance-lock.*      single-instance hand-off and stale-lock recovery
@@ -352,7 +353,8 @@ through documented Niri IPC and the DMS CLI.
 
 ## Research, licences and deliberate limits
 
-See [docs/RESEARCH.md](docs/RESEARCH.md) for the source-level review of DMS
+See [docs/EDITOR-ARCHITECTURE.md](docs/EDITOR-ARCHITECTURE.md) for the tool
+module map and [docs/RESEARCH.md](docs/RESEARCH.md) for the source-level review of DMS
 Screenshot+, HyprCapture and Niri 26.04, including the exact protocol/API
 limits and licence analysis.
 
@@ -398,7 +400,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.3.0`. The core acceptance path is implemented and tested on Niri
+Version `0.4.0`. The core acceptance path is implemented and tested on Niri
 26.04 + DMS 2.0. Region/fullscreen editing is in-place in the frozen overlay;
 window/file editing uses the standalone editor. Multi-output composition has
 synthetic coverage; only one physical output was available during live testing.

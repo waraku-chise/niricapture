@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0] — 2026-11-06
+
+### Modular editor tools
+
+- Split the in-place editor into `IEditorTool`, `ToolRegistry`, `ToolBar`,
+  `EditorCanvas`, `AnnotationDocument` and `annotation-geometry` modules under
+  `src/editor/`.
+- Each built-in tool (select, pen, arrow, line, rectangle, ellipse, text,
+  highlighter, mosaic, blur, numbered marker) has its own module and owns its
+  temporary interaction state.
+- Toolbar layout, buttons, palette and hit testing no longer know how any tool
+  draws.
+- Undo/redo, marker numbering, hit testing and vector rendering now use one
+  shared data model. Mosaic/blur continue to sample the original frozen image
+  on export.
+- Added `tests/tool-smoke.cpp` for registry, every draw tool, tool switching,
+  text callback, select/move and toolbar/palette hit testing.
+- The standalone window/file editor keeps its legacy internals for now to avoid
+  regressing its extra tools; see `docs/EDITOR-ARCHITECTURE.md`.
+
 ## [0.3.0] — 2026-11-05
 
 ### True in-place toolbar

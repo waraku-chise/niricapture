@@ -1,0 +1,68 @@
+/** @fileoverview Toolbar model, layout and painting (no tool logic). */
+#pragma once
+
+#include "editor/tool.hpp"
+
+#include <QColor>
+#include <QRectF>
+#include <QString>
+#include <QVector>
+
+class QPainter;
+class ToolRegistry;
+
+struct ToolButton {
+  QRectF rect;
+  QString id;
+  QString icon;
+  QString tooltip;
+  QColor swatch;
+  bool isTool = false;
+  bool enabled = true;
+  bool active = false;
+  bool hovered = false;
+  bool pressed = false;
+};
+
+struct ToolBarHit {
+  bool valid = false;
+  bool isTool = false;
+  QString id;
+};
+
+/** Builds and paints the floating toolbar; tool actions are registry ids. */
+class ToolBar {
+public:
+  explicit ToolBar(const ToolRegistry &registry);
+
+  void setCurrentTool(const QString &id);
+  void setPaletteOpen(bool open) { paletteOpen_ = open; }
+  [[nodiscard]] bool paletteOpen() const { return paletteOpen_; }
+  void setColors(const QColor &color, bool filled);
+  void setHistory(bool canUndo, bool canRedo);
+  void setHovered(const QString &id);
+  void setPressed(const QString &id);
+
+  [[nodiscard]] QRectF rect(const QRectF &viewport,
+                            const QRectF &selection) const;
+  [[nodiscard]] QRectF paletteRect(const QRectF &viewport,
+                                   const QRectF &selection) const;
+  [[nodiscard]] QVector<ToolButton> buttons(const QRectF &viewport,
+                                             const QRectF &selection) const;
+  [[nodiscard]] ToolBarHit hitTest(const QRectF &viewport,
+                                   const QRectF &selection,
+                                   const QPointF &local) const;
+  void paint(QPainter &painter, const QRectF &viewport,
+             const QRectF &selection) const;
+
+private:
+  const ToolRegistry &registry_;
+  QString currentTool_;
+  QColor color_ = QColor(QStringLiteral("#ff375f"));
+  bool filled_ = false;
+  bool paletteOpen_ = false;
+  bool canUndo_ = false;
+  bool canRedo_ = false;
+  QString hovered_;
+  QString pressed_;
+};
