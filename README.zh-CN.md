@@ -31,6 +31,7 @@ NiriCapture 先通过 DMS 冻结桌面，再在所有输出上绘制选区覆盖
 | **OCR 结果** | **Niri 原生窗口截图** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="可选中的 OCR 结果面板"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri 原生窗口截图"> |
 | **标注导出** | |
+| <img src="docs/screenshots/editor-home.png" width="420" alt="编辑器首页：新建和打开"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="独立编辑器画布"> |
 | <img src="docs/screenshots/annotations.png" width="420" alt="合成后的标注"> | |
 
 ## 已实现功能
@@ -195,7 +196,7 @@ makepkg -si
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.4.0_amd64.deb
+sudo apt install ./niricapture_0.5.0_amd64.deb
 ```
 
 该 deb 由 Arch 上使用 Qt 6.12 构建的二进制打包而成，面向 Debian
@@ -213,7 +214,7 @@ binds {
     Mod+Shift+S repeat=false hotkey-overlay-title="Screenshot: NiriCapture region" {
         spawn "niricapture" "--capture-region";
     }
-    Mod+Shift+W repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
+    Ctrl+F1 repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
         spawn "niricapture" "--capture-window";
     }
     Mod+Shift+A repeat=false hotkey-overlay-title="Screenshot: NiriCapture all outputs" {
@@ -261,6 +262,25 @@ niricapture --window-id 42 --save
 在滚动布局上实现像素级准确的自定义 hover 覆盖层。Niri 合成器 picker 才是可靠
 的选择入口。
 
+### 独立编辑器
+
+启动器里的 **NiriCapture 编辑器** 运行：
+
+```bash
+niricapture --editor
+```
+
+它会打开一个普通应用窗口：
+
+- **新建画布**：选择宽高，从透明画布开始。
+- **打开图片**：编辑 PNG/JPEG/WebP/BMP/GIF 图片。
+- **画布**：调整画布宽高、内边距，以及透明/白色/深色/渐变背景。
+- **缩放**：`−` / `+` / `适应`，或 Ctrl+滚轮；中键拖动或 Space+拖动平移。
+- 保存、复制、钉图、OCR，以及与截图编辑器相同的标注工具。
+
+窗口截图会直接用渲染好的窗口图打开这个编辑器，不再进入旧的
+`CaptureEditor` 窗口。
+
 ### 编辑器快捷键
 
 | 按键 | 工具 / 操作 |
@@ -297,8 +317,7 @@ niricapture --window-id 42 --save
 | 序号 | 点 + 创建顺序 | 矢量，删除后自动重新编号 |
 | 马赛克 | 矩形 + 随机种子 + 实心/像素化 | 替换源像素 |
 | 模糊 | 矩形 + 半径 | 用高斯模糊替换源像素 |
-| 聚光灯 | 矩形 + 放大倍率 | 采样已经过马赛克/模糊处理的像素 |
-| 剪切条 | 条带 | 修改工作位图，可撤销 |
+| 聚光灯 / 剪切条 | 仅旧版独立编辑器 | 尚未迁入模块化编辑器 |
 
 标注保存在源图像坐标系中，并与原图分开存储。导出时按原生分辨率合成；
 矢量工具不会破坏原图像素。
@@ -323,7 +342,8 @@ src/capture.*            剪贴板、OCR、渲染、矢量/源像素标注
 src/desktop-capture.*    Niri 输出发现、DMS 冻结帧、合成数学
 src/region-selector.*    每个输出一个 layer surface，共享冻结选区
 src/editor/             模块化工具、注册表、工具栏、画布、文档
-src/editor.cpp          独立窗口/文件编辑器（旧路径）
+src/editor-window.*     独立的新建/打开编辑器窗口
+src/editor.cpp          保留给回归测试的旧编辑器
 src/surface-capture.cpp  Niri 原生窗口渲染 + 异步文件等待
 src/pin.*                固定在屏幕上的截图
 src/instance-lock.*      单实例交接与残留锁恢复
@@ -381,7 +401,7 @@ make check
 
 ## 状态
 
-版本 `0.4.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
-区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑仍使用独立编辑器。多输出
+版本 `0.5.0`。核心验收路径已实现，并在 Niri 26.04 + DMS 2.0 上测试。
+区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件编辑使用新的独立新建/打开编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端
 测试。

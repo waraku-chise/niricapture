@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.4.0 LANGUAGES CXX)
+project(niricapture VERSION 0.5.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -77,6 +77,8 @@ qt_add_executable(niricapture
   src/i18n.hpp
   src/editor.cpp
   src/editor.hpp
+  src/editor-window.cpp
+  src/editor-window.hpp
 )
 qt_add_resources(niricapture "capture-fonts"
   PREFIX "/fonts"
@@ -116,6 +118,8 @@ qt_add_executable(niricapture-smoke
   tests/transform-smoke.hpp
   tests/tool-smoke.cpp
   tests/tool-smoke.hpp
+  tests/editor-window-smoke.cpp
+  tests/editor-window-smoke.hpp
   src/cli-path.cpp
   src/cli-path.hpp
   src/capture.cpp
@@ -130,6 +134,8 @@ qt_add_executable(niricapture-smoke
   src/i18n.hpp
   src/editor.cpp
   src/editor.hpp
+  src/editor-window.cpp
+  src/editor-window.hpp
   src/eyedropper.cpp
   src/eyedropper.hpp
   src/pin-file.cpp
@@ -196,7 +202,7 @@ install(FILES assets/OFL.txt
 install(FILES NOTICE LICENSES/MIT-nirisnap.txt
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/niricapture"
 )
-install(FILES niricapture.desktop
+install(FILES niricapture.desktop niricapture-editor.desktop
   DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 install(FILES packaging/niricapture-keybinds.kdl

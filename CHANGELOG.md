@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0] — 2026-11-06
+
+### Standalone editor
+
+- `niricapture --editor` opens a normal application window with a New/Open
+  start page.
+- The launcher entry `NiriCapture Editor` uses that mode; screenshot capture
+  remains available from the existing Niri binds.
+- New canvas dialog, image open, save, copy, pin, OCR and zoom/fit controls.
+- Canvas adjustment dialog: width, height, padding and background
+  (transparent, white, dark, Aurora, Sunset, Lagoon, Violet).
+- Zoom with Ctrl+wheel, pan with middle-drag or Space+drag.
+- Window capture now opens the same modular editor window; the old standalone
+  `CaptureEditor` path is no longer used by production CLI modes.
+- Window capture bind moved to **Ctrl+F1**.
+
 ## [0.4.0] — 2026-11-06
 
 ### Modular editor tools

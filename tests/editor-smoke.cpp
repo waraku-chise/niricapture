@@ -9,6 +9,7 @@
 #include "pin-lifecycle-smoke.hpp"
 #include "transform-smoke.hpp"
 #include "tool-smoke.hpp"
+#include "editor-window-smoke.hpp"
 #include "eyedropper.hpp"
 
 #include <QApplication>
@@ -2639,6 +2640,11 @@ int main(int argc, char **argv) {
   if (!runEditorToolSmoke(toolError)) {
     qWarning().noquote() << toolError;
     return 140;
+  }
+  QString editorWindowError;
+  if (!runEditorWindowSmoke(editorWindowError)) {
+    qWarning().noquote() << editorWindowError;
+    return 141;
   }
   // Exercise production Open dispatch, then exit without an event-loop turn.
   if (application.arguments().contains(QStringLiteral("--open-app-exit-helper"))) {

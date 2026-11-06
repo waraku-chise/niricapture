@@ -7,7 +7,7 @@ binds {
     Mod+Shift+S repeat=false hotkey-overlay-title="Screenshot: NiriCapture region" {
         spawn "niricapture" "--capture-region";
     }
-    Mod+Shift+W repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
+    Ctrl+F1 repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
         spawn "niricapture" "--capture-window";
     }
     Mod+Shift+A repeat=false hotkey-overlay-title="Screenshot: NiriCapture all outputs" {

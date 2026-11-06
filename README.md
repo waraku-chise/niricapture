@@ -33,6 +33,7 @@ shown with `Q`.
 | **OCR result** | **Native window capture** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
 | **Annotation export** | |
+| <img src="docs/screenshots/editor-home.png" width="420" alt="Editor home with New and Open"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="Standalone editor canvas"> |
 | <img src="docs/screenshots/annotations.png" width="420" alt="Rendered annotations"> | |
 
 ## What works
@@ -206,7 +207,7 @@ makepkg -si
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_0.4.0_amd64.deb
+sudo apt install ./niricapture_0.5.0_amd64.deb
 ```
 
 The Debian package is built from the Arch/Qt 6.12 binary. It targets Debian
@@ -225,7 +226,7 @@ binds {
     Mod+Shift+S repeat=false hotkey-overlay-title="Screenshot: NiriCapture region" {
         spawn "niricapture" "--capture-region";
     }
-    Mod+Shift+W repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
+    Ctrl+F1 repeat=false hotkey-overlay-title="Screenshot: NiriCapture window" {
         spawn "niricapture" "--capture-window";
     }
     Mod+Shift+A repeat=false hotkey-overlay-title="Screenshot: NiriCapture all outputs" {
@@ -275,7 +276,28 @@ viewport offset or absolute screen position of every window, so NiriCapture
 does not pretend it can build a pixel-accurate custom hover overlay across the
 scrolling layout. The compositor picker is the reliable selection surface.
 
-### Editor
+### Standalone editor
+
+The launcher entry **NiriCapture Editor** runs:
+
+```bash
+niricapture --editor
+```
+
+It opens a normal application window with:
+
+- **New canvas** — choose width/height and start from a transparent canvas.
+- **Open image** — edit a PNG/JPEG/WebP/BMP/GIF frame.
+- **Canvas** — resize the canvas, set padding, and choose a transparent,
+  white, dark, or gradient background.
+- **Zoom** — `−` / `+` / `Fit`, or Ctrl+wheel. Pan with middle-drag or
+  Space+drag.
+- Save, copy, pin, OCR, and the same annotation tools as the screenshot editor.
+
+Window captures open this editor directly with the rendered window image; they
+no longer use the old `CaptureEditor` window.
+
+### Editor keys
 
 | Key | Tool / action |
 |---|---|
@@ -311,8 +333,7 @@ The toolbar follows the image and clamps to screen edges.
 | Number | point + order | vector, auto-renumbered |
 | Mosaic | rect + seed + solid/pixelate | replaces source pixels |
 | Blur | rect + radius | replaces source pixels with Gaussian blur |
-| Spotlight | rect + magnification | samples already-redacted pixels |
-| Cutout | strip | modifies the working bitmap, undoable |
+| Spotlight / Cutout | legacy standalone editor only | not yet exposed by the modular editor |
 
 Annotations live in source-image coordinates and are stored separately from
 the original image. Export composites them at native resolution; the source
@@ -339,7 +360,8 @@ src/capture.*            clipboard, OCR, rendering, vector/source annotations
 src/desktop-capture.*    Niri output discovery, DMS frames, composition math
 src/region-selector.*    one layer surface per output, global frozen selection
 src/editor/             modular tools, registry, toolbar, canvas, document
-src/editor.cpp          standalone window/file editor (legacy path)
+src/editor-window.*     standalone New/Open editor window
+src/editor.cpp          legacy editor kept for regression tests
 src/surface-capture.cpp  Niri-native window rendering + async file handling
 src/pin.*                always-visible pinned images
 src/instance-lock.*      single-instance hand-off and stale-lock recovery
@@ -400,7 +422,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `0.4.0`. The core acceptance path is implemented and tested on Niri
+Version `0.5.0`. The core acceptance path is implemented and tested on Niri
 26.04 + DMS 2.0. Region/fullscreen editing is in-place in the frozen overlay;
-window/file editing uses the standalone editor. Multi-output composition has
+window/file editing uses the new standalone New/Open editor. Multi-output composition has
 synthetic coverage; only one physical output was available during live testing.

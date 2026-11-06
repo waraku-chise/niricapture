@@ -1,7 +1,7 @@
 #include "capture.hpp"
 #include "cli-path.hpp"
 #include "desktop-capture.hpp"
-#include "editor.hpp"
+#include "editor-window.hpp"
 #include "instance-lock.hpp"
 #include "pin.hpp"
 #include "region-selector.hpp"
@@ -20,7 +20,6 @@
 #include <QLockFile>
 #include <QPointer>
 #include <QProcess>
-#include <QScreen>
 #include <QSocketNotifier>
 #include <QTextStream>
 #include <QTimer>
@@ -147,14 +146,6 @@ QString largestOutputForRect(const DesktopFrames &frames, const QRectF &rect) {
     }
   }
   return best;
-}
-
-QScreen *screenForOutput(const QString &name) {
-  for (QScreen *screen : QGuiApplication::screens()) {
-    if (screen->name() == name)
-      return screen;
-  }
-  return QGuiApplication::primaryScreen();
 }
 
 bool composeCapture(const DesktopFrames &frames, const QRectF &selection,
@@ -351,58 +342,6 @@ CaptureData toCaptureData(CaptureResult result) {
                                 result.screenOrigin, result.anchorToScreen);
 }
 
-void configureEditorLayer(CaptureEditor &editor, QScreen *screen) {
-  editor.setScreen(screen);
-  editor.setGeometry(screen->geometry());
-  editor.winId();
-  QWindow *window = editor.windowHandle();
-  LayerShellQt::Window *layer = LayerShellQt::Window::get(window);
-  if (!window || !layer) {
-    qCritical() << "Could not create capture editor layer";
-    return;
-  }
-  layer->setScope(QStringLiteral("niricapture"));
-  layer->setScreen(screen);
-  layer->setLayer(LayerShellQt::Window::LayerOverlay);
-  LayerShellQt::Window::Anchors anchors;
-  anchors.setFlag(LayerShellQt::Window::AnchorTop);
-  anchors.setFlag(LayerShellQt::Window::AnchorBottom);
-  anchors.setFlag(LayerShellQt::Window::AnchorLeft);
-  anchors.setFlag(LayerShellQt::Window::AnchorRight);
-  layer->setAnchors(anchors);
-  layer->setExclusiveZone(-1);
-  layer->setKeyboardInteractivity(
-      LayerShellQt::Window::KeyboardInteractivityExclusive);
-  layer->setActivateOnShow(true);
-}
-
-int openEditor(CaptureData capture, QuickOutputMode quickMode,
-               const QString &outputName, std::atomic_bool &termination) {
-  if (termination.load(std::memory_order_acquire))
-    return 0;
-  if (quickMode != QuickOutputMode::None) {
-    QString error;
-    const QImage image =
-        renderCapture(capture, QRectF(QPointF(), capture.previewSize), {},
-                      BackgroundStyle::None);
-    if (image.isNull() || !quickOutput(image, quickMode, error)) {
-      qCritical().noquote() << error;
-      sendCaptureNotification(
-          QStringLiteral("Screenshot failed: %1").arg(error));
-      return 1;
-    }
-    return 0;
-  }
-
-  QScreen *targetScreen = screenForOutput(outputName);
-  CaptureEditor editor(std::move(capture), CaptureEditor::CaptureMode::File,
-                       QuickOutputMode::None, &termination);
-  configureEditorLayer(editor, targetScreen);
-  editor.show();
-  editor.setFocus(Qt::ActiveWindowFocusReason);
-  return QApplication::exec();
-}
-
 int failCapture(const QString &error) {
   qCritical().noquote() << error;
   sendCaptureNotification(QStringLiteral("Screenshot failed: %1").arg(error));
@@ -410,12 +349,31 @@ int failCapture(const QString &error) {
 }
 } // namespace
 
+bool wantsNormalWindow(int argc, char **argv) {
+  for (int index = 1; index < argc; ++index) {
+    const QString argument = QString::fromLocal8Bit(argv[index]);
+    if (argument == QStringLiteral("--editor") ||
+        argument == QStringLiteral("--file") ||
+        argument.startsWith(QStringLiteral("--file=")) ||
+        argument == QStringLiteral("--clipboard") ||
+        argument == QStringLiteral("--capture-window") ||
+        argument == QStringLiteral("--capture-windows") ||
+        argument == QStringLiteral("--window-id") ||
+        argument.startsWith(QStringLiteral("--window-id=")))
+      return true;
+  }
+  return false;
+}
+
 int main(int argc, char **argv) {
   QCoreApplication::setApplicationName(QStringLiteral("niricapture"));
   QCoreApplication::setApplicationVersion(
       QString::fromLatin1(NIRICAPTURE_VERSION));
   QCoreApplication::setOrganizationName(QStringLiteral("NiriCapture"));
-  qputenv("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell");
+  if (wantsNormalWindow(argc, argv))
+    qunsetenv("QT_WAYLAND_SHELL_INTEGRATION");
+  else
+    qputenv("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell");
   // Qt suppresses diagnostics when stderr is not a TTY (common under Niri's
   // keybind spawn and systemd). CLI users still need to see capture errors.
   qputenv("QT_FORCE_STDERR_LOGGING", "1");
@@ -475,6 +433,9 @@ int main(int argc, char **argv) {
   const QCommandLineOption clipboardOption(
       QStringLiteral("clipboard"),
       QStringLiteral("Open the current clipboard image in the editor."));
+  const QCommandLineOption editorOption(
+      QStringLiteral("editor"),
+      QStringLiteral("Open the standalone editor start page (New / Open)."));
   const QCommandLineOption pinOption(
       QStringLiteral("pin"),
       QStringLiteral("Show an image as a pinned always-visible layer."),
@@ -490,6 +451,7 @@ int main(int argc, char **argv) {
   parser.addOption(saveOption);
   parser.addOption(fileOption);
   parser.addOption(clipboardOption);
+  parser.addOption(editorOption);
   parser.addOption(pinOption);
   parser.addPositionalArgument(
       QStringLiteral("target"),
@@ -633,9 +595,20 @@ int main(int argc, char **argv) {
         << "Quick output options cannot be combined with an image input";
     return 2;
   }
+  if (parser.isSet(editorOption) &&
+      (!filePath.isEmpty() || clipboardInput || requestedModes > 0 ||
+       parser.isSet(pinOption))) {
+    qCritical() << "--editor cannot be combined with capture/image/pin options";
+    return 2;
+  }
   if (!loadCaptureFonts())
     return 1;
   application.setQuitOnLastWindowClosed(true);
+  if (parser.isSet(editorOption)) {
+    EditorWindow window;
+    window.showFullScreen();
+    return QApplication::exec();
+  }
 
   const QString runtime = secureRuntimeDirectory();
   if (runtime.isEmpty()) {
@@ -665,9 +638,10 @@ int main(int argc, char **argv) {
   if (editingImage) {
     if (!prepareFileImage(filePath, clipboardInput, result, error))
       return failCapture(error);
-    const QString outputName = result.outputName;
-    return openEditor(toCaptureData(std::move(result)), quickOutputMode,
-                      outputName, terminationRequested);
+    EditorWindow window;
+    window.openImage(result.image);
+    window.showFullScreen();
+    return QApplication::exec();
   }
 
   if (mode == CaptureMode::Window) {
@@ -679,9 +653,16 @@ int main(int argc, char **argv) {
         return 0;
       return failCapture(error);
     }
-    const QString outputName = result.outputName;
-    return openEditor(toCaptureData(std::move(result)), quickOutputMode,
-                      outputName, terminationRequested);
+    if (quickOutputMode != QuickOutputMode::None) {
+      QString quickError;
+      if (!quickOutput(result.image, quickOutputMode, quickError))
+        return failCapture(quickError);
+      return 0;
+    }
+    EditorWindow window;
+    window.openImage(result.image);
+    window.showFullScreen();
+    return QApplication::exec();
   }
 
   if (mode == CaptureMode::Region) {

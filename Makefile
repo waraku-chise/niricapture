@@ -9,7 +9,7 @@ PYTHON ?= python3
 
 LINT_SOURCES := \
 	src/main.cpp src/capture.cpp src/desktop-capture.cpp \
-	src/region-selector.cpp src/editor.cpp src/surface-capture.cpp \
+	src/region-selector.cpp src/editor.cpp src/editor-window.cpp src/surface-capture.cpp \
 	src/cli-path.cpp src/icons.cpp src/pin.cpp src/pin-file.cpp \
 	src/pin-layout.cpp src/eyedropper.cpp src/instance-lock.cpp
 LINT_CHECKS ?= -*,clang-analyzer-*,bugprone-*

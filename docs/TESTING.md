@@ -228,3 +228,23 @@ handle out and produced a 1350×820 selection, proving that a selection can be
 expanded again after shrinking. The draw hook produced a rectangle, arrow,
 numbered marker and pixelated redaction in the saved 1100×700 PNG. The OCR
 hook opened the real selectable result panel.
+
+## Standalone editor (0.5.0)
+
+`tests/editor-window-smoke.cpp` launches `EditorWindow` offscreen, creates a
+400×300 canvas, and verifies the window renders. Live checks:
+
+```bash
+niricapture --editor          # New/Open start page
+niricapture --file image.png  # direct image editing
+niricapture --capture-window --window-id 44
+```
+
+The launcher entry `NiriCapture Editor` runs `niricapture --editor`; it is
+installed as `$XDG_DATA_HOME/applications/niricapture-editor.desktop` and was
+validated with `desktop-file-validate`.
+
+Window capture uses `Ctrl+F1` in the example/user Niri bindings. The window
+image opens in the same modular editor, where canvas zoom/fit, padding/size,
+transparent/white/dark/gradient backgrounds, save/copy/pin and OCR are
+available.

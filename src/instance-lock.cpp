@@ -163,7 +163,7 @@ InstanceLockResult acquireInstanceLock(QLockFile &lock, InstanceMode mode) {
       return {false, kInstanceLockErrorExitCode, error, 0};
     }
     if (waitForHandover(lock))
-      return {true, holderPid, {}, holderPid};
+      return {true, 0, {}, holderPid};
     return {false, kInstanceLockErrorExitCode,
             QStringLiteral("Timed out waiting for niricapture (pid %1) to release "
                            "the single-instance lock")

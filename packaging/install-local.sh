@@ -37,7 +37,7 @@ packages=(
 
 announce() { printf '==> %s\n' "$*"; }
 
-for path in CMakeLists.txt README.md niricapture.desktop \
+for path in CMakeLists.txt README.md niricapture.desktop niricapture-editor.desktop \
             packaging/niricapture-keybinds.kdl NOTICE \
             LICENSES/MIT-nirisnap.txt; do
   [[ -f ${repo_root}/${path} ]] || {
@@ -49,6 +49,7 @@ done
 install_paths=(
   "${prefix}/bin/niricapture"
   "${prefix}/share/applications/niricapture.desktop"
+  "${prefix}/share/applications/niricapture-editor.desktop"
   "${prefix}/share/niricapture/niricapture-keybinds.kdl"
   "${prefix}/share/licenses/niricapture"
   "${prefix}/share/doc/niricapture"

@@ -1,9 +1,9 @@
 # Editor architecture
 
-This document covers the in-place region/fullscreen editor introduced in 0.3.0
-and modularized in 0.4.0. The standalone window/file editor is documented
-separately at the end because it intentionally keeps its legacy internals for
-now; see [Scope and remaining work](#scope-and-remaining-work).
+This document covers the modular editor used by region/fullscreen, window and
+file editing. The in-place canvas was introduced in 0.3.0 and modularized in
+0.4.0; 0.5.0 adds the standalone `EditorWindow` New/Open application using the
+same modules.
 
 ## Before
 
@@ -24,11 +24,10 @@ now; see [Scope and remaining work](#scope-and-remaining-work).
 That made every new tool touch the canvas class, and temporary tool state
 (`freehandPoints_`, drag annotations) lived beside permanent document state.
 
-The standalone `src/editor.cpp` (3 202 lines) is a second, older editor used
-for window/file editing. It has its own tool enum, toolbar and interaction
-state. It is kept for feature parity while the new architecture proves itself.
-The two editors do not share mutable state; region/fullscreen never enters the
-standalone editor path.
+`src/editor.cpp` (3 202 lines) is the older `CaptureEditor`. It is no longer
+used by production CLI modes; window and file inputs now open
+`src/editor-window.cpp`. The old class is retained only for its large
+regression suite while the last standalone-only features are ported.
 
 ## Target architecture
 
@@ -40,6 +39,7 @@ src/editor/
 ├── tool-registry.*             owns tool instances, lookup by stable id
 ├── tool-bar.*                  ToolButton model, layout, painting, hit testing
 ├── editor-canvas.*             event dispatch, current tool, preview, vector paint
+├── editor-window.*             standalone New/Open application window
 └── tools/
     ├── builtin-tools.*         the only place that registers built-in tools
     ├── select-tool.*
@@ -207,14 +207,22 @@ know about layer surfaces, screens, output frames, OCR or output files.
 
 ## Scope and remaining work
 
-The modular canvas is the **region/fullscreen** editor. The standalone
-window/file editor (`src/editor.cpp`) still contains its own legacy tool
-dispatch and its extra tools (spotlight, eyedropper, cutout, background, pin,
-open). It is intentionally not rewritten in this pass: replacing it would
-risk the existing window/file behavior and its large regression suite.
+The modular canvas is used by:
 
-The next migration step is to adapt `CaptureEditor` to the same
-`AnnotationDocument`/`EditorCanvas`/`ToolBar` interfaces, adding
-`SpotlightTool`, `EyedropperTool` and `CutoutTool` modules. Until then the two
-editors are separate execution paths with no shared mutable state; they do not
-run simultaneously for one capture.
+- region/fullscreen in `RegionSelector`;
+- window capture and image/file editing in `EditorWindow`;
+- the New/Open launcher entry.
+
+`src/editor.cpp` remains compiled only for the regression suite. Its
+standalone-only features have not all been ported to `EditorWindow` yet:
+
+- Spotlight
+- Eyedropper
+- Cutout
+- the old shape/colour popup layout
+- the old multi-select/crop interaction model
+
+The new editor intentionally uses the modular toolbar/canvas, a New/Open home
+page and explicit canvas adjustment instead of the old in-window flow. The
+next step is to add `SpotlightTool`, `EyedropperTool` and a cutout command to the
+new canvas, then remove `CaptureEditor` once its regression suite is migrated.

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=NiriCapture Editor
+Name[zh_CN]=NiriCapture 编辑器
+Comment=Create a canvas or open an image for annotation
+Comment[zh_CN]=新建画布或打开图片进行标注
+Exec=niricapture --editor
+Icon=accessories-screenshot-tool
+Terminal=false
+NoDisplay=false
+Categories=Graphics;
+Keywords=screenshot;image;editor;annotate;
+StartupNotify=true
