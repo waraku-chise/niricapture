@@ -632,10 +632,9 @@ int main(int argc, char **argv) {
       qEnvironmentVariableIsEmpty("NIRICAPTURE_SCREENSHOT_DIR"))
     qputenv("NIRICAPTURE_SCREENSHOT_DIR", config.screenshotDir.toUtf8());
   if (parser.isSet(printConfigOption)) {
-    QFile file(config.path);
-    if (file.open(QIODevice::ReadOnly))
-      fwrite(file.readAll().constData(), 1, static_cast<size_t>(file.size()),
-             stdout);
+    const QByteArray serialized = config.toJsonBytes();
+    fwrite(serialized.constData(), 1, static_cast<size_t>(serialized.size()),
+           stdout);
     fprintf(stdout, "\n# %s\n", config.path.toUtf8().constData());
     return 0;
   }

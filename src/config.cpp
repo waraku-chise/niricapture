@@ -7,13 +7,22 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QSaveFile>
 #include <QStandardPaths>
 
 #include <algorithm>
 
 namespace {
-QString colorName(const QColor &color) {
-  return color.isValid() ? color.name(QColor::HexRgb) : QString();
+constexpr const char *kReadme =
+    "NiriCapture configuration. tools/commands control order and visibility; "
+    "shortcuts are tool ids to Qt key sequences; canvas applies to new images; "
+    "colors are #rrggbb or #aarrggbb.";
+
+QString colorValue(const QColor &color) {
+  if (!color.isValid())
+    return {};
+  return color.alpha() < 255 ? color.name(QColor::HexArgb)
+                             : color.name(QColor::HexRgb);
 }
 
 QColor readColor(const QJsonObject &object, const QString &key,
@@ -23,6 +32,28 @@ QColor readColor(const QJsonObject &object, const QString &key,
   return color.isValid() ? color : fallback;
 }
 
+QJsonObject section(const QJsonObject &root, const QString &name) {
+  return root.value(name).toObject();
+}
+
+bool migrate(QJsonObject &root, int fromVersion, QString *error) {
+  if (fromVersion > AppConfig::kCurrentSchemaVersion) {
+    if (error)
+      *error = QStringLiteral("Config schema version %1 is newer than supported "
+                              "version %2")
+                   .arg(fromVersion)
+                   .arg(AppConfig::kCurrentSchemaVersion);
+    return false;
+  }
+  int version = std::max(1, fromVersion);
+  if (version <= 1) {
+    // v2 only makes the schema explicit. Missing fields already inherit
+    // defaults, so no structural rewrite is needed.
+    version = 2;
+  }
+  root.insert(QStringLiteral("version"), version);
+  return true;
+}
 } // namespace
 
 AppConfig AppConfig::defaults() { return {}; }
@@ -38,74 +69,120 @@ QString AppConfig::defaultPath() {
   return QDir(base).filePath(QStringLiteral("niricapture/config.json"));
 }
 
-bool AppConfig::writeDefault(const QString &path, QString *error) {
-  QJsonObject root;
-  root.insert(QStringLiteral("version"), 1);
-  root.insert(
-      QStringLiteral("_readme"),
-      QStringLiteral("NiriCapture configuration. tools/commands control order "
-                     "and visibility; shortcuts are tool ids to Qt key "
-                     "sequences; canvas applies to new images; colors are "
-                     "#rrggbb."));
+QJsonObject AppConfig::toJson() const {
+  QJsonObject root = rawDocument_;
+  root.insert(QStringLiteral("version"), kCurrentSchemaVersion);
+  if (!root.contains(QStringLiteral("_readme")))
+    root.insert(QStringLiteral("_readme"), QString::fromLatin1(kReadme));
+
   root.insert(QStringLiteral("tools"),
-              QJsonArray::fromStringList(AppConfig::defaults().tools));
+              QJsonArray::fromStringList(tools));
   root.insert(QStringLiteral("commands"),
-              QJsonArray::fromStringList(AppConfig::defaults().commands));
-  QJsonObject shortcuts;
-  const AppConfig defaults;
-  for (auto it = defaults.shortcuts.cbegin(); it != defaults.shortcuts.cend();
-       ++it)
-    shortcuts.insert(it.key(), it.value());
-  root.insert(QStringLiteral("shortcuts"), shortcuts);
+              QJsonArray::fromStringList(commands));
 
-  QJsonObject palette;
-  palette.insert(QStringLiteral("colors"),
-                 QJsonArray::fromStringList(defaults.palette.colors));
+  QJsonObject shortcutObject;
+  for (auto it = shortcuts.cbegin(); it != shortcuts.cend(); ++it) {
+    if (!it.value().trimmed().isEmpty())
+      shortcutObject.insert(it.key(), it.value());
+  }
+  root.insert(QStringLiteral("shortcuts"), shortcutObject);
+
+  QJsonObject paletteObject = section(root, QStringLiteral("palette"));
+  paletteObject.insert(QStringLiteral("colors"),
+                       QJsonArray::fromStringList(palette.colors));
   QJsonArray widths;
-  for (const int width : defaults.palette.widths)
+  for (const int width : palette.widths)
     widths.append(width);
-  palette.insert(QStringLiteral("widths"), widths);
-  root.insert(QStringLiteral("palette"), palette);
+  paletteObject.insert(QStringLiteral("widths"), widths);
+  root.insert(QStringLiteral("palette"), paletteObject);
 
-  QJsonObject canvas;
-  canvas.insert(QStringLiteral("width"), defaults.canvas.width);
-  canvas.insert(QStringLiteral("height"), defaults.canvas.height);
-  canvas.insert(QStringLiteral("padding"), defaults.canvas.padding);
-  canvas.insert(QStringLiteral("background"), defaults.canvas.background);
-  canvas.insert(QStringLiteral("background_color"), QStringLiteral("#151922"));
-  canvas.insert(QStringLiteral("fit_on_open"), defaults.canvas.fitOnOpen);
-  root.insert(QStringLiteral("canvas"), canvas);
+  QJsonObject canvasObject = section(root, QStringLiteral("canvas"));
+  canvasObject.insert(QStringLiteral("width"), canvas.width);
+  canvasObject.insert(QStringLiteral("height"), canvas.height);
+  canvasObject.insert(QStringLiteral("padding"), canvas.padding);
+  canvasObject.insert(QStringLiteral("background"), canvas.background);
+  canvasObject.insert(QStringLiteral("background_color"),
+                      colorValue(canvas.backgroundColor));
+  canvasObject.insert(QStringLiteral("fit_on_open"), canvas.fitOnOpen);
+  root.insert(QStringLiteral("canvas"), canvasObject);
 
-  QJsonObject editor;
-  editor.insert(QStringLiteral("accent"), colorName(defaults.theme.accent));
-  editor.insert(QStringLiteral("background"),
-                colorName(defaults.theme.background));
-  editor.insert(QStringLiteral("panel"), colorName(defaults.theme.panel));
-  editor.insert(QStringLiteral("checker_light"),
-                colorName(defaults.theme.checkerLight));
-  editor.insert(QStringLiteral("checker_dark"),
-                colorName(defaults.theme.checkerDark));
-  editor.insert(QStringLiteral("default_color"),
-                colorName(defaults.theme.defaultColor));
-  editor.insert(QStringLiteral("default_width"), defaults.theme.defaultWidth);
-  root.insert(QStringLiteral("editor"), editor);
+  QJsonObject editorObject = section(root, QStringLiteral("editor"));
+  editorObject.insert(QStringLiteral("accent"), colorValue(theme.accent));
+  editorObject.insert(QStringLiteral("background"),
+                      colorValue(theme.background));
+  editorObject.insert(QStringLiteral("panel"), colorValue(theme.panel));
+  editorObject.insert(QStringLiteral("checker_light"),
+                      colorValue(theme.checkerLight));
+  editorObject.insert(QStringLiteral("checker_dark"),
+                      colorValue(theme.checkerDark));
+  editorObject.insert(QStringLiteral("default_color"),
+                      colorValue(theme.defaultColor));
+  editorObject.insert(QStringLiteral("default_width"), theme.defaultWidth);
+  root.insert(QStringLiteral("editor"), editorObject);
 
-  root.insert(QStringLiteral("ocr"), QJsonObject{
-                                         {QStringLiteral("languages"), QString()},
-                                     });
-  root.insert(QStringLiteral("paths"),
-              QJsonObject{{QStringLiteral("screenshots"), QString()}});
+  QJsonObject ocrObject = section(root, QStringLiteral("ocr"));
+  ocrObject.insert(QStringLiteral("languages"), ocrLanguages);
+  root.insert(QStringLiteral("ocr"), ocrObject);
 
-  QDir().mkpath(QFileInfo(path).absolutePath());
-  QFile file(path);
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+  QJsonObject pathsObject = section(root, QStringLiteral("paths"));
+  pathsObject.insert(QStringLiteral("screenshots"), screenshotDir);
+  root.insert(QStringLiteral("paths"), pathsObject);
+
+  return root;
+}
+
+QByteArray AppConfig::toJsonBytes() const {
+  return QJsonDocument(toJson()).toJson(QJsonDocument::Indented);
+}
+
+bool AppConfig::saveTo(const QString &filePath, QString *error) const {
+  if (!writable_) {
     if (error)
-      *error = QStringLiteral("Could not write config %1: %2")
-                   .arg(path, file.errorString());
+      *error = QStringLiteral("Refusing to overwrite an invalid or newer config");
     return false;
   }
-  file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+  if (filePath.isEmpty()) {
+    if (error)
+      *error = QStringLiteral("Config path is empty");
+    return false;
+  }
+  const QFileInfo info(filePath);
+  if (!QDir().mkpath(info.absolutePath())) {
+    if (error)
+      *error = QStringLiteral("Could not create config directory %1")
+                   .arg(info.absolutePath());
+    return false;
+  }
+  QSaveFile file(filePath);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    if (error)
+      *error = QStringLiteral("Could not open config %1 for writing: %2")
+                   .arg(filePath, file.errorString());
+    return false;
+  }
+  const QByteArray bytes = toJsonBytes();
+  if (file.write(bytes) != bytes.size()) {
+    if (error)
+      *error = QStringLiteral("Could not write config %1: %2")
+                   .arg(filePath, file.errorString());
+    file.cancelWriting();
+    return false;
+  }
+  if (!file.commit()) {
+    if (error)
+      *error = QStringLiteral("Could not commit config %1: %2")
+                   .arg(filePath, file.errorString());
+    return false;
+  }
   return true;
+}
+
+bool AppConfig::save(QString *error) const { return saveTo(path, error); }
+
+bool AppConfig::writeDefault(const QString &path, QString *error) {
+  AppConfig config = defaults();
+  config.path = path;
+  return config.saveTo(path, error);
 }
 
 AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
@@ -115,11 +192,24 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
   const QJsonDocument document = QJsonDocument::fromJson(json, &parseError);
   if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
     if (error)
-      *error = QStringLiteral("Config JSON error: %1")
+      *error = QStringLiteral("Config JSON error at offset %1: %2")
+                   .arg(parseError.offset)
                    .arg(parseError.errorString());
-    return base;
+    AppConfig rejected = base;
+    rejected.writable_ = false;
+    return rejected;
   }
-  const QJsonObject root = document.object();
+
+  QJsonObject root = document.object();
+  const int declaredVersion = root.value(QStringLiteral("version")).toInt(1);
+  if (!migrate(root, declaredVersion, error)) {
+    AppConfig rejected = base;
+    rejected.writable_ = false;
+    return rejected;
+  }
+  config.rawDocument_ = root;
+  config.schemaVersion_ = AppConfig::kCurrentSchemaVersion;
+  config.writable_ = true;
 
   const auto readStrings = [](const QJsonValue &value) {
     QStringList result;
@@ -141,16 +231,15 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
     if (!commands.isEmpty())
       config.commands = commands;
   }
-  if (root.value(QStringLiteral("shortcuts")).isObject()) {
-    const QJsonObject shortcuts =
-        root.value(QStringLiteral("shortcuts")).toObject();
-    for (auto it = shortcuts.constBegin(); it != shortcuts.constEnd(); ++it) {
-      const QString key = it.value().toString().trimmed();
-      if (!key.isEmpty())
-        config.shortcuts.insert(it.key(), key);
-    }
+  const QJsonObject shortcuts =
+      section(root, QStringLiteral("shortcuts"));
+  for (auto it = shortcuts.constBegin(); it != shortcuts.constEnd(); ++it) {
+    const QString key = it.value().toString().trimmed();
+    if (!key.isEmpty())
+      config.shortcuts.insert(it.key(), key);
   }
-  const QJsonObject palette = root.value(QStringLiteral("palette")).toObject();
+
+  const QJsonObject palette = section(root, QStringLiteral("palette"));
   if (palette.contains(QStringLiteral("colors"))) {
     const QStringList colors =
         readStrings(palette.value(QStringLiteral("colors")));
@@ -159,7 +248,8 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
   }
   if (palette.value(QStringLiteral("widths")).isArray()) {
     QVector<int> widths;
-    for (const QJsonValue &value : palette.value(QStringLiteral("widths")).toArray()) {
+    for (const QJsonValue &value :
+         palette.value(QStringLiteral("widths")).toArray()) {
       const int width = value.toInt();
       if (width > 0)
         widths.push_back(width);
@@ -168,9 +258,10 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
       config.palette.widths = widths;
   }
 
-  const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
+  const QJsonObject canvas = section(root, QStringLiteral("canvas"));
   config.canvas.width = std::clamp(
-      canvas.value(QStringLiteral("width")).toInt(config.canvas.width), 1, 20000);
+      canvas.value(QStringLiteral("width")).toInt(config.canvas.width), 1,
+      20000);
   config.canvas.height = std::clamp(
       canvas.value(QStringLiteral("height")).toInt(config.canvas.height), 1,
       20000);
@@ -195,7 +286,7 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
   config.canvas.fitOnOpen =
       canvas.value(QStringLiteral("fit_on_open")).toBool(config.canvas.fitOnOpen);
 
-  const QJsonObject editor = root.value(QStringLiteral("editor")).toObject();
+  const QJsonObject editor = section(root, QStringLiteral("editor"));
   config.theme.accent =
       readColor(editor, QStringLiteral("accent"), config.theme.accent);
   config.theme.background =
@@ -204,8 +295,8 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
       readColor(editor, QStringLiteral("panel"), config.theme.panel);
   config.theme.checkerLight = readColor(
       editor, QStringLiteral("checker_light"), config.theme.checkerLight);
-  config.theme.checkerDark =
-      readColor(editor, QStringLiteral("checker_dark"), config.theme.checkerDark);
+  config.theme.checkerDark = readColor(
+      editor, QStringLiteral("checker_dark"), config.theme.checkerDark);
   config.theme.defaultColor = readColor(
       editor, QStringLiteral("default_color"), config.theme.defaultColor);
   config.theme.defaultWidth = std::clamp(
@@ -213,10 +304,10 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
           .toDouble(config.theme.defaultWidth),
       1.0, 96.0);
 
-  const QJsonObject ocr = root.value(QStringLiteral("ocr")).toObject();
+  const QJsonObject ocr = section(root, QStringLiteral("ocr"));
   config.ocrLanguages =
       ocr.value(QStringLiteral("languages")).toString().trimmed();
-  const QJsonObject paths = root.value(QStringLiteral("paths")).toObject();
+  const QJsonObject paths = section(root, QStringLiteral("paths"));
   config.screenshotDir =
       paths.value(QStringLiteral("screenshots")).toString().trimmed();
   return config;

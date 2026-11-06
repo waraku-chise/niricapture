@@ -3,7 +3,9 @@
 
 #include "capture.hpp"
 
+#include <QByteArray>
 #include <QColor>
+#include <QJsonObject>
 #include <QHash>
 #include <QString>
 #include <QStringList>
@@ -67,12 +69,28 @@ struct AppConfig {
   QString screenshotDir;
   QString path;
 
+  static constexpr int kCurrentSchemaVersion = 2;
+
   [[nodiscard]] static AppConfig defaults();
   /** Loads config, creating a documented default file when absent. */
   [[nodiscard]] static AppConfig load(QString *error = nullptr);
   [[nodiscard]] static QString defaultPath();
   [[nodiscard]] static bool writeDefault(const QString &path, QString *error);
   [[nodiscard]] BackgroundStyle backgroundStyle() const;
+  [[nodiscard]] int schemaVersion() const { return schemaVersion_; }
+  [[nodiscard]] QJsonObject toJson() const;
+  [[nodiscard]] QByteArray toJsonBytes() const;
+  /** Atomically writes the current configuration to `path`. */
+  [[nodiscard]] bool writable() const { return writable_; }
+  [[nodiscard]] bool save(QString *error = nullptr) const;
+  [[nodiscard]] bool saveTo(const QString &path, QString *error = nullptr) const;
+
+private:
+  friend AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
+                                  QString *error);
+  QJsonObject rawDocument_;
+  int schemaVersion_ = kCurrentSchemaVersion;
+  bool writable_ = true;
 };
 
 /** Testable JSON parser; missing keys inherit defaults. */

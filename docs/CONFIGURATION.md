@@ -17,12 +17,24 @@ niricapture --print-config
 ```
 
 A malformed file is reported on stderr and the built-in defaults are used; the
-file is not overwritten. Unknown keys are ignored.
+file is not overwritten. Unknown keys are preserved when the file is saved by
+the settings UI or another writer.
+
+## Schema and migration
+
+The current schema is `version: 2`. Missing versions are treated as v1 and
+migrated in memory; the next save writes v2. A file declaring a newer schema is
+rejected with an explicit error, and defaults are used for that process.
+
+Saving uses `QSaveFile` (write to a temporary file, then atomic rename), so a
+crash or full disk does not leave a truncated config. Errors include the path
+and the Qt error string.
 
 ## Full example
 
 ```json
 {
+  "version": 2,
   "tools": [
     "select", "pen", "arrow", "line", "rectangle", "ellipse",
     "text", "highlighter", "mosaic", "blur", "marker"

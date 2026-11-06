@@ -258,3 +258,15 @@ path. Live checks used `NIRICAPTURE_CONFIG=/tmp/nc-config.json` with a reduced
 toolbar (select/text/marker), green default style, two palette colors, padding
 24 and an Aurora canvas; the standalone editor and the in-place overlay both
 honored it.
+
+
+## Config v2 checks
+
+`tests/config-smoke.cpp` now validates:
+
+- JSON parse and defaults inheritance;
+- v1 → v2 migration;
+- newer schema rejection and `writable() == false`;
+- unknown keys at root and inside `canvas` / `editor` / `palette` / `ocr` /
+  `paths` preserved through `toJson()`;
+- atomic `QSaveFile` save and reload from a nested directory.

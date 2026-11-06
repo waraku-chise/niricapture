@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Configuration v2
+
+- `AppConfig::toJson()` / `toJsonBytes()` serialize the full configuration.
+- `save()` / `saveTo()` write through `QSaveFile` (atomic replace).
+- Unknown JSON keys are preserved on save.
+- Schema `version: 2` with in-memory migration from v1 and rejection of newer
+  schemas (including refusing to overwrite them).
+- `--print-config` prints the normalized v2 JSON.
+- `tests/config-smoke.cpp` covers roundtrip, unknown-field preservation,
+  migration, newer-schema rejection and atomic save/reload.
+
 ## [0.6.2] — 2026-11-06
 
 - The pointing-hand cursor now covers the whole toolbar panel and palette,

@@ -2,6 +2,12 @@
 
 #include "config.hpp"
 
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTemporaryDir>
+
 bool runConfigSmoke(QString &error) {
   const QByteArray json = R"({
     "tools": ["select", "text", "marker"],
@@ -51,6 +57,87 @@ bool runConfigSmoke(QString &error) {
   if (config.ocrLanguages != QStringLiteral("eng") ||
       config.screenshotDir != QStringLiteral("/tmp/niricapture-shots")) {
     error = QStringLiteral("Config OCR/path settings were not applied");
+    return false;
+  }
+  if (config.schemaVersion() != AppConfig::kCurrentSchemaVersion) {
+    error = QStringLiteral("Config schema version was not migrated");
+    return false;
+  }
+
+  const QByteArray preserved = R"({
+    "version": 1,
+    "future_root": {"enabled": true},
+    "canvas": {"width": 320, "future_canvas": "keep"},
+    "editor": {"future_editor": 7},
+    "palette": {"future_palette": ["keep"]},
+    "ocr": {"future_ocr": true},
+    "paths": {"future_path": "keep"}
+  })";
+  const AppConfig preserveConfig =
+      configFromJson(preserved, defaults, &parseError);
+  if (!parseError.isEmpty()) {
+    error = parseError;
+    return false;
+  }
+  const QJsonObject serialized = preserveConfig.toJson();
+  if (serialized.value(QStringLiteral("version")).toInt() != 2 ||
+      !serialized.value(QStringLiteral("future_root")).isObject() ||
+      !serialized.value(QStringLiteral("canvas"))
+           .toObject()
+           .value(QStringLiteral("future_canvas"))
+           .isString() ||
+      !serialized.value(QStringLiteral("editor"))
+           .toObject()
+           .contains(QStringLiteral("future_editor")) ||
+      !serialized.value(QStringLiteral("palette"))
+           .toObject()
+           .contains(QStringLiteral("future_palette")) ||
+      !serialized.value(QStringLiteral("ocr"))
+           .toObject()
+           .contains(QStringLiteral("future_ocr")) ||
+      !serialized.value(QStringLiteral("paths"))
+           .toObject()
+           .contains(QStringLiteral("future_path"))) {
+    error = QStringLiteral("Unknown config fields were not preserved");
+    return false;
+  }
+
+  QString newerError;
+  const AppConfig newer = configFromJson(
+      R"({"version": 99, "tools": ["text"]})", defaults, &newerError);
+  if (newerError.isEmpty() || newer.tools != defaults.tools ||
+      newer.writable()) {
+    error = QStringLiteral("Newer schema version was not rejected");
+    return false;
+  }
+
+  QTemporaryDir temporary;
+  if (!temporary.isValid()) {
+    error = QStringLiteral("Could not create temporary config directory");
+    return false;
+  }
+  AppConfig saved = preserveConfig;
+  saved.path = temporary.filePath(QStringLiteral("nested/config.json"));
+  QString saveError;
+  if (!saved.save(&saveError) || !saveError.isEmpty()) {
+    error = saveError.isEmpty() ? QStringLiteral("Config save failed")
+                                : saveError;
+    return false;
+  }
+  QFile savedFile(saved.path);
+  if (!savedFile.open(QIODevice::ReadOnly)) {
+    error = QStringLiteral("Could not reopen saved config");
+    return false;
+  }
+  QString reloadError;
+  const AppConfig reloaded =
+      configFromJson(savedFile.readAll(), defaults, &reloadError);
+  if (!reloadError.isEmpty() ||
+      reloaded.palette.colors != preserveConfig.palette.colors ||
+      reloaded.canvas.width != preserveConfig.canvas.width ||
+      reloaded.theme.defaultColor != preserveConfig.theme.defaultColor) {
+    error = reloadError.isEmpty() ? QStringLiteral("Config roundtrip failed")
+                                  : reloadError;
     return false;
   }
   return true;
