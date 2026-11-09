@@ -351,6 +351,7 @@ Window captures open this editor directly with the rendered window image.
 | `R` / `E` | Rectangle / ellipse |
 | `T` | Text |
 | `Q` | Colour / line-style / width popup |
+| `Ctrl+Shift+F` | Text font |
 | `H` | Highlighter |
 | `C` | Numbered marker |
 | `D` | Mosaic (D toggles solid/pixelate) |

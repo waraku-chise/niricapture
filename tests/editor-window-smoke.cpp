@@ -3,12 +3,14 @@
 #include "editor-window.hpp"
 #include "autostart.hpp"
 #include "settings-window.hpp"
+#include "editor/font-picker.hpp"
 
 #include <QApplication>
 #include <QImage>
 #include <QSize>
 #include <QTemporaryDir>
 #include <QFile>
+#include <QPushButton>
 #include <QDir>
 
 bool runEditorWindowSmoke(QString &error) {
@@ -48,6 +50,23 @@ bool runEditorWindowSmoke(QString &error) {
     return false;
   }
   settings.close();
+  QWidget pickerParent;
+  pickerParent.resize(800, 600);
+  pickerParent.show();
+  QApplication::processEvents();
+  FontPicker picker(QStringLiteral("Neucha"), &pickerParent,
+                    [](const QString &) {});
+  picker.showCentered();
+  QApplication::processEvents();
+  if (!picker.isVisible()) {
+    error = QStringLiteral("Embedded FontPicker did not become visible");
+    return false;
+  }
+  if (picker.findChildren<QPushButton *>().size() < 2) {
+    error = QStringLiteral("FontPicker is missing its action buttons");
+    return false;
+  }
+  picker.close();
   if (!setAutostartEnabled(true)) {
     error = QStringLiteral("Could not enable test autostart");
     return false;

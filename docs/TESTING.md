@@ -297,3 +297,10 @@ honored it.
 - 45° snapping constrains a line endpoint around its anchor.
 - `Alt` toggles snapping; a line drawn with snapping off retains its raw angle.
 - Wheel steps through the configured line-width presets.
+
+
+## Font dialog checks
+
+- The standalone font action opens the embedded picker, not a portal dialog.
+- The in-place screenshot overlay opens the same picker and remains responsive.
+- Picker labels and buttons are Chinese; `Ctrl+Shift+F` opens it directly.

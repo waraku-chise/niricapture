@@ -21,6 +21,8 @@ set(NIRICAPTURE_EDITOR_SOURCES
   src/editor/tool-registry.hpp
   src/editor/editor-canvas.cpp
   src/editor/editor-canvas.hpp
+  src/editor/font-picker.cpp
+  src/editor/font-picker.hpp
   src/editor/tool-bar.cpp
   src/editor/tool-bar.hpp
   src/editor/tools/builtin-tools.cpp

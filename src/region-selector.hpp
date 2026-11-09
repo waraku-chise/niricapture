@@ -13,6 +13,8 @@
 #include <QRectF>
 #include <QVector>
 
+class FontPicker;
+
 #include <cstdint>
 
 class QKeyEvent;
@@ -118,6 +120,7 @@ private:
   ToolBar toolBar_;
 
   QPointer<QLineEdit> textEditor_;
+  FontPicker *fontPicker_ = nullptr;
   QPointer<RegionOverlay> textOverlay_;
   QPointF textPoint_;
   bool committingText_ = false;

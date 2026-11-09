@@ -257,7 +257,8 @@ void SettingsWindow::buildUi() {
   dataForm->addRow(QStringLiteral("开机启动"), autostart_);
   connect(browse, &QPushButton::clicked, this, [this] {
     const QString dir = QFileDialog::getExistingDirectory(
-        this, QStringLiteral("选择截图目录"), screenshotDir_->text());
+        this, QStringLiteral("选择截图目录"), screenshotDir_->text(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontUseNativeDialog);
     if (!dir.isEmpty())
       screenshotDir_->setText(dir);
   });

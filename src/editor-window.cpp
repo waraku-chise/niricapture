@@ -1,6 +1,7 @@
 #include "editor-window.hpp"
 
 #include "editor/editor-canvas.hpp"
+#include "editor/font-picker.hpp"
 #include "editor/tool-bar.hpp"
 #include "i18n.hpp"
 
@@ -14,7 +15,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
-#include <QFontDialog>
 #include <QColorDialog>
 #include <QFontMetricsF>
 #include <QFormLayout>
@@ -447,6 +447,13 @@ protected:
       event->accept();
       return;
     }
+    if (event->key() == Qt::Key_F &&
+        event->modifiers().testFlag(Qt::ControlModifier) &&
+        event->modifiers().testFlag(Qt::ShiftModifier)) {
+      chooseFont();
+      event->accept();
+      return;
+    }
     if (event->matches(QKeySequence::Copy)) {
       owner_->copyImage();
       event->accept();
@@ -563,23 +570,25 @@ private:
   }
 
   void chooseFont() {
-    QFont initial(canvas_.style().fontFamily);
-    initial.setPixelSize(18);
-    bool accepted = false;
-    const QFont chosen = QFontDialog::getFont(
-        &accepted, initial, this, ui("Text font", "文字字体"));
-    if (!accepted)
-      return;
-    canvas_.style().fontFamily = chosen.family();
-    if (canvas_.document().selected() >= 0) {
-      Annotation &annotation =
-          canvas_.document().annotations()[canvas_.document().selected()];
-      if (annotation.kind == Annotation::Kind::Text) {
-        canvas_.document().pushUndo();
-        annotation.fontFamily = chosen.family();
-      }
+    if (fontPicker_) {
+      fontPicker_->deleteLater();
+      fontPicker_ = nullptr;
     }
-    update();
+    fontPicker_ = new FontPicker(
+        canvas_.style().fontFamily, this, [this](const QString &family) {
+          fontPicker_ = nullptr;
+          canvas_.style().fontFamily = family;
+          if (canvas_.document().selected() >= 0) {
+            Annotation &annotation =
+                canvas_.document().annotations()[canvas_.document().selected()];
+            if (annotation.kind == Annotation::Kind::Text) {
+              canvas_.document().pushUndo();
+              annotation.fontFamily = family;
+            }
+          }
+          update();
+        });
+    fontPicker_->showCentered();
   }
 
   void handleToolbarHit(const ToolBarHit &hit) {
@@ -632,7 +641,8 @@ private:
       }
     } else if (hit.id == QStringLiteral("custom-color")) {
       const QColor color = QColorDialog::getColor(
-          canvas_.style().color, this, ui("Custom colour", "自定义颜色"));
+          canvas_.style().color, this, ui("Custom colour", "自定义颜色"),
+          QColorDialog::DontUseNativeDialog);
       if (color.isValid()) {
         canvas_.style().color = color;
         if (canvas_.document().selected() >= 0) {
@@ -707,6 +717,7 @@ private:
   QPointF panStart_;
   QPointF panOrigin_;
   QLineEdit *textEditor_ = nullptr;
+  FontPicker *fontPicker_ = nullptr;
   QPointF textPoint_;
 };
 

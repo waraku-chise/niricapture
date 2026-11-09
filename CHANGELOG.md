@@ -21,6 +21,15 @@
 
 ## [Unreleased]
 
+### Font picker / dialogs
+
+- Replaced the top-level font dialog with the in-surface `FontPicker`; this
+  fixes the screenshot editor freezing when the font action was clicked.
+- Font picker labels and buttons are Chinese; `Ctrl+Shift+F` opens it.
+- Load Qt's `qtbase_zh_CN` catalog so standard dialog buttons are Chinese.
+- Colour and directory pickers use non-native Qt dialogs.
+- The screenshot overlay and standalone editor share the same embedded picker.
+
 ### 1.0 editor features
 
 - Added `--settings`, a tabbed settings window for tools/commands, palette,

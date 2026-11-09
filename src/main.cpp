@@ -4,6 +4,7 @@
 #include "config.hpp"
 #include "editor-window.hpp"
 #include "instance-lock.hpp"
+#include "i18n.hpp"
 #include "pin.hpp"
 #include "region-selector.hpp"
 #include "settings-window.hpp"
@@ -390,6 +391,7 @@ int main(int argc, char **argv) {
     qputenv("QT_QPA_PLATFORM", "offscreen");
   QGuiApplication::setDesktopFileName(QStringLiteral("niricapture"));
   QApplication application(argc, argv);
+  installQtTranslator(application);
 
   QCommandLineParser parser;
   parser.setApplicationDescription(QStringLiteral(

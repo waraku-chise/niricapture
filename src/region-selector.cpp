@@ -2,6 +2,7 @@
 #include "region-selector.hpp"
 
 #include "editor/annotation-geometry.hpp"
+#include "editor/font-picker.hpp"
 #include "i18n.hpp"
 
 #include <LayerShellQt/Window>
@@ -9,7 +10,6 @@
 #include <QApplication>
 #include <QFont>
 #include <QFontDatabase>
-#include <QFontDialog>
 #include <QColorDialog>
 #include <QFontMetricsF>
 #include <QGuiApplication>
@@ -635,24 +635,28 @@ void RegionSelector::setToolbarHover(RegionOverlay *overlay,
 }
 
 void RegionSelector::chooseFont() {
-  QFont initial(canvas_.style().fontFamily);
-  initial.setPixelSize(18);
-  bool accepted = false;
   QWidget *parent = overlays_.isEmpty() ? nullptr : overlays_.first();
-  const QFont chosen = QFontDialog::getFont(
-      &accepted, initial, parent, ui("Text font", "文字字体"));
-  if (!accepted)
+  if (!parent)
     return;
-  canvas_.style().fontFamily = chosen.family();
-  if (canvas_.document().selected() >= 0) {
-    Annotation &annotation =
-        canvas_.document().annotations()[canvas_.document().selected()];
-    if (annotation.kind == Annotation::Kind::Text) {
-      canvas_.document().pushUndo();
-      annotation.fontFamily = chosen.family();
-    }
+  if (fontPicker_) {
+    fontPicker_->deleteLater();
+    fontPicker_ = nullptr;
   }
-  selectionChanged();
+  fontPicker_ = new FontPicker(
+      canvas_.style().fontFamily, parent, [this](const QString &family) {
+        fontPicker_ = nullptr;
+        canvas_.style().fontFamily = family;
+        if (canvas_.document().selected() >= 0) {
+          Annotation &annotation =
+              canvas_.document().annotations()[canvas_.document().selected()];
+          if (annotation.kind == Annotation::Kind::Text) {
+            canvas_.document().pushUndo();
+            annotation.fontFamily = family;
+          }
+        }
+        selectionChanged();
+      });
+  fontPicker_->showCentered();
 }
 
 void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
@@ -708,7 +712,8 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
   } else if (hit.id == QStringLiteral("custom-color")) {
     QWidget *parent = overlays_.isEmpty() ? nullptr : overlays_.first();
     const QColor color = QColorDialog::getColor(
-        canvas_.style().color, parent, ui("Custom colour", "自定义颜色"));
+        canvas_.style().color, parent, ui("Custom colour", "自定义颜色"),
+        QColorDialog::DontUseNativeDialog);
     if (color.isValid()) {
       canvas_.style().color = color;
       if (canvas_.document().selected() >= 0) {
@@ -846,6 +851,13 @@ bool RegionSelector::editorKey(QKeyEvent *event, RegionOverlay *) {
   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
     if (hasSelection())
       exportSelection(QuickOutputMode::Both);
+    event->accept();
+    return true;
+  }
+  if (event->key() == Qt::Key_F &&
+      event->modifiers().testFlag(Qt::ControlModifier) &&
+      event->modifiers().testFlag(Qt::ShiftModifier)) {
+    chooseFont();
     event->accept();
     return true;
   }
