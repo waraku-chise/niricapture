@@ -19,6 +19,7 @@ class AnnotationDocument;
 struct EditorStyle {
   QColor color = QColor(QStringLiteral("#ff375f"));
   qreal width = 4.0;
+  StrokeStyle strokeStyle = StrokeStyle::Solid;
   QString fontFamily = QStringLiteral("Neucha");
   bool filled = false;
 };

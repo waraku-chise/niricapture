@@ -348,7 +348,7 @@ Window captures open this editor directly with the rendered window image.
 | `A` / `L` | Arrow / line |
 | `R` / `E` | Rectangle / ellipse |
 | `T` | Text |
-| `Q` | Colour / line-width popup |
+| `Q` | Colour / line-style / width popup |
 | `H` | Highlighter |
 | `C` | Numbered marker |
 | `D` | Mosaic (D toggles solid/pixelate) |
@@ -359,12 +359,14 @@ Window captures open this editor directly with the rendered window image.
 | `Ctrl` + drag annotation handle | Resize around centre |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
 | `Delete` | Delete selected annotation |
-| Wheel | Scale selected annotation / tool size |
+| Wheel | Change line width / selected annotation thickness |
 | `Ctrl+C` / `Ctrl+S` | Copy / save |
 | `Enter` | Copy and save |
 | `Esc` | Close popup, then editor |
 
-Shape, colour, line-width, and extra actions are grouped in popups. The
+Shape, colour, line style, line width, and extra actions are grouped in
+popups. The left control selects solid/dashed/dotted/dash-dot, the dots below
+set width, and the wheel steps through the width presets. The
 standalone editor docks its toolbar to the top border, with the image laid out
 below; the region editor keeps its toolbar near the selection and clamps it to
 the screen edges.

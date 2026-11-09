@@ -47,11 +47,12 @@ public:
   void setPalette(const QStringList &colors, const QVector<int> &widths);
   [[nodiscard]] QColor colorAt(int index) const;
   [[nodiscard]] int widthAt(int index) const;
-  [[nodiscard]] int nextWidth(qreal current) const;
   void setPaletteOpen(bool open) { paletteOpen_ = open; }
   [[nodiscard]] bool paletteOpen() const { return paletteOpen_; }
   void setColors(const QColor &color, bool filled);
   void setWidth(qreal width);
+  void setStrokeStyle(StrokeStyle style) { strokeStyle_ = style; }
+  [[nodiscard]] StrokeStyle strokeStyle() const { return strokeStyle_; }
   void setHistory(bool canUndo, bool canRedo);
   void setHovered(const QString &id);
   void setPressed(const QString &id);
@@ -77,6 +78,7 @@ private:
   QString currentTool_;
   QColor color_ = QColor(QStringLiteral("#ff375f"));
   qreal width_ = 4.0;
+  StrokeStyle strokeStyle_ = StrokeStyle::Solid;
   bool filled_ = false;
   bool paletteOpen_ = false;
   bool canUndo_ = false;

@@ -278,6 +278,7 @@ RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
       toolBar_(canvas_.registry()) {
   canvas_.registry().setVisibleTools(config.tools);
   canvas_.setToolShortcuts(config.shortcuts);
+  canvas_.setWidthOptions(config.palette.widths);
   EditorStyle style;
   style.color = config.theme.defaultColor;
   style.width = config.theme.defaultWidth;
@@ -590,6 +591,7 @@ void RegionSelector::syncToolbar() {
   toolBar_.setCurrentTool(canvas_.currentToolId());
   toolBar_.setColors(canvas_.style().color, canvas_.style().filled);
   toolBar_.setWidth(canvas_.style().width);
+  toolBar_.setStrokeStyle(canvas_.style().strokeStyle);
   toolBar_.setHistory(canvas_.document().canUndo(),
                       canvas_.document().canRedo());
 }
@@ -686,6 +688,14 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
         selected.color = canvas_.style().color;
       }
     }
+  } else if (hit.id == QStringLiteral("line-style")) {
+    canvas_.style().strokeStyle =
+        nextStrokeStyle(canvas_.style().strokeStyle);
+    if (canvas_.document().selected() >= 0) {
+      canvas_.document().pushUndo();
+      canvas_.document().annotations()[canvas_.document().selected()]
+          .strokeStyle = canvas_.style().strokeStyle;
+    }
   } else if (hit.id.startsWith(QStringLiteral("size-"))) {
     canvas_.style().width =
         std::clamp(hit.id.sliced(5).toInt(), 1, 96);
@@ -694,6 +704,19 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
       Annotation &selected = canvas_.document().annotations()[
           canvas_.document().selected()];
       selected.size = canvas_.style().width;
+    }
+  } else if (hit.id == QStringLiteral("custom-color")) {
+    QWidget *parent = overlays_.isEmpty() ? nullptr : overlays_.first();
+    const QColor color = QColorDialog::getColor(
+        canvas_.style().color, parent, ui("Custom colour", "自定义颜色"));
+    if (color.isValid()) {
+      canvas_.style().color = color;
+      if (canvas_.document().selected() >= 0) {
+        canvas_.document().pushUndo();
+        Annotation &selected = canvas_.document().annotations()[
+            canvas_.document().selected()];
+        selected.color = color;
+      }
     }
   } else if (hit.id == QStringLiteral("fill")) {
     canvas_.style().filled = !canvas_.style().filled;

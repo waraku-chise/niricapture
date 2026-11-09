@@ -20,6 +20,7 @@ bool TwoPointTool::mousePress(const ToolEvent &event, ToolContext &context) {
   end_ = event.pos;
   previewColor_ = context.style.color;
   previewWidth_ = context.style.width;
+  previewStrokeStyle_ = context.style.strokeStyle;
   previewFilled_ = supportsFill() && context.style.filled;
   context.requestRepaint();
   return true;
@@ -47,6 +48,7 @@ bool TwoPointTool::mouseRelease(const ToolEvent &event, ToolContext &context) {
     annotation.end = end_;
     annotation.color = context.style.color;
     annotation.size = context.style.width;
+    annotation.strokeStyle = context.style.strokeStyle;
     annotation.filled = supportsFill() && context.style.filled;
     context.document.add(std::move(annotation));
     context.setStatus(addedStatus());
@@ -65,6 +67,7 @@ std::optional<Annotation> TwoPointTool::preview() const {
   annotation.end = end_;
   annotation.color = previewColor_;
   annotation.size = previewWidth_;
+  annotation.strokeStyle = previewStrokeStyle_;
   annotation.filled = previewFilled_;
   return annotation;
 }

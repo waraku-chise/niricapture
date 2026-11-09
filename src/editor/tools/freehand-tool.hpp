@@ -21,5 +21,6 @@ protected:
   QVector<QPointF> points_;
   QColor previewColor_;
   qreal previewWidth_ = 4.0;
+  StrokeStyle previewStrokeStyle_ = StrokeStyle::Solid;
   bool active_ = false;
 };

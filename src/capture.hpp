@@ -51,6 +51,11 @@ enum class CaptureOutcome { Success, Cancelled, Error };
 
 enum class SpotlightShape { Ellipse, Rectangle, RoundedRectangle };
 enum class RedactionStyle { Solid, Pixelate };
+enum class StrokeStyle { Solid, Dashed, Dotted, DashDot };
+
+[[nodiscard]] constexpr StrokeStyle nextStrokeStyle(StrokeStyle style) {
+  return static_cast<StrokeStyle>((static_cast<int>(style) + 1) % 4);
+}
 
 struct Annotation {
   enum class Kind {
@@ -73,6 +78,7 @@ struct Annotation {
   QString text;
   QString fontFamily;
   QColor color;
+  StrokeStyle strokeStyle = StrokeStyle::Solid;
   qreal size = 4.0;
   int number = 0;
   QVector<QPointF> points;

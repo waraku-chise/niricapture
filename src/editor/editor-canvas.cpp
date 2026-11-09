@@ -36,6 +36,11 @@ void EditorCanvas::setToolShortcuts(
   shortcuts_ = shortcuts;
 }
 
+void EditorCanvas::setWidthOptions(const QVector<int> &widths) {
+  if (!widths.isEmpty())
+    widthOptions_ = widths;
+}
+
 void EditorCanvas::setColorSampler(
     std::function<QColor(const QPointF &)> sampler) {
   sampleColor_ = std::move(sampler);
@@ -176,7 +181,29 @@ bool EditorCanvas::wheel(QWheelEvent *event) {
       repaint_();
     return true;
   }
-  return false;
+  if (widthOptions_.isEmpty() ||
+      event->modifiers().testFlag(Qt::ControlModifier) ||
+      event->modifiers().testFlag(Qt::AltModifier) ||
+      event->modifiers().testFlag(Qt::MetaModifier))
+    return false;
+  const int steps = event->angleDelta().y() / 120;
+  if (steps == 0)
+    return false;
+  int nearest = 0;
+  qreal distance = std::abs(widthOptions_.at(0) - style_.width);
+  for (int i = 1; i < widthOptions_.size(); ++i) {
+    const qreal candidate = std::abs(widthOptions_.at(i) - style_.width);
+    if (candidate < distance) {
+      distance = candidate;
+      nearest = i;
+    }
+  }
+  const int target = std::clamp(
+      nearest + steps, 0, static_cast<int>(widthOptions_.size()) - 1);
+  style_.width = widthOptions_.at(target);
+  if (repaint_)
+    repaint_();
+  return true;
 }
 
 std::optional<Annotation> EditorCanvas::preview() const {

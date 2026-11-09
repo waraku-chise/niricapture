@@ -18,6 +18,7 @@ bool FreehandTool::mousePress(const ToolEvent &event, ToolContext &context) {
   points_.push_back(event.pos);
   previewColor_ = color(context.style);
   previewWidth_ = context.style.width;
+  previewStrokeStyle_ = context.style.strokeStyle;
   context.requestRepaint();
   return true;
 }
@@ -50,6 +51,7 @@ bool FreehandTool::mouseRelease(const ToolEvent &event, ToolContext &context) {
     annotation.end = points_.last();
     annotation.color = color(context.style);
     annotation.size = context.style.width;
+    annotation.strokeStyle = context.style.strokeStyle;
     annotation.points = points_;
     context.document.add(std::move(annotation));
     context.setStatus(addedStatus());
@@ -68,6 +70,7 @@ std::optional<Annotation> FreehandTool::preview() const {
   annotation.end = points_.last();
   annotation.color = previewColor_;
   annotation.size = previewWidth_;
+  annotation.strokeStyle = previewStrokeStyle_;
   annotation.points = points_;
   return annotation;
 }

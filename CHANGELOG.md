@@ -35,7 +35,8 @@
   around the centre), including the combination.
 - Hovering a toolbar tool now shows its name above the button.
 - The colour popup now uses a compact 9×4 swatch grid, a current-colour swatch
-  with custom-colour rainbow corner, a width control and a fill toggle.
+  with custom-colour rainbow corner, a line-style selector, width circles and a
+  fill toggle. The wheel steps through the width presets.
 - Text annotations carry a font family. The toolbar “Text font” command opens
   a font dialog; the settings window sets the default `editor.font`.
 - Removed the legacy `CaptureEditor` source, its old smoke tests and the old

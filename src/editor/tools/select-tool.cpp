@@ -79,6 +79,8 @@ bool SelectTool::mousePress(const ToolEvent &event, ToolContext &context) {
   context.document.setSelected(hit);
   context.style.color = context.document.annotations().at(hit).color;
   context.style.width = context.document.annotations().at(hit).size;
+  context.style.strokeStyle =
+      context.document.annotations().at(hit).strokeStyle;
   context.style.filled = context.document.annotations().at(hit).filled;
   original_ = context.document.annotations().at(hit);
   index_ = hit;
@@ -156,6 +158,7 @@ bool SelectTool::wheel(QWheelEvent *event, ToolContext &context) {
   context.document.pushUndo();
   const qreal factor = steps > 0 ? 1.12 : 1.0 / 1.12;
   annotation.size = std::clamp(annotation.size * factor, 2.0, 96.0);
+  context.style.width = annotation.size;
   context.requestRepaint();
   return true;
 }

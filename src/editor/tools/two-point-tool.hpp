@@ -22,6 +22,7 @@ protected:
   QPointF end_;
   QColor previewColor_;
   qreal previewWidth_ = 4.0;
+  StrokeStyle previewStrokeStyle_ = StrokeStyle::Solid;
   bool previewFilled_ = false;
   bool active_ = false;
 };

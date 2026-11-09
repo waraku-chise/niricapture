@@ -118,7 +118,7 @@ only changes the tool switch; global actions (`Ctrl+C`, `Ctrl+S`, `Ctrl+Z`,
 ## palette
 
 `colors` is a list of `#rrggbb` values (the default palette has 36 colours in
-a 9×4 grid); `widths` is a list of positive integer line widths. They drive the colour/width popup and the colour/size actions for
+a 9×4 grid); `widths` is a list of positive integer line widths, shown as circles and stepped through with the wheel. They drive the colour/width popup and the colour/size actions for
 the selected annotation. `editor.default_color` and `editor.default_width` set
 the initial style.
 

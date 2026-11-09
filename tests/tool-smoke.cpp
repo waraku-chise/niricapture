@@ -12,6 +12,7 @@
 
 #include <QImage>
 #include <QPainter>
+#include <QWheelEvent>
 #include <QPointF>
 #include <QRectF>
 
@@ -221,6 +222,43 @@ bool runEditorToolSmoke(QString &error) {
       return false;
   }
 
+  {
+    EditorCanvas wheelCanvas;
+    wheelCanvas.setWidthOptions({2, 4, 8, 12});
+    wheelCanvas.style().width = 4;
+    QWheelEvent wheelUp(QPointF(50, 50), QPointF(50, 50), QPoint(),
+                        QPoint(0, 120), Qt::NoButton, Qt::NoModifier,
+                        Qt::NoScrollPhase, false);
+    if (!check(wheelCanvas.wheel(&wheelUp) &&
+                   wheelCanvas.style().width == 8,
+               "Wheel did not advance the line width", error))
+      return false;
+    QWheelEvent wheelDown(QPointF(50, 50), QPointF(50, 50), QPoint(),
+                          QPoint(0, -120), Qt::NoButton, Qt::NoModifier,
+                          Qt::NoScrollPhase, false);
+    if (!check(wheelCanvas.wheel(&wheelDown) &&
+                   wheelCanvas.style().width == 4,
+               "Wheel did not reduce the line width", error))
+      return false;
+
+    EditorCanvas dashedCanvas;
+    dashedCanvas.setSelection(QRectF(0, 0, 200, 200));
+    dashedCanvas.style().strokeStyle = StrokeStyle::Dashed;
+    dashedCanvas.setTool(QStringLiteral("rectangle"));
+    ToolEvent dashStart;
+    dashStart.pos = {20, 20};
+    ToolEvent dashEnd = dashStart;
+    dashEnd.pos = {100, 100};
+    dashedCanvas.press(dashStart);
+    dashedCanvas.move(dashEnd);
+    dashedCanvas.release(dashEnd);
+    if (!check(!dashedCanvas.document().annotations().isEmpty() &&
+                   dashedCanvas.document().annotations().first().strokeStyle ==
+                       StrokeStyle::Dashed,
+               "Line style was not copied to the annotation", error))
+      return false;
+  }
+
   const QFont customFont =
       annotationTextFont(5.0, QStringLiteral("DejaVu Sans"));
   if (!check(customFont.family().contains(QStringLiteral("DejaVu")),
@@ -278,7 +316,7 @@ bool runEditorToolSmoke(QString &error) {
   for (const ToolButton &button : paletteBar.buttons(viewport, selection)) {
     if (button.id == QStringLiteral("color-0"))
       colorSelected = button.selected;
-    if (button.id == QStringLiteral("width"))
+    if (button.id == QStringLiteral("size-9"))
       widthSelected = button.selected;
     if (button.id == QStringLiteral("custom-color"))
       customColor = button.swatch == QColor(QStringLiteral("#00ff00"));
@@ -289,8 +327,16 @@ bool runEditorToolSmoke(QString &error) {
     return false;
   if (!check(customColor, "Custom colour swatch is missing", error))
     return false;
-  if (!check(paletteBar.nextWidth(3) == 9 && paletteBar.nextWidth(9) == 3,
-             "Width control does not cycle", error))
+  bool lineStylePresent = false;
+  for (const ToolButton &button : paletteBar.buttons(viewport, selection)) {
+    if (button.id == QStringLiteral("line-style"))
+      lineStylePresent = true;
+  }
+  if (!check(lineStylePresent, "Line-style control missing", error))
+    return false;
+  paletteBar.setStrokeStyle(StrokeStyle::Dashed);
+  if (!check(paletteBar.strokeStyle() == StrokeStyle::Dashed,
+             "Stroke style was not applied", error))
     return false;
   const QRectF barRect = paletteBar.rect(viewport, selection);
   if (!check(paletteBar.contains(viewport, selection,

@@ -83,6 +83,7 @@ public:
     setAttribute(Qt::WA_OpaquePaintEvent);
     canvas_.registry().setVisibleTools(config_.tools);
     canvas_.setToolShortcuts(config_.shortcuts);
+    canvas_.setWidthOptions(config_.palette.widths);
     EditorStyle style;
     style.color = config_.theme.defaultColor;
     style.width = config_.theme.defaultWidth;
@@ -613,8 +614,17 @@ private:
               .color = canvas_.style().color;
         }
       }
-    } else if (hit.id == QStringLiteral("width")) {
-      canvas_.style().width = bar_.nextWidth(canvas_.style().width);
+    } else if (hit.id == QStringLiteral("line-style")) {
+      canvas_.style().strokeStyle =
+          nextStrokeStyle(canvas_.style().strokeStyle);
+      if (canvas_.document().selected() >= 0) {
+        canvas_.document().pushUndo();
+        canvas_.document().annotations()[canvas_.document().selected()]
+            .strokeStyle = canvas_.style().strokeStyle;
+      }
+    } else if (hit.id.startsWith(QStringLiteral("size-"))) {
+      canvas_.style().width =
+          std::clamp(hit.id.sliced(5).toInt(), 1, 96);
       if (canvas_.document().selected() >= 0) {
         canvas_.document().pushUndo();
         canvas_.document().annotations()[canvas_.document().selected()]
@@ -646,6 +656,7 @@ private:
     bar_.setCurrentTool(canvas_.currentToolId());
     bar_.setColors(canvas_.style().color, canvas_.style().filled);
     bar_.setWidth(canvas_.style().width);
+    bar_.setStrokeStyle(canvas_.style().strokeStyle);
     bar_.setHistory(canvas_.document().canUndo(),
                     canvas_.document().canRedo());
   }

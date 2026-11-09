@@ -360,6 +360,20 @@ QVector<WindowTarget> parseWindows(const QByteArray &json, quint64 workspaceId,
   return result;
 }
 
+Qt::PenStyle annotationPenStyle(StrokeStyle style) {
+  switch (style) {
+  case StrokeStyle::Dashed:
+    return Qt::DashLine;
+  case StrokeStyle::Dotted:
+    return Qt::DotLine;
+  case StrokeStyle::DashDot:
+    return Qt::DashDotLine;
+  case StrokeStyle::Solid:
+    break;
+  }
+  return Qt::SolidLine;
+}
+
 void drawAnnotation(QPainter &painter, const Annotation &annotation) {
   // Redactions replace source pixels in renderCapture before ordinary vector
   // annotations are painted. They must never be approximated by a translucent
@@ -370,7 +384,8 @@ void drawAnnotation(QPainter &painter, const Annotation &annotation) {
     return;
 
   const qreal width = std::max<qreal>(2.0, annotation.size);
-  QPen pen(annotation.color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+  QPen pen(annotation.color, width, annotationPenStyle(annotation.strokeStyle),
+           Qt::RoundCap, Qt::RoundJoin);
   painter.setPen(pen);
   painter.setBrush(annotation.color);
 
