@@ -5,6 +5,7 @@
 #include "editor/tool-bar.hpp"
 #include "editor/tool-registry.hpp"
 #include "editor/tools/builtin-tools.hpp"
+#include "capture.hpp"
 
 #include <QImage>
 #include <QPainter>
@@ -197,6 +198,53 @@ bool runEditorToolSmoke(QString &error) {
                                  QPointF(barRect.left() + 2,
                                          barRect.center().y())),
              "Toolbar gaps are not part of the hand-cursor area", error))
+    return false;
+  ToolBar dockBar(registry);
+  dockBar.setDock(ToolBar::Dock::Top);
+  const QRectF docked = dockBar.rect(viewport, selection);
+  if (!check(qFuzzyCompare(docked.top(), viewport.top() + 8.0),
+             "Docked toolbar is not on the top border", error))
+    return false;
+
+  CaptureData sourceCapture;
+  sourceCapture.source = QImage(160, 120, QImage::Format_ARGB32_Premultiplied);
+  sourceCapture.source.fill(QColor(QStringLiteral("#ffffff")));
+  for (int x = 0; x < sourceCapture.source.width(); x += 8) {
+    for (int y = 0; y < sourceCapture.source.height(); y += 8) {
+      if (((x / 8) + (y / 8)) % 2 == 0) {
+        QPainter stripe(&sourceCapture.source);
+        stripe.fillRect(QRect(x, y, 4, 4), QColor(QStringLiteral("#202020")));
+      }
+    }
+  }
+  sourceCapture.previewSize = sourceCapture.source.size();
+  sourceCapture.monitor.geometry = QRect(QPoint(0, 0), sourceCapture.source.size());
+  sourceCapture.monitor.pixelSize = sourceCapture.source.size();
+  sourceCapture.monitor.scale = 1.0;
+
+  const auto effectChanged = [&](const QString &toolId) {
+    EditorCanvas effectCanvas;
+    effectCanvas.setSelection(QRectF(QPointF(0, 0), QSizeF(160, 120)));
+    effectCanvas.setTool(toolId);
+    ToolEvent effectPress;
+    effectPress.pos = {20, 20};
+    ToolEvent effectMove = effectPress;
+    effectMove.pos = {130, 100};
+    effectCanvas.press(effectPress);
+    effectCanvas.move(effectMove);
+    effectCanvas.release(effectMove);
+    if (effectCanvas.document().annotations().size() != 1)
+      return false;
+    const QImage output = renderCapture(
+        sourceCapture, QRectF(0, 0, 160, 120),
+        effectCanvas.document().annotations(), BackgroundStyle::None);
+    return !output.isNull() && output != sourceCapture.source;
+  };
+  if (!check(effectChanged(QStringLiteral("mosaic")),
+             "Mosaic render did not change pixels", error))
+    return false;
+  if (!check(effectChanged(QStringLiteral("blur")),
+             "Blur render did not change pixels", error))
     return false;
 
   QImage image(400, 300, QImage::Format_ARGB32_Premultiplied);

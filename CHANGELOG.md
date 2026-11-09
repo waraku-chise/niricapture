@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3] — 2026-11-09
+
+### Editor fixes
+
+- The standalone editor's annotation toolbar is now docked to the top border
+  instead of floating over the canvas; the image area is laid out below it.
+- Mosaic and Gaussian blur now render a live preview during drawing and after
+  commit, before the vector layer. Export behavior is unchanged and verified
+  against `renderCapture`.
+- Tests cover the docked toolbar geometry and that mosaic/blur actually change
+  rendered pixels.
+
 ## [Unreleased]
 
 ### Configuration v2

@@ -44,6 +44,7 @@ namespace {
 constexpr int kDefaultCanvasWidth = 1600;
 constexpr int kDefaultCanvasHeight = 900;
 constexpr int kEditorMargin = 48;
+constexpr qreal kToolbarStrip = 56.0;
 
 QString imageFilter() {
   return QObject::tr("Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif);;All files (*)");
@@ -89,6 +90,7 @@ public:
     bar_.setPalette(config_.palette.colors, config_.palette.widths);
     bar_.setTheme(config_.theme.panel, QColor(255, 255, 255, 30),
                   config_.theme.accent);
+    bar_.setDock(ToolBar::Dock::Top);
     canvas_.setStatusCallback(
         [this](const QString &text) { owner_->setStatus(text); });
     canvas_.setRepaintCallback([this] { update(); });
@@ -262,6 +264,7 @@ protected:
     painter.restore();
 
     painter.drawImage(image, capture_.source);
+    paintSourceEffects(painter, image);
 
     painter.save();
     painter.setClipRect(image);
@@ -444,13 +447,62 @@ protected:
   }
 
 private:
+  void paintSourceEffects(QPainter &painter, const QRectF &imageRect) const {
+    if (capture_.source.isNull() || imageSize_.isEmpty())
+      return;
+    QVector<Annotation> all = canvas_.document().annotations();
+    if (const auto preview = canvas_.preview())
+      all.push_back(*preview);
+    const QRectF imageBounds(QPointF(0, 0), QSizeF(imageSize_));
+    for (const Annotation &annotation : all) {
+      if (annotation.kind != Annotation::Kind::Redaction &&
+          annotation.kind != Annotation::Kind::Blur)
+        continue;
+      const QRectF logical =
+          QRectF(annotation.start, annotation.end).normalized().intersected(
+              imageBounds);
+      if (logical.width() < 1 || logical.height() < 1)
+        continue;
+      const QRectF screen(imageRect.topLeft() + logical.topLeft() * zoom_,
+                          logical.size() * zoom_);
+      if (screen.width() < 1 || screen.height() < 1)
+        continue;
+      const QRect source(logical.x(), logical.y(), logical.width(),
+                         logical.height());
+      const QImage patch = capture_.source.copy(source);
+      if (patch.isNull())
+        continue;
+      painter.save();
+      painter.setClipRect(screen);
+      if (annotation.kind == Annotation::Kind::Blur) {
+        const QSize small(std::max(1, qRound(screen.width() / 14.0)),
+                          std::max(1, qRound(screen.height() / 14.0)));
+        const QImage preview =
+            patch.scaled(small, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+                .scaled(screen.size().toSize(), Qt::IgnoreAspectRatio,
+                        Qt::SmoothTransformation);
+        painter.drawImage(screen.topLeft(), preview);
+      } else {
+        const QSize small(std::max(1, qRound(screen.width() / 12.0)),
+                          std::max(1, qRound(screen.height() / 12.0)));
+        const QImage preview =
+            patch.scaled(small, Qt::IgnoreAspectRatio, Qt::FastTransformation)
+                .scaled(screen.size().toSize(), Qt::IgnoreAspectRatio,
+                        Qt::FastTransformation);
+        painter.drawImage(screen.topLeft(), preview);
+      }
+      painter.restore();
+    }
+  }
+
   void computeFit() {
     if (imageSize_.isEmpty() || width() <= 0 || height() <= 0)
       return;
     const QSizeF content = QSizeF(imageSize_) +
                            QSizeF(padding_ * 2, padding_ * 2);
     const qreal availableWidth = std::max(1, width() - kEditorMargin * 2);
-    const qreal availableHeight = std::max(1, height() - kEditorMargin * 2);
+    const qreal availableHeight = std::max(
+        1.0, height() - kToolbarStrip - kEditorMargin * 2);
     zoom_ = std::clamp(
         std::min(availableWidth / content.width(),
                  availableHeight / content.height()),
@@ -463,8 +515,10 @@ private:
     const QSizeF content = QSizeF(imageSize_) +
                            QSizeF(padding_ * 2, padding_ * 2);
     const QSizeF shown = content * zoom_;
-    const QPointF origin((width() - shown.width()) / 2.0 + pan_.x(),
-                         (height() - shown.height()) / 2.0 + pan_.y());
+    const qreal top = kToolbarStrip;
+    const QPointF origin(
+        (width() - shown.width()) / 2.0 + pan_.x(),
+        top + (height() - top - shown.height()) / 2.0 + pan_.y());
     return {origin, shown};
   }
 

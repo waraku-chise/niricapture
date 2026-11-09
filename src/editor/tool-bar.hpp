@@ -35,8 +35,11 @@ struct ToolBarHit {
 /** Builds and paints the floating toolbar; tool actions are registry ids. */
 class ToolBar {
 public:
+  enum class Dock { Floating, Top };
+
   explicit ToolBar(const ToolRegistry &registry);
 
+  void setDock(Dock dock) { dock_ = dock; }
   void setCurrentTool(const QString &id);
   void setCommands(const QStringList &commands);
   void setTheme(const QColor &panel, const QColor &border,
@@ -69,6 +72,7 @@ public:
 
 private:
   const ToolRegistry &registry_;
+  Dock dock_ = Dock::Floating;
   QString currentTool_;
   QColor color_ = QColor(QStringLiteral("#ff375f"));
   qreal width_ = 4.0;

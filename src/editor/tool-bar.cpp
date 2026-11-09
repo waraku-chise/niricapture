@@ -124,6 +124,12 @@ QRectF ToolBar::rect(const QRectF &viewport, const QRectF &selection) const {
   const qreal width = count * kButton + (count - 1) * kGap + groups * kGroupGap;
   qreal x = selection.center().x() - width / 2.0;
   x = std::clamp(x, 8.0, std::max(8.0, viewport.width() - width - 8.0));
+  if (dock_ == Dock::Top) {
+    const qreal dockX = std::clamp(
+        (viewport.width() - width) / 2.0, 8.0,
+        std::max(8.0, viewport.width() - width - 8.0));
+    return {dockX, viewport.top() + 8, width, kHeight};
+  }
   qreal y = selection.top() - kHeight - 10;
   if (y < 8)
     y = selection.bottom() + 10;
