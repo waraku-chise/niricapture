@@ -52,6 +52,8 @@ the in-place editor, and the colour panel is shown with `Q`.
 - Eyedropper samples a colour from the frozen frame or opened image (`I`).
 - Text annotations support custom font families, chosen from the toolbar font
   command or the settings default.
+- Smart snapping to canvas/annotation edges and centres, vertical/horizontal/
+  45° lines, with guide lines. `Alt` toggles it.
 - `--tray` provides a persistent menu for region/window/fullscreen capture,
   editor, settings, autostart and quit.
 - `--settings` edits tools, commands, palette, canvas, theme, OCR and paths.
@@ -355,6 +357,7 @@ Window captures open this editor directly with the rendered window image.
 | `B` | Gaussian blur (wheel changes radius) |
 | `I` | Eyedropper |
 | `O` | OCR a region |
+| `Alt` | Toggle snapping (on by default) |
 | `Shift` + drag annotation handle | Keep aspect ratio |
 | `Ctrl` + drag annotation handle | Resize around centre |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |

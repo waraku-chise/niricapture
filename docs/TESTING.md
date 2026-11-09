@@ -289,3 +289,11 @@ honored it.
   serialized by config v2.
 - Toolbar hover labels are painted above the button (or below when the toolbar
   is too close to the top edge).
+
+
+## Snapping checks
+
+- Edge snapping produces guide lines and aligns to the image/annotation bounds.
+- 45° snapping constrains a line endpoint around its anchor.
+- `Alt` toggles snapping; a line drawn with snapping off retains its raw angle.
+- Wheel steps through the configured line-width presets.

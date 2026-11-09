@@ -97,7 +97,10 @@ bool SelectTool::mouseMove(const ToolEvent &event, ToolContext &context) {
     return false;
   Annotation changed = original_;
   if (mode_ == Mode::Move) {
-    changed = translatedAnnotation(original_, event.pos - start_);
+    QPointF delta = event.pos - start_;
+    if (context.snapTranslation)
+      delta = context.snapTranslation(annotationBounds(original_), delta);
+    changed = translatedAnnotation(original_, delta);
   } else if (handle_ != AnnotationHandle::None) {
     const bool movingStart = handle_ == AnnotationHandle::Start;
     const QPointF center =
@@ -108,6 +111,12 @@ bool SelectTool::mouseMove(const ToolEvent &event, ToolContext &context) {
     if (fromCenter)
       anchor = center;
     QPointF target = event.pos;
+    if (context.snapPoint) {
+      target = context.snapPoint(
+          target, &anchor,
+          original_.kind == Annotation::Kind::Line ||
+              original_.kind == Annotation::Kind::Arrow);
+    }
     if (event.modifiers.testFlag(Qt::ShiftModifier)) {
       if (original_.kind == Annotation::Kind::Line ||
           original_.kind == Annotation::Kind::Arrow) {

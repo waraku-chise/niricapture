@@ -44,6 +44,8 @@ struct ToolContext {
   std::function<void()> requestRepaint;
   std::function<void(const QPointF &)> beginText;
   std::function<QColor(const QPointF &)> sampleColor;
+  std::function<QPointF(const QPointF &, const QPointF *, bool)> snapPoint;
+  std::function<QPointF(const QRectF &, const QPointF &)> snapTranslation;
 };
 
 enum class ToolGroup { Select, Draw, Shape, Text, Effect, Marker, Utility };

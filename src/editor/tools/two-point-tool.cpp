@@ -16,8 +16,9 @@ bool TwoPointTool::mousePress(const ToolEvent &event, ToolContext &context) {
     return false;
   reset();
   active_ = true;
-  start_ = event.pos;
-  end_ = event.pos;
+  const bool snap = static_cast<bool>(context.snapPoint);
+  start_ = snap ? context.snapPoint(event.pos, nullptr, false) : event.pos;
+  end_ = start_;
   previewColor_ = context.style.color;
   previewWidth_ = context.style.width;
   previewStrokeStyle_ = context.style.strokeStyle;
@@ -29,7 +30,10 @@ bool TwoPointTool::mousePress(const ToolEvent &event, ToolContext &context) {
 bool TwoPointTool::mouseMove(const ToolEvent &event, ToolContext &context) {
   if (!active_)
     return false;
-  end_ = event.pos;
+  const bool angleSnap =
+      (kind() == Annotation::Kind::Line || kind() == Annotation::Kind::Arrow);
+  end_ = context.snapPoint ? context.snapPoint(event.pos, &start_, angleSnap)
+                           : event.pos;
   context.requestRepaint();
   return true;
 }
@@ -37,7 +41,10 @@ bool TwoPointTool::mouseMove(const ToolEvent &event, ToolContext &context) {
 bool TwoPointTool::mouseRelease(const ToolEvent &event, ToolContext &context) {
   if (!active_)
     return false;
-  end_ = event.pos;
+  const bool angleSnap =
+      (kind() == Annotation::Kind::Line || kind() == Annotation::Kind::Arrow);
+  end_ = context.snapPoint ? context.snapPoint(event.pos, &start_, angleSnap)
+                           : event.pos;
   active_ = false;
   const bool valid = QLineF(start_, end_).length() > 4.0;
   if (valid) {

@@ -15,6 +15,8 @@ set(NIRICAPTURE_EDITOR_SOURCES
   src/editor/annotation-document.hpp
   src/editor/annotation-geometry.cpp
   src/editor/annotation-geometry.hpp
+  src/editor/snap.cpp
+  src/editor/snap.hpp
   src/editor/tool-registry.cpp
   src/editor/tool-registry.hpp
   src/editor/editor-canvas.cpp

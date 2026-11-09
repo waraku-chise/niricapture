@@ -2,6 +2,7 @@
 #pragma once
 
 #include "editor/annotation-document.hpp"
+#include "editor/snap.hpp"
 #include "editor/tool-registry.hpp"
 
 #include <QPointF>
@@ -33,6 +34,8 @@ public:
   void setDefaultStyle(const EditorStyle &style);
   void setToolShortcuts(const QHash<QString, QString> &shortcuts);
   void setWidthOptions(const QVector<int> &widths);
+  [[nodiscard]] bool snapEnabled() const { return snapEnabled_; }
+  void setSnapEnabled(bool enabled);
   void setColorSampler(std::function<QColor(const QPointF &)> sampler);
 
   void setSelection(const QRectF &selection);
@@ -61,6 +64,10 @@ public:
 
 private:
   [[nodiscard]] ToolContext context();
+  [[nodiscard]] SnapResult snapPoint(const QPointF &point,
+                                     const QPointF *anchor, bool angle) const;
+  [[nodiscard]] TranslationSnap snapTranslation(
+      const QRectF &bounds, const QPointF &delta) const;
 
   AnnotationDocument document_;
   ToolRegistry registry_;
@@ -73,5 +80,7 @@ private:
   std::function<void(const QPointF &)> beginText_;
   QHash<QString, QString> shortcuts_;
   QVector<int> widthOptions_{2, 4, 8, 12};
+  bool snapEnabled_ = true;
   std::function<QColor(const QPointF &)> sampleColor_;
+  mutable QVector<QLineF> guides_;
 };

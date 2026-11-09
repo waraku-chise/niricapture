@@ -4,6 +4,7 @@
 #include "editor/editor-canvas.hpp"
 #include "editor/tool-bar.hpp"
 #include "editor/tool-registry.hpp"
+#include "editor/snap.hpp"
 #include "editor/tools/builtin-tools.hpp"
 #include "capture.hpp"
 #include "config.hpp"
@@ -11,6 +12,7 @@
 #include <QDir>
 
 #include <QImage>
+#include <QKeyEvent>
 #include <QPainter>
 #include <QWheelEvent>
 #include <QPointF>
@@ -256,6 +258,62 @@ bool runEditorToolSmoke(QString &error) {
                    dashedCanvas.document().annotations().first().strokeStyle ==
                        StrokeStyle::Dashed,
                "Line style was not copied to the annotation", error))
+      return false;
+  }
+
+  {
+    const SnapResult edge =
+        snapPointToCanvas(QPointF(498, 300), nullptr, false,
+                          QRectF(0, 0, 500, 500), {}, -1);
+    if (!check(edge.point.x() == 500 && !edge.guides.isEmpty(),
+               "Edge snapping did not produce a guide", error))
+      return false;
+    const SnapResult diagonal =
+        snapPointToCanvas(QPointF(200, 195), new QPointF(100, 100), true,
+                          QRectF(0, 0, 500, 500), {}, -1);
+    if (!check(qAbs(diagonal.point.x() - 100 - (diagonal.point.y() - 100)) <
+                   0.01,
+               "45-degree snapping did not constrain the line", error))
+      return false;
+
+    EditorCanvas snappedLine;
+    snappedLine.setSelection(QRectF(0, 0, 500, 500));
+    snappedLine.setTool(QStringLiteral("line"));
+    ToolEvent lineStart;
+    lineStart.pos = {100, 100};
+    ToolEvent lineEnd = lineStart;
+    lineEnd.pos = {300, 104};
+    snappedLine.press(lineStart);
+    snappedLine.move(lineEnd);
+    snappedLine.release(lineEnd);
+    if (!check(!snappedLine.document().annotations().isEmpty(),
+               "Snapped line was not created", error))
+      return false;
+    const Annotation line = snappedLine.document().annotations().first();
+    if (!check(qAbs(line.start.y() - line.end.y()) < 0.01,
+               "Line endpoint did not magnetise horizontally", error))
+      return false;
+
+    QKeyEvent altOff(QEvent::KeyPress, Qt::Key_Alt, Qt::NoModifier);
+    if (!check(snappedLine.keyPress(&altOff) && !snappedLine.snapEnabled(),
+               "Alt did not disable snapping", error))
+      return false;
+    EditorCanvas freeLine;
+    freeLine.setSelection(QRectF(0, 0, 500, 500));
+    freeLine.setTool(QStringLiteral("line"));
+    if (!check(freeLine.keyPress(&altOff), "Alt toggle failed on new canvas",
+               error))
+      return false;
+    freeLine.press(lineStart);
+    freeLine.move(lineEnd);
+    freeLine.release(lineEnd);
+    const Annotation unsnapped = freeLine.document().annotations().first();
+    if (!check(qAbs(unsnapped.start.y() - unsnapped.end.y()) > 1.0,
+               "Alt-disabled line was still snapped", error))
+      return false;
+    QKeyEvent altOn(QEvent::KeyPress, Qt::Key_Alt, Qt::NoModifier);
+    if (!check(freeLine.keyPress(&altOn) && freeLine.snapEnabled(),
+               "Alt did not re-enable snapping", error))
       return false;
   }
 

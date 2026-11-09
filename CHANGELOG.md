@@ -37,6 +37,8 @@
 - The colour popup now uses a compact 9×4 swatch grid, a current-colour swatch
   with custom-colour rainbow corner, a line-style selector, width circles and a
   fill toggle. The wheel steps through the width presets.
+- Added smart snapping to canvas/annotation edges and centres, plus 0/45/90°
+  line angles, with guide lines. `Alt` toggles snapping.
 - Text annotations carry a font family. The toolbar “Text font” command opens
   a font dialog; the settings window sets the default `editor.font`.
 - Removed the legacy `CaptureEditor` source, its old smoke tests and the old

@@ -1,4 +1,5 @@
 #include "editor/editor-canvas.hpp"
+#include "i18n.hpp"
 
 #include "editor/annotation-geometry.hpp"
 #include "editor/tools/builtin-tools.hpp"
@@ -39,6 +40,13 @@ void EditorCanvas::setToolShortcuts(
 void EditorCanvas::setWidthOptions(const QVector<int> &widths) {
   if (!widths.isEmpty())
     widthOptions_ = widths;
+}
+
+void EditorCanvas::setSnapEnabled(bool enabled) {
+  snapEnabled_ = enabled;
+  guides_.clear();
+  if (repaint_)
+    repaint_();
 }
 
 void EditorCanvas::setColorSampler(
@@ -91,8 +99,27 @@ void EditorCanvas::setTextCallback(
 }
 
 ToolContext EditorCanvas::context() {
-  return ToolContext{document_, selection_, style_, setStatus_,
-                     repaint_,    beginText_, sampleColor_};
+  return ToolContext{
+      document_, selection_, style_, setStatus_, repaint_, beginText_,
+      sampleColor_,
+      [this](const QPointF &point, const QPointF *anchor, bool angle) {
+        if (!snapEnabled_) {
+          guides_.clear();
+          return point;
+        }
+        const SnapResult result = snapPoint(point, anchor, angle);
+        guides_ = result.guides;
+        return result.point;
+      },
+      [this](const QRectF &bounds, const QPointF &delta) {
+        if (!snapEnabled_) {
+          guides_.clear();
+          return delta;
+        }
+        const TranslationSnap result = snapTranslation(bounds, delta);
+        guides_ = result.guides;
+        return result.delta;
+      }};
 }
 
 bool EditorCanvas::press(const ToolEvent &event) {
@@ -123,10 +150,21 @@ bool EditorCanvas::release(const ToolEvent &event) {
   ToolContext ctx = context();
   const bool consumed = tool->mouseRelease(event, ctx);
   active_ = false;
+  guides_.clear();
   return consumed;
 }
 
 bool EditorCanvas::keyPress(QKeyEvent *event) {
+  if (event->key() == Qt::Key_Alt && !event->isAutoRepeat()) {
+    snapEnabled_ = !snapEnabled_;
+    guides_.clear();
+    if (setStatus_)
+      setStatus_(snapEnabled_ ? ui("Snapping: on", "磁吸：开")
+                              : ui("Snapping: off", "磁吸：关"));
+    if (repaint_)
+      repaint_();
+    return true;
+  }
   if (IEditorTool *tool = currentTool()) {
     ToolContext ctx = context();
     if (tool->keyPress(event, ctx))
@@ -212,9 +250,24 @@ std::optional<Annotation> EditorCanvas::preview() const {
 }
 
 void EditorCanvas::resetTool() {
+  guides_.clear();
   if (IEditorTool *tool = currentTool())
     tool->reset();
   active_ = false;
+}
+
+SnapResult EditorCanvas::snapPoint(const QPointF &point,
+                                    const QPointF *anchor,
+                                    bool angle) const {
+  return snapPointToCanvas(point, anchor, angle, selection_,
+                           document_.annotations(), document_.selected());
+}
+
+TranslationSnap EditorCanvas::snapTranslation(const QRectF &bounds,
+                                               const QPointF &delta) const {
+  return snapTranslationToCanvas(bounds, delta, selection_,
+                                 document_.annotations(),
+                                 document_.selected());
 }
 
 void EditorCanvas::paintVectors(QPainter &painter, const QPointF &origin) const {
@@ -229,6 +282,10 @@ void EditorCanvas::paintVectors(QPainter &painter, const QPointF &origin) const 
   if (const auto inProgress = preview()) {
     if (annotationLayer(inProgress->kind) == AnnotationLayer::Default)
       paintAnnotation(painter, *inProgress);
+  }
+  for (const QLineF &guide : guides_) {
+    painter.setPen(QPen(QColor(124, 196, 255, 180), 1, Qt::DashLine));
+    painter.drawLine(guide);
   }
   if (document_.selected() >= 0 &&
       document_.selected() < document_.annotations().size()) {
