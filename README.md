@@ -33,6 +33,7 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="可选中的 OCR 结果面板"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri 原生窗口截图"> |
 | **标注导出** | |
 | <img src="docs/screenshots/editor-home.png" width="420" alt="编辑器首页：新建和打开"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="独立编辑器画布"> |
+| <img src="docs/screenshots/settings.png" width="420" alt="设置窗口"> | |
 | <img src="docs/screenshots/annotations.png" width="420" alt="合成后的标注"> | |
 
 ## 已实现功能
@@ -316,8 +317,7 @@ niricapture --editor
 - **缩放**：`−` / `+` / `适应`，或 Ctrl+滚轮；中键拖动或 Space+拖动平移。
 - 保存、复制、钉图、OCR，以及与截图编辑器相同的标注工具。
 
-窗口截图会直接用渲染好的窗口图打开这个编辑器，不再进入旧的
-`CaptureEditor` 窗口。
+窗口截图会直接用渲染好的窗口图打开这个编辑器。
 
 ### 编辑器快捷键
 
@@ -381,7 +381,6 @@ src/desktop-capture.*    Niri 输出发现、冻结帧、合成数学
 src/region-selector.*    每个输出一个 layer surface，共享冻结选区
 src/editor/             模块化工具、注册表、工具栏、画布、文档
 src/editor-window.*     独立的新建/打开编辑器窗口
-src/editor.cpp          保留给回归测试的旧编辑器
 src/surface-capture.cpp  Niri 原生窗口渲染 + 异步文件等待
 src/pin.*                固定在屏幕上的截图
 src/instance-lock.*      单实例交接与残留锁恢复

@@ -69,8 +69,6 @@ qt_add_executable(niricapture
   src/pin-layout.hpp
   src/capture.cpp
   src/capture.hpp
-  src/eyedropper.cpp
-  src/eyedropper.hpp
   src/surface-capture.cpp
   src/desktop-capture.cpp
   src/desktop-capture.hpp
@@ -147,12 +145,8 @@ qt_add_executable(niricapture-smoke
   ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
-  src/editor.cpp
-  src/editor.hpp
   src/editor-window.cpp
   src/editor-window.hpp
-  src/eyedropper.cpp
-  src/eyedropper.hpp
   src/pin-file.cpp
   src/pin-file.hpp
   src/pin-layout.cpp

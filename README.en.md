@@ -34,6 +34,7 @@ the in-place editor, and the colour panel is shown with `Q`.
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
 | **Annotation export** | |
 | <img src="docs/screenshots/editor-home.png" width="420" alt="Editor home with New and Open"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="Standalone editor canvas"> |
+| <img src="docs/screenshots/settings.png" width="420" alt="Settings"> | |
 | <img src="docs/screenshots/annotations.png" width="420" alt="Rendered annotations"> | |
 
 ## What works
@@ -334,8 +335,7 @@ It opens a normal application window with:
   Space+drag.
 - Save, copy, pin, OCR, and the same annotation tools as the screenshot editor.
 
-Window captures open this editor directly with the rendered window image; they
-no longer use the old `CaptureEditor` window.
+Window captures open this editor directly with the rendered window image.
 
 ### Editor keys
 
@@ -373,7 +373,7 @@ The toolbar follows the image and clamps to screen edges.
 | Number | point + order | vector, auto-renumbered |
 | Mosaic | rect + seed + solid/pixelate | replaces source pixels |
 | Blur | rect + radius | replaces source pixels with Gaussian blur |
-| Spotlight / Cutout | legacy standalone editor only | not yet exposed by the modular editor |
+| Eyedropper | source-image pixel | updates the active colour |
 
 Annotations live in source-image coordinates and are stored separately from
 the original image. Export composites them at native resolution; the source
@@ -401,7 +401,6 @@ src/desktop-capture.*    Niri output discovery, frozen frames, composition math
 src/region-selector.*    one layer surface per output, global frozen selection
 src/editor/             modular tools, registry, toolbar, canvas, document
 src/editor-window.*     standalone New/Open editor window
-src/editor.cpp          legacy editor kept for regression tests
 src/surface-capture.cpp  Niri-native window rendering + async file handling
 src/pin.*                always-visible pinned images
 src/instance-lock.*      single-instance hand-off and stale-lock recovery

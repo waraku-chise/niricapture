@@ -73,12 +73,10 @@ The live flow was verified with the real DMS freeze path:
 - `Q` opened the colour/line-width panel with the Chinese status
   `颜色 / 线宽`.
 
-## Previous standalone-editor anchoring
+## Standalone editor anchoring
 
-The embedded `CaptureEditor` mode is no longer used for region/fullscreen
-capture. Its offscreen regression test remains: a 300×200 capture anchored at
-(120,90) starts at that point and the surrounding area stays transparent. This
-history is kept because window/file editing still uses the standalone editor.
+Window and file editing always use the standalone `EditorWindow`; the old
+`CaptureEditor` anchoring test was removed with the legacy editor.
 
 ## Live Niri native window tests
 
@@ -147,9 +145,8 @@ and calls `recognizeText` with `NIRICAPTURE_OCR_LANGS=eng+chi_sim`. Both a
 Chinese word and the English line are found. The test is skipped if Tesseract
 or `chi_sim.traineddata` is absent.
 
-The interaction suite also OCRs a real `CaptureEditor` region, waits for the
-worker, verifies the selectable result panel contains the recognized text, and
-checks that `Esc` closes the panel before the editor.
+The interaction suite OCRs the standalone editor and verifies the selectable
+result panel; `Esc` closes the panel before the editor.
 
 ## Multi-output composition
 

@@ -31,8 +31,8 @@
   explicit `spawn-at-startup` snippet instead).
 - Added the Eyedropper tool (`I`) with source-image sampling in both the
   standalone and in-place editors.
-- The production binary no longer includes the legacy `CaptureEditor`; it is
-  retained only in the smoke test target.
+- Removed the legacy `CaptureEditor` source, its old smoke tests and the old
+  `eyedropper.cpp` helper. The modular editor is now the only editor.
 
 ### Configuration v2
 

@@ -24,10 +24,8 @@ same modules.
 That made every new tool touch the canvas class, and temporary tool state
 (`freehandPoints_`, drag annotations) lived beside permanent document state.
 
-`src/editor.cpp` (3 202 lines) is the older `CaptureEditor`. It is no longer
-used by production CLI modes; window and file inputs now open
-`src/editor-window.cpp`. The old class is retained only for its large
-regression suite while the last standalone-only features are ported.
+The old `CaptureEditor` (`src/editor.cpp`) has been removed. Window and file
+inputs use `src/editor-window.cpp`; the modular editor is the only editor.
 
 ## Target architecture
 
@@ -218,16 +216,6 @@ The modular canvas is used by:
 - window capture and image/file editing in `EditorWindow`;
 - the New/Open launcher entry.
 
-`src/editor.cpp` remains compiled only for the regression suite. Its
-standalone-only features have not all been ported to `EditorWindow` yet:
-
-- Spotlight
-- Eyedropper
-- Cutout
-- the old shape/colour popup layout
-- the old multi-select/crop interaction model
-
-The new editor intentionally uses the modular toolbar/canvas, a New/Open home
-page and explicit canvas adjustment instead of the old in-window flow. The
-next step is to add `SpotlightTool`, `EyedropperTool` and a cutout command to the
-new canvas, then remove `CaptureEditor` once its regression suite is migrated.
+The old editor's Spotlight, Cutout and multi-select/crop interaction model were
+removed with it. Eyedropper is now `EyedropperTool`; the new editor uses the
+modular toolbar/canvas, a New/Open home page and explicit canvas adjustment.
