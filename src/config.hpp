@@ -22,10 +22,7 @@ struct CanvasConfig {
 };
 
 struct PaletteConfig {
-  QStringList colors{QStringLiteral("#ff375f"), QStringLiteral("#ff9f0a"),
-                     QStringLiteral("#ffd60a"), QStringLiteral("#30d158"),
-                     QStringLiteral("#0a84ff"), QStringLiteral("#bf5af2"),
-                     QStringLiteral("#ffffff"), QStringLiteral("#000000")};
+  QStringList colors{QStringLiteral("#000000"), QStringLiteral("#4a4a4a"), QStringLiteral("#7f1d1d"), QStringLiteral("#dc2626"), QStringLiteral("#ea580c"), QStringLiteral("#eab308"), QStringLiteral("#16a34a"), QStringLiteral("#0d9488"), QStringLiteral("#2563eb"), QStringLiteral("#6b7280"), QStringLiteral("#9ca3af"), QStringLiteral("#9f1239"), QStringLiteral("#f87171"), QStringLiteral("#fb923c"), QStringLiteral("#fde047"), QStringLiteral("#4ade80"), QStringLiteral("#2dd4bf"), QStringLiteral("#60a5fa"), QStringLiteral("#cbd5e1"), QStringLiteral("#ffffff"), QStringLiteral("#92400e"), QStringLiteral("#fca5a5"), QStringLiteral("#fdba74"), QStringLiteral("#fef08a"), QStringLiteral("#86efac"), QStringLiteral("#99f6e4"), QStringLiteral("#93c5fd"), QStringLiteral("#7c3aed"), QStringLiteral("#a855f7"), QStringLiteral("#db2777"), QStringLiteral("#ec4899"), QStringLiteral("#f472b6"), QStringLiteral("#f9a8d4"), QStringLiteral("#a16207"), QStringLiteral("#78350f"), QStringLiteral("#1e3a8a")};
   QVector<int> widths{2, 4, 8, 12};
 };
 

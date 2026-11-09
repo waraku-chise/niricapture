@@ -264,6 +264,13 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
         readStrings(palette.value(QStringLiteral("colors")));
     if (!colors.isEmpty())
       config.palette.colors = colors;
+    const QStringList legacyColors{
+        QStringLiteral("#ff375f"), QStringLiteral("#ff9f0a"),
+        QStringLiteral("#ffd60a"), QStringLiteral("#30d158"),
+        QStringLiteral("#0a84ff"), QStringLiteral("#bf5af2"),
+        QStringLiteral("#ffffff"), QStringLiteral("#000000")};
+    if (config.palette.colors == legacyColors)
+      config.palette.colors = AppConfig::defaults().palette.colors;
   }
   if (palette.value(QStringLiteral("widths")).isArray()) {
     QVector<int> widths;

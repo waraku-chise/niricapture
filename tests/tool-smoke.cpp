@@ -6,6 +6,9 @@
 #include "editor/tool-registry.hpp"
 #include "editor/tools/builtin-tools.hpp"
 #include "capture.hpp"
+#include "config.hpp"
+
+#include <QDir>
 
 #include <QImage>
 #include <QPainter>
@@ -26,6 +29,22 @@ bool check(bool condition, const char *message, QString &error) {
 bool runEditorToolSmoke(QString &error) {
   ToolRegistry registry;
   registerBuiltinTools(registry);
+  if (qEnvironmentVariableIsSet("NIRICAPTURE_PALETTE_SNAPSHOT")) {
+    const AppConfig defaults = AppConfig::defaults();
+    ToolBar snapshot(registry);
+    snapshot.setDock(ToolBar::Dock::Top);
+    snapshot.setPalette(defaults.palette.colors, defaults.palette.widths);
+    snapshot.setColors(defaults.theme.defaultColor, false);
+    snapshot.setWidth(defaults.theme.defaultWidth);
+    snapshot.setPaletteOpen(true);
+    QImage image(900, 240, QImage::Format_ARGB32_Premultiplied);
+    image.fill(defaults.theme.background);
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    snapshot.paint(painter, QRectF(0, 0, 900, 240), QRectF(0, 0, 900, 240));
+    painter.end();
+    image.save(QDir::tempPath() + QStringLiteral("/niricapture-palette.png"));
+  }
   if (!check(registry.tools().size() == 12, "Expected 12 built-in tools", error))
     return false;
   if (!check(registry.find(QStringLiteral("select")) != nullptr,
@@ -255,15 +274,23 @@ bool runEditorToolSmoke(QString &error) {
   paletteBar.setPaletteOpen(true);
   bool colorSelected = false;
   bool widthSelected = false;
+  bool customColor = false;
   for (const ToolButton &button : paletteBar.buttons(viewport, selection)) {
     if (button.id == QStringLiteral("color-0"))
       colorSelected = button.selected;
-    if (button.id == QStringLiteral("size-9"))
+    if (button.id == QStringLiteral("width"))
       widthSelected = button.selected;
+    if (button.id == QStringLiteral("custom-color"))
+      customColor = button.swatch == QColor(QStringLiteral("#00ff00"));
   }
   if (!check(colorSelected, "Colour selection is not marked", error))
     return false;
-  if (!check(widthSelected, "Width selection is not marked", error))
+  if (!check(widthSelected, "Width control is not marked", error))
+    return false;
+  if (!check(customColor, "Custom colour swatch is missing", error))
+    return false;
+  if (!check(paletteBar.nextWidth(3) == 9 && paletteBar.nextWidth(9) == 3,
+             "Width control does not cycle", error))
     return false;
   const QRectF barRect = paletteBar.rect(viewport, selection);
   if (!check(paletteBar.contains(viewport, selection,

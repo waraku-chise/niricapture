@@ -47,6 +47,7 @@ public:
   void setPalette(const QStringList &colors, const QVector<int> &widths);
   [[nodiscard]] QColor colorAt(int index) const;
   [[nodiscard]] int widthAt(int index) const;
+  [[nodiscard]] int nextWidth(qreal current) const;
   void setPaletteOpen(bool open) { paletteOpen_ = open; }
   [[nodiscard]] bool paletteOpen() const { return paletteOpen_; }
   void setColors(const QColor &color, bool filled);

@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QFontDialog>
+#include <QColorDialog>
 #include <QFontMetricsF>
 #include <QFormLayout>
 #include <QFrame>
@@ -417,7 +418,10 @@ protected:
       return;
     }
     if (event->key() == Qt::Key_Escape) {
-      if (textEditor_) {
+      if (bar_.paletteOpen()) {
+        bar_.setPaletteOpen(false);
+        update();
+      } else if (textEditor_) {
         textEditor_->hide();
         textEditor_->deleteLater();
         textEditor_ = nullptr;
@@ -430,6 +434,15 @@ protected:
       } else {
         owner_->showHome();
       }
+      event->accept();
+      return;
+    }
+    if (event->key() == Qt::Key_Q &&
+        !event->modifiers().testFlag(Qt::ControlModifier) &&
+        !event->modifiers().testFlag(Qt::AltModifier) &&
+        !event->modifiers().testFlag(Qt::MetaModifier)) {
+      bar_.setPaletteOpen(!bar_.paletteOpen());
+      update();
       event->accept();
       return;
     }
@@ -600,12 +613,23 @@ private:
               .color = canvas_.style().color;
         }
       }
-    } else if (hit.id.startsWith(QStringLiteral("size-"))) {
-      canvas_.style().width = std::clamp(hit.id.sliced(5).toInt(), 2, 64);
+    } else if (hit.id == QStringLiteral("width")) {
+      canvas_.style().width = bar_.nextWidth(canvas_.style().width);
       if (canvas_.document().selected() >= 0) {
         canvas_.document().pushUndo();
         canvas_.document().annotations()[canvas_.document().selected()]
             .size = canvas_.style().width;
+      }
+    } else if (hit.id == QStringLiteral("custom-color")) {
+      const QColor color = QColorDialog::getColor(
+          canvas_.style().color, this, ui("Custom colour", "自定义颜色"));
+      if (color.isValid()) {
+        canvas_.style().color = color;
+        if (canvas_.document().selected() >= 0) {
+          canvas_.document().pushUndo();
+          canvas_.document().annotations()[canvas_.document().selected()]
+              .color = color;
+        }
       }
     } else if (hit.id == QStringLiteral("fill")) {
       canvas_.style().filled = !canvas_.style().filled;

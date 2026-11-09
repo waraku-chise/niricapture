@@ -10,6 +10,7 @@
 #include <QFont>
 #include <QFontDatabase>
 #include <QFontDialog>
+#include <QColorDialog>
 #include <QFontMetricsF>
 #include <QGuiApplication>
 #include <QKeyEvent>
