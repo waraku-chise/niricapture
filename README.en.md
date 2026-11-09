@@ -54,7 +54,7 @@ the in-place editor, and the colour panel is shown with `Q`.
   command or the settings default.
 - Smart snapping to canvas/annotation edges and centres, vertical/horizontal/
   45° lines, with guide lines. `Alt` toggles it.
-- `--tray` provides a persistent menu for region/window/fullscreen capture,
+- `--tray` provides a persistent menu for region/window/focused-output capture,
   editor, settings, autostart and quit.
 - `--settings` edits tools, commands, palette, canvas, theme, OCR and paths.
 - Region and current-output fullscreen captures open the toolbar directly in
@@ -310,16 +310,74 @@ viewport offset or absolute screen position of every window, so NiriCapture
 does not pretend it can build a pixel-accurate custom hover overlay across the
 scrolling layout. The compositor picker is the reliable selection surface.
 
-### Tray and settings
+### Tray
 
 ```bash
 niricapture --tray       # persistent tray, separate tray.lock
+```
+
+The tray uses StatusNotifierItem and needs a host such as the DMS bar or waybar;
+without one it exits with status 1 and prints the reason. A left click on the
+icon also pops up the same menu. The items are, in order: region capture, window
+capture, focused output, open editor, settings, start at login (checkable),
+quit. Every capture, editor and settings entry starts a separate `niricapture`
+process; the tray itself never captures.
+
+The tray takes its own `tray.lock`: when a tray is already running, another
+`--tray` exits silently (status 0) instead of adding a second icon. “Start at
+login” writes `~/.config/autostart/niricapture-tray.desktop`
+(`Exec="…/niricapture" --tray`) and removes it when unchecked; the check mark
+always reflects whether that file exists. If Niri or the desktop does not
+process XDG autostart, use:
+
+```kdl
+spawn-at-startup "niricapture" "--tray";
+```
+
+### Settings window
+
+```bash
 niricapture --settings   # settings window
 ```
 
-The tray's “Start at login” writes an XDG autostart entry. If Niri does not
-process XDG autostart, add `spawn-at-startup "niricapture" "--tray"` to the Niri
-config. Settings are also available from the editor's top bar.
+Open it from the editor's top bar, the tray menu or the command line. Its tabs
+map onto the configuration file:
+
+| Tab | Contents |
+|---|---|
+| Tools | Check the tools to show; ↑/↓ reorders them |
+| Commands | Check the annotation toolbar commands (palette, font, undo/redo, OCR, copy, save, close) |
+| Palette | Colour list (add/remove) and line widths (comma-separated positive integers) |
+| Canvas | Default width/height, padding, background style and background colour for new documents |
+| Theme | Accent, editor background, panel, checkerboard light/dark, default annotation colour and width, text font |
+| Capture / data | OCR languages (e.g. `eng+chi_sim`), screenshot directory, start at login, config path |
+
+The footer has “Open config”, “Reset to defaults” and “Save/Cancel”. Reset only
+resets the UI; nothing is written until Save. Saving validates that at least one
+tool, one command and one colour remain and that every width is a positive
+integer. Writes use `QSaveFile` (temporary file plus atomic rename); errors show
+the path and the Qt error string.
+
+When the file is read-only (its schema version is newer than the binary, or the
+file is malformed) the Save button is disabled with the reason shown. The
+configuration is read once per process, so the confirmation says “new editors
+will use the new configuration”: already open editors and the tray are not hot
+reloaded, while processes started later from the menu or a keybind pick up the
+new values. Use `--config` or `NIRICAPTURE_CONFIG` for a custom path; see
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md) for every field.
+
+### Eyedropper
+
+Press `I` to select the eyedropper, then click the image; both the frozen frame
+and an image opened in the standalone editor can be sampled. The sampled colour
+becomes the current annotation colour and the status bar shows `Sampled
+#RRGGBB`; annotations drawn afterwards use it. The eyedropper only changes the
+current colour and does not add it to the palette — to keep it, use the
+“添加颜色” (Add colour) button in the settings window's palette tab, or edit
+`palette.colors` directly. Clicks outside the image do not sample. The tool
+stays active; `Esc` returns to the select tool, or switch with another tool's
+shortcut. The shortcut itself can be changed through `shortcuts.eyedropper` in
+the configuration.
 
 ### Standalone editor
 
