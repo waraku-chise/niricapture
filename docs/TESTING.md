@@ -280,6 +280,25 @@ honored it.
   instance lock.
 - Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.
 
+### Live tray and autostart check (2026-11-09)
+
+In the live Niri 26.04 / DMS session (single 1920×1080 output):
+
+- `niricapture --tray` registered a StatusNotifierItem with the
+  `org.kde.StatusNotifierWatcher` hosted by the DMS shell (`qs`); the icon was
+  visible in the bar and the watcher's `RegisteredStatusNotifierItems` listed
+  it.
+- The “Start at login” toggle wrote
+  `~/.config/autostart/niricapture-tray.desktop` with
+  `Exec="/home/chise/.local/bin/niricapture" --tray`, and the file passed
+  `desktop-file-validate`.
+- systemd's `systemd-xdg-autostart-generator` produced
+  `app-niricapture-tray@autostart.service`
+  (`WantedBy=xdg-desktop-autostart.target`, active in this session). Starting
+  that unit launched the tray while the DMS bar was up, so this machine does
+  not need the `spawn-at-startup` fallback.
+- A second `--tray` exits with status 0 because of the separate `tray.lock`.
+
 
 ## 1.0 resize/font checks
 

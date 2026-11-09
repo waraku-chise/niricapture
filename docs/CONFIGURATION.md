@@ -103,7 +103,7 @@ order. Omit a tool to hide it without deleting code.
 Ordered toolbar command ids:
 
 ```text
-palette, undo, redo, ocr, copy, save, close
+palette, font, undo, redo, ocr, copy, save, close
 ```
 
 The top bar of the standalone editor keeps Home/Open/Save/Copy/Pin/Canvas/Close
