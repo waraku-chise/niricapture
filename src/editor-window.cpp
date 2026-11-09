@@ -91,6 +91,18 @@ public:
     bar_.setTheme(config_.theme.panel, QColor(255, 255, 255, 30),
                   config_.theme.accent);
     bar_.setDock(ToolBar::Dock::Top);
+    canvas_.setColorSampler([this](const QPointF &point) {
+      if (capture_.source.isNull() || imageSize_.isEmpty())
+        return QColor();
+      const qreal sx = capture_.source.width() /
+                       static_cast<qreal>(std::max(1, imageSize_.width()));
+      const qreal sy = capture_.source.height() /
+                       static_cast<qreal>(std::max(1, imageSize_.height()));
+      const QPoint pixel(qFloor(point.x() * sx), qFloor(point.y() * sy));
+      if (!capture_.source.rect().contains(pixel))
+        return QColor();
+      return capture_.source.pixelColor(pixel);
+    });
     canvas_.setStatusCallback(
         [this](const QString &text) { owner_->setStatus(text); });
     canvas_.setRepaintCallback([this] { update(); });
@@ -755,6 +767,10 @@ void EditorWindow::buildEditor() {
   addButton(ui("Save", "保存"), [this] { saveImage(); });
   addButton(ui("Copy", "复制"), [this] { copyImage(); });
   addButton(ui("Pin", "钉图"), [this] { pinImage(); });
+  addButton(ui("Settings", "设置"), [] {
+    QProcess::startDetached(QCoreApplication::applicationFilePath(),
+                            {QStringLiteral("--settings")});
+  });
   barLayout->addSpacing(12);
 
   auto *zoomOut = new QPushButton(QStringLiteral("−"), bar);

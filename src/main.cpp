@@ -6,6 +6,8 @@
 #include "instance-lock.hpp"
 #include "pin.hpp"
 #include "region-selector.hpp"
+#include "settings-window.hpp"
+#include "tray.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -356,6 +358,8 @@ bool wantsNormalWindow(int argc, char **argv) {
   for (int index = 1; index < argc; ++index) {
     const QString argument = QString::fromLocal8Bit(argv[index]);
     if (argument == QStringLiteral("--editor") ||
+        argument == QStringLiteral("--settings") ||
+        argument == QStringLiteral("--tray") ||
         argument == QStringLiteral("--file") ||
         argument.startsWith(QStringLiteral("--file=")) ||
         argument == QStringLiteral("--clipboard") ||
@@ -439,6 +443,12 @@ int main(int argc, char **argv) {
   const QCommandLineOption editorOption(
       QStringLiteral("editor"),
       QStringLiteral("Open the standalone editor start page (New / Open)."));
+  const QCommandLineOption settingsOption(
+      QStringLiteral("settings"),
+      QStringLiteral("Open the settings window."));
+  const QCommandLineOption trayOption(
+      QStringLiteral("tray"),
+      QStringLiteral("Run the StatusNotifierItem tray menu."));
   const QCommandLineOption configOption(
       QStringLiteral("config"),
       QStringLiteral("Use this JSON configuration file."),
@@ -462,6 +472,8 @@ int main(int argc, char **argv) {
   parser.addOption(fileOption);
   parser.addOption(clipboardOption);
   parser.addOption(editorOption);
+  parser.addOption(settingsOption);
+  parser.addOption(trayOption);
   parser.addOption(configOption);
   parser.addOption(printConfigOption);
   parser.addOption(pinOption);
@@ -608,9 +620,19 @@ int main(int argc, char **argv) {
     return 2;
   }
   if (parser.isSet(editorOption) &&
+      (parser.isSet(settingsOption) || parser.isSet(trayOption))) {
+    qCritical() << "--editor cannot be combined with --settings or --tray";
+    return 2;
+  }
+  if (parser.isSet(settingsOption) && parser.isSet(trayOption)) {
+    qCritical() << "--settings cannot be combined with --tray";
+    return 2;
+  }
+  if ((parser.isSet(editorOption) || parser.isSet(settingsOption) ||
+       parser.isSet(trayOption)) &&
       (!filePath.isEmpty() || clipboardInput || requestedModes > 0 ||
        parser.isSet(pinOption))) {
-    qCritical() << "--editor cannot be combined with capture/image/pin options";
+    qCritical() << "--editor/--settings/--tray cannot be combined with capture/image/pin options";
     return 2;
   }
   if (parser.isSet(configOption) && parser.value(configOption).trimmed().isEmpty()) {
@@ -642,6 +664,30 @@ int main(int argc, char **argv) {
   if (parser.isSet(editorOption)) {
     EditorWindow window(config);
     window.showFullScreen();
+    return QApplication::exec();
+  }
+  if (parser.isSet(settingsOption)) {
+    SettingsWindow window;
+    window.show();
+    return QApplication::exec();
+  }
+  if (parser.isSet(trayOption)) {
+    application.setQuitOnLastWindowClosed(false);
+    const QString runtime = secureRuntimeDirectory();
+    if (runtime.isEmpty()) {
+      qCritical() << "Could not create private runtime directory";
+      return 1;
+    }
+    QLockFile trayLock(QDir(runtime).filePath(QStringLiteral("tray.lock")));
+    if (!trayLock.tryLock(100))
+      return 0;
+    TrayApp tray(config);
+    if (!tray.available()) {
+      qCritical() << "No StatusNotifierItem tray host is available";
+      return 1;
+    }
+    if (!tray.show())
+      return 1;
     return QApplication::exec();
   }
 

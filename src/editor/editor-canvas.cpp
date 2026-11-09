@@ -14,6 +14,7 @@ EditorCanvas::EditorCanvas() {
   setStatus_ = [](const QString &) {};
   repaint_ = [] {};
   beginText_ = [](const QPointF &) {};
+  sampleColor_ = [](const QPointF &) { return QColor(); };
   registerBuiltinTools(registry_);
   currentToolId_ = registry_.defaultToolId();
   if (IEditorTool *tool = currentTool()) {
@@ -33,6 +34,11 @@ void EditorCanvas::setDefaultStyle(const EditorStyle &style) {
 void EditorCanvas::setToolShortcuts(
     const QHash<QString, QString> &shortcuts) {
   shortcuts_ = shortcuts;
+}
+
+void EditorCanvas::setColorSampler(
+    std::function<QColor(const QPointF &)> sampler) {
+  sampleColor_ = std::move(sampler);
 }
 
 void EditorCanvas::setSelection(const QRectF &selection) {
@@ -80,8 +86,8 @@ void EditorCanvas::setTextCallback(
 }
 
 ToolContext EditorCanvas::context() {
-  return ToolContext{document_,    selection_, style_,   setStatus_,
-                     repaint_,     beginText_};
+  return ToolContext{document_, selection_, style_, setStatus_,
+                     repaint_,    beginText_, sampleColor_};
 }
 
 bool EditorCanvas::press(const ToolEvent &event) {

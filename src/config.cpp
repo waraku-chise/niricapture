@@ -224,6 +224,17 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
     const QStringList tools = readStrings(root.value(QStringLiteral("tools")));
     if (!tools.isEmpty())
       config.tools = tools;
+    // Keep existing default configurations in sync with the eyedropper added
+    // in 1.0 without overriding a genuinely custom tool list.
+    const QStringList legacyDefaults{
+        QStringLiteral("select"),   QStringLiteral("pen"),
+        QStringLiteral("arrow"),    QStringLiteral("line"),
+        QStringLiteral("rectangle"), QStringLiteral("ellipse"),
+        QStringLiteral("text"),     QStringLiteral("highlighter"),
+        QStringLiteral("mosaic"),   QStringLiteral("blur"),
+        QStringLiteral("marker")};
+    if (config.tools == legacyDefaults)
+      config.tools.push_back(QStringLiteral("eyedropper"));
   }
   if (root.contains(QStringLiteral("commands"))) {
     const QStringList commands =

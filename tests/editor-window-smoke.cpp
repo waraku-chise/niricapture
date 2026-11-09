@@ -1,10 +1,15 @@
 #include "editor-window-smoke.hpp"
 
 #include "editor-window.hpp"
+#include "autostart.hpp"
+#include "settings-window.hpp"
 
 #include <QApplication>
 #include <QImage>
 #include <QSize>
+#include <QTemporaryDir>
+#include <QFile>
+#include <QDir>
 
 bool runEditorWindowSmoke(QString &error) {
   EditorWindow window;
@@ -25,6 +30,38 @@ bool runEditorWindowSmoke(QString &error) {
     return false;
   }
   window.close();
+  QApplication::processEvents();
+
+  QTemporaryDir configRoot;
+  if (!configRoot.isValid()) {
+    error = QStringLiteral("Could not create settings test directory");
+    return false;
+  }
+  qputenv("XDG_CONFIG_HOME", configRoot.path().toUtf8());
+  qputenv("NIRICAPTURE_CONFIG",
+          QDir(configRoot.path()).filePath(QStringLiteral("niricapture/config.json")).toUtf8());
+  SettingsWindow settings;
+  settings.show();
+  QApplication::processEvents();
+  if (!settings.isVisible()) {
+    error = QStringLiteral("SettingsWindow did not become visible");
+    return false;
+  }
+  settings.close();
+  if (!setAutostartEnabled(true)) {
+    error = QStringLiteral("Could not enable test autostart");
+    return false;
+  }
+  if (!QFile::exists(autostartFilePath())) {
+    error = QStringLiteral("Autostart file was not created");
+    return false;
+  }
+  if (!setAutostartEnabled(false) || QFile::exists(autostartFilePath())) {
+    error = QStringLiteral("Autostart file was not removed");
+    return false;
+  }
+  qunsetenv("NIRICAPTURE_CONFIG");
+  qunsetenv("XDG_CONFIG_HOME");
   QApplication::processEvents();
   return true;
 }

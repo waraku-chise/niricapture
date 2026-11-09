@@ -285,6 +285,25 @@ RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
   toolBar_.setPalette(config.palette.colors, config.palette.widths);
   toolBar_.setTheme(config.theme.panel, QColor(255, 255, 255, 30),
                     config.theme.accent);
+  canvas_.setColorSampler([this](const QPointF &point) {
+    for (const OutputFrame &frame : frames_.outputs) {
+      if (!QRectF(frame.monitor.geometry).contains(point) ||
+          frame.image.isNull())
+        continue;
+      const qreal sx = frame.image.width() /
+                       static_cast<qreal>(std::max(1,
+                                                   frame.monitor.geometry.width()));
+      const qreal sy =
+          frame.image.height() /
+          static_cast<qreal>(std::max(1, frame.monitor.geometry.height()));
+      const QPoint pixel(
+          qFloor((point.x() - frame.monitor.geometry.left()) * sx),
+          qFloor((point.y() - frame.monitor.geometry.top()) * sy));
+      if (frame.image.rect().contains(pixel))
+        return frame.image.pixelColor(pixel);
+    }
+    return QColor();
+  });
   canvas_.setStatusCallback([this](const QString &status) { setStatus(status); });
   canvas_.setRepaintCallback([this] { selectionChanged(); });
   canvas_.setTextCallback([this](const QPointF &point) {

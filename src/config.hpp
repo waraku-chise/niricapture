@@ -45,7 +45,7 @@ struct AppConfig {
                     QStringLiteral("rectangle"), QStringLiteral("ellipse"),
                     QStringLiteral("text"),     QStringLiteral("highlighter"),
                     QStringLiteral("mosaic"),   QStringLiteral("blur"),
-                    QStringLiteral("marker")};
+                    QStringLiteral("marker"),   QStringLiteral("eyedropper")};
   QStringList commands{QStringLiteral("palette"), QStringLiteral("undo"),
                        QStringLiteral("redo"),    QStringLiteral("ocr"),
                        QStringLiteral("copy"),    QStringLiteral("save"),
@@ -61,7 +61,8 @@ struct AppConfig {
       {QStringLiteral("highlighter"), QStringLiteral("H")},
       {QStringLiteral("mosaic"), QStringLiteral("D")},
       {QStringLiteral("blur"), QStringLiteral("B")},
-      {QStringLiteral("marker"), QStringLiteral("C")}};
+      {QStringLiteral("marker"), QStringLiteral("C")},
+      {QStringLiteral("eyedropper"), QStringLiteral("I")}};
   PaletteConfig palette;
   CanvasConfig canvas;
   EditorTheme theme;

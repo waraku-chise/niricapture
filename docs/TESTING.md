@@ -270,3 +270,15 @@ honored it.
 - unknown keys at root and inside `canvas` / `editor` / `palette` / `ocr` /
   `paths` preserved through `toJson()`;
 - atomic `QSaveFile` save and reload from a nested directory.
+
+
+## 1.0 settings/tray checks
+
+- `niricapture --settings` stays alive in a normal Wayland session; settings
+  fields load from config v2 and save atomically.
+- `niricapture --tray` creates a separate `tray.lock` and waits for a
+  StatusNotifierItem host; under a session without a tray it exits with a clear
+  error.
+- Tray actions spawn child processes, so they do not contend with the capture
+  instance lock.
+- Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.

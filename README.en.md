@@ -48,6 +48,10 @@ the in-place editor, and the colour panel is shown with `Q`.
 - Non-destructive annotations: select/move/resize, pen, arrow, line, outlined
   or filled rectangle, outlined or filled ellipse, text, highlighter, truly
   pixelated mosaic, real Gaussian blur, numbered markers, undo/redo.
+- Eyedropper samples a colour from the frozen frame or opened image (`I`).
+- `--tray` provides a persistent menu for region/window/fullscreen capture,
+  editor, settings, autostart and quit.
+- `--settings` edits tools, commands, palette, canvas, theme, OCR and paths.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
 - Selection handles resize against the full frozen output: a region can be
@@ -300,6 +304,17 @@ window IPC exposes layout-relative fields but **not** the current scrolling
 viewport offset or absolute screen position of every window, so NiriCapture
 does not pretend it can build a pixel-accurate custom hover overlay across the
 scrolling layout. The compositor picker is the reliable selection surface.
+
+### Tray and settings
+
+```bash
+niricapture --tray       # persistent tray, separate tray.lock
+niricapture --settings   # settings window
+```
+
+The tray's “Start at login” writes an XDG autostart entry. If Niri does not
+process XDG autostart, add `spawn-at-startup "niricapture" "--tray"` to the Niri
+config. Settings are also available from the editor's top bar.
 
 ### Standalone editor
 

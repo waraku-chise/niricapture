@@ -4,7 +4,7 @@ include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core Gui Test Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core DBus Gui Test Widgets)
 find_package(LayerShellQt REQUIRED)
 
 set(NIRICAPTURE_EDITOR_SOURCES
@@ -41,6 +41,8 @@ set(NIRICAPTURE_EDITOR_SOURCES
   src/editor/tools/rectangle-tool.hpp
   src/editor/tools/ellipse-tool.cpp
   src/editor/tools/ellipse-tool.hpp
+  src/editor/tools/eyedropper-tool.cpp
+  src/editor/tools/eyedropper-tool.hpp
   src/editor/tools/text-tool.cpp
   src/editor/tools/text-tool.hpp
   src/editor/tools/marker-tool.cpp
@@ -77,10 +79,14 @@ qt_add_executable(niricapture
   ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
-  src/editor.cpp
-  src/editor.hpp
   src/editor-window.cpp
   src/editor-window.hpp
+  src/settings-window.cpp
+  src/settings-window.hpp
+  src/autostart.cpp
+  src/autostart.hpp
+  src/tray.cpp
+  src/tray.hpp
 )
 qt_add_resources(niricapture "capture-fonts"
   PREFIX "/fonts"
@@ -100,6 +106,7 @@ target_compile_definitions(niricapture PRIVATE
 target_link_libraries(niricapture PRIVATE
   Qt6::Concurrent
   Qt6::Core
+  Qt6::DBus
   Qt6::Gui
   Qt6::Widgets
   LayerShellQt::Interface
@@ -122,6 +129,10 @@ qt_add_executable(niricapture-smoke
   tests/tool-smoke.hpp
   tests/editor-window-smoke.cpp
   tests/editor-window-smoke.hpp
+  src/settings-window.cpp
+  src/settings-window.hpp
+  src/autostart.cpp
+  src/autostart.hpp
   tests/config-smoke.cpp
   tests/config-smoke.hpp
   src/cli-path.cpp

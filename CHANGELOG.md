@@ -21,6 +21,19 @@
 
 ## [Unreleased]
 
+### 1.0 editor features
+
+- Added `--settings`, a tabbed settings window for tools/commands, palette,
+  canvas defaults, theme, OCR and paths. Writes use the config v2 atomic save.
+- Added `--tray`, a StatusNotifierItem tray menu for region/window/fullscreen
+  capture, editor, settings, autostart and quit, with a separate `tray.lock`.
+- Added XDG autostart helper and settings/tray toggle (Niri may need an
+  explicit `spawn-at-startup` snippet instead).
+- Added the Eyedropper tool (`I`) with source-image sampling in both the
+  standalone and in-place editors.
+- The production binary no longer includes the legacy `CaptureEditor`; it is
+  retained only in the smoke test target.
+
 ### Configuration v2
 
 - `AppConfig::toJson()` / `toJsonBytes()` serialize the full configuration.

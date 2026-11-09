@@ -4,6 +4,7 @@
 #include "editor/tools/arrow-tool.hpp"
 #include "editor/tools/blur-tool.hpp"
 #include "editor/tools/ellipse-tool.hpp"
+#include "editor/tools/eyedropper-tool.hpp"
 #include "editor/tools/highlighter-tool.hpp"
 #include "editor/tools/line-tool.hpp"
 #include "editor/tools/marker-tool.hpp"
@@ -25,4 +26,5 @@ void registerBuiltinTools(ToolRegistry &registry) {
   registry.emplace<MosaicTool>();
   registry.emplace<BlurTool>();
   registry.emplace<MarkerTool>();
+  registry.emplace<EyedropperTool>();
 }

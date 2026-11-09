@@ -32,6 +32,7 @@ public:
   [[nodiscard]] const EditorStyle &style() const { return style_; }
   void setDefaultStyle(const EditorStyle &style);
   void setToolShortcuts(const QHash<QString, QString> &shortcuts);
+  void setColorSampler(std::function<QColor(const QPointF &)> sampler);
 
   void setSelection(const QRectF &selection);
   [[nodiscard]] QRectF selection() const { return selection_; }
@@ -70,4 +71,5 @@ private:
   std::function<void()> repaint_;
   std::function<void(const QPointF &)> beginText_;
   QHash<QString, QString> shortcuts_;
+  std::function<QColor(const QPointF &)> sampleColor_;
 };

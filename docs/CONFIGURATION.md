@@ -7,7 +7,8 @@ $XDG_CONFIG_HOME/niricapture/config.json
 # normally ~/.config/niricapture/config.json
 ```
 
-If it does not exist, it is created with documented defaults. The path can be
+If it does not exist, it is created with documented defaults. The settings
+window (`niricapture --settings`) edits this file and saves it atomically. The path can be
 overridden with:
 
 ```bash
@@ -37,7 +38,7 @@ and the Qt error string.
   "version": 2,
   "tools": [
     "select", "pen", "arrow", "line", "rectangle", "ellipse",
-    "text", "highlighter", "mosaic", "blur", "marker"
+    "text", "highlighter", "mosaic", "blur", "marker", "eyedropper"
   ],
   "commands": [
     "palette", "undo", "redo", "ocr", "copy", "save", "close"
@@ -53,7 +54,8 @@ and the Qt error string.
     "highlighter": "H",
     "mosaic": "D",
     "blur": "B",
-    "marker": "C"
+    "marker": "C",
+    "eyedropper": "I"
   },
   "palette": {
     "colors": ["#ff375f", "#ff9f0a", "#ffd60a", "#30d158",
@@ -89,7 +91,7 @@ their configured shortcut. Available ids:
 
 ```text
 select, pen, arrow, line, rectangle, ellipse,
-text, highlighter, mosaic, blur, marker
+text, highlighter, mosaic, blur, marker, eyedropper
 ```
 
 If the list is empty or omitted, all built-in tools are shown in registration

@@ -26,13 +26,16 @@ bool check(bool condition, const char *message, QString &error) {
 bool runEditorToolSmoke(QString &error) {
   ToolRegistry registry;
   registerBuiltinTools(registry);
-  if (!check(registry.tools().size() == 11, "Expected 11 built-in tools", error))
+  if (!check(registry.tools().size() == 12, "Expected 12 built-in tools", error))
     return false;
   if (!check(registry.find(QStringLiteral("select")) != nullptr,
              "Select tool missing", error))
     return false;
   if (!check(registry.defaultToolId() == QStringLiteral("select"),
              "Select must be the default tool", error))
+    return false;
+  if (!check(registry.find(QStringLiteral("eyedropper")) != nullptr,
+             "Eyedropper tool missing", error))
     return false;
 
   AnnotationDocument document;
@@ -134,6 +137,19 @@ bool runEditorToolSmoke(QString &error) {
   canvas.release(moveEnd);
   if (!check(canvas.document().annotations().first().start == QPointF(60, 50),
              "Select tool did not move the layer", error))
+    return false;
+
+  EditorCanvas eyedropperCanvas;
+  eyedropperCanvas.setSelection(QRectF(0, 0, 100, 100));
+  eyedropperCanvas.setColorSampler([](const QPointF &) {
+    return QColor(QStringLiteral("#12ab34"));
+  });
+  eyedropperCanvas.setTool(QStringLiteral("eyedropper"));
+  ToolEvent eyedropperEvent;
+  eyedropperEvent.pos = {50, 50};
+  eyedropperCanvas.press(eyedropperEvent);
+  if (!check(eyedropperCanvas.style().color == QColor(QStringLiteral("#12ab34")),
+             "Eyedropper did not update the active colour", error))
     return false;
 
   bool textRequested = false;

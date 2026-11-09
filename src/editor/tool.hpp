@@ -41,9 +41,10 @@ struct ToolContext {
   std::function<void(const QString &)> setStatus;
   std::function<void()> requestRepaint;
   std::function<void(const QPointF &)> beginText;
+  std::function<QColor(const QPointF &)> sampleColor;
 };
 
-enum class ToolGroup { Select, Draw, Shape, Text, Effect, Marker };
+enum class ToolGroup { Select, Draw, Shape, Text, Effect, Marker, Utility };
 
 /**
  * One editor tool. Drawing tools own their temporary interaction state and
