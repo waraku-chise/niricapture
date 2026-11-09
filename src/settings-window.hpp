@@ -8,6 +8,7 @@
 
 class QCheckBox;
 class QComboBox;
+class QFontComboBox;
 class QLineEdit;
 class QListWidget;
 class QPushButton;
@@ -50,6 +51,7 @@ private:
   QPushButton *checkerDark_ = nullptr;
   QPushButton *defaultColor_ = nullptr;
   QSpinBox *defaultWidth_ = nullptr;
+  QFontComboBox *font_ = nullptr;
   QLineEdit *ocrLanguages_ = nullptr;
   QLineEdit *screenshotDir_ = nullptr;
   QCheckBox *autostart_ = nullptr;

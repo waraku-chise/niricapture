@@ -50,6 +50,8 @@ the in-place editor, and the colour panel is shown with `Q`.
   or filled rectangle, outlined or filled ellipse, text, highlighter, truly
   pixelated mosaic, real Gaussian blur, numbered markers, undo/redo.
 - Eyedropper samples a colour from the frozen frame or opened image (`I`).
+- Text annotations support custom font families, chosen from the toolbar font
+  command or the settings default.
 - `--tray` provides a persistent menu for region/window/fullscreen capture,
   editor, settings, autostart and quit.
 - `--settings` edits tools, commands, palette, canvas, theme, OCR and paths.
@@ -351,7 +353,10 @@ Window captures open this editor directly with the rendered window image.
 | `C` | Numbered marker |
 | `D` | Mosaic (D toggles solid/pixelate) |
 | `B` | Gaussian blur (wheel changes radius) |
+| `I` | Eyedropper |
 | `O` | OCR a region |
+| `Shift` + drag annotation handle | Keep aspect ratio |
+| `Ctrl` + drag annotation handle | Resize around centre |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
 | `Delete` | Delete selected annotation |
 | Wheel | Scale selected annotation / tool size |
@@ -359,8 +364,10 @@ Window captures open this editor directly with the rendered window image.
 | `Enter` | Copy and save |
 | `Esc` | Close popup, then editor |
 
-Shape, colour, line-width, and extra actions are grouped in floating popups.
-The toolbar follows the image and clamps to screen edges.
+Shape, colour, line-width, and extra actions are grouped in popups. The
+standalone editor docks its toolbar to the top border, with the image laid out
+below; the region editor keeps its toolbar near the selection and clamps it to
+the screen edges.
 
 ### Annotations
 

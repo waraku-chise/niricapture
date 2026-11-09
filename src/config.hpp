@@ -37,6 +37,7 @@ struct EditorTheme {
   QColor checkerDark = QColor(QStringLiteral("#1b1f27"));
   QColor defaultColor = QColor(QStringLiteral("#ff375f"));
   qreal defaultWidth = 4.0;
+  QString fontFamily = QStringLiteral("Neucha");
 };
 
 struct AppConfig {
@@ -46,10 +47,10 @@ struct AppConfig {
                     QStringLiteral("text"),     QStringLiteral("highlighter"),
                     QStringLiteral("mosaic"),   QStringLiteral("blur"),
                     QStringLiteral("marker"),   QStringLiteral("eyedropper")};
-  QStringList commands{QStringLiteral("palette"), QStringLiteral("undo"),
-                       QStringLiteral("redo"),    QStringLiteral("ocr"),
-                       QStringLiteral("copy"),    QStringLiteral("save"),
-                       QStringLiteral("close")};
+  QStringList commands{QStringLiteral("palette"), QStringLiteral("font"),
+                       QStringLiteral("undo"),    QStringLiteral("redo"),
+                       QStringLiteral("ocr"),     QStringLiteral("copy"),
+                       QStringLiteral("save"),    QStringLiteral("close")};
   QHash<QString, QString> shortcuts{
       {QStringLiteral("select"), QStringLiteral("V")},
       {QStringLiteral("pen"), QStringLiteral("F")},

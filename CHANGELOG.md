@@ -31,6 +31,11 @@
   explicit `spawn-at-startup` snippet instead).
 - Added the Eyedropper tool (`I`) with source-image sampling in both the
   standalone and in-place editors.
+- Annotation resize honours **Shift** (keep aspect ratio) and **Ctrl** (resize
+  around the centre), including the combination.
+- Hovering a toolbar tool now shows its name above the button.
+- Text annotations carry a font family. The toolbar “Text font” command opens
+  a font dialog; the settings window sets the default `editor.font`.
 - Removed the legacy `CaptureEditor` source, its old smoke tests and the old
   `eyedropper.cpp` helper. The modular editor is now the only editor.
 

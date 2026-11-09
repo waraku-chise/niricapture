@@ -71,6 +71,7 @@ struct Annotation {
   QPointF start;
   QPointF end;
   QString text;
+  QString fontFamily;
   QColor color;
   qreal size = 4.0;
   int number = 0;
@@ -98,7 +99,8 @@ enum class AnnotationLayer { Redaction, Default };
 }
 
 [[nodiscard]] bool loadCaptureFonts();
-[[nodiscard]] QFont annotationTextFont(qreal size);
+[[nodiscard]] QFont annotationTextFont(qreal size,
+                                      const QString &family = {});
 /**
  * Discovers the focused Niri output (name, logical geometry, scale). Safe to
  * call on the main thread before pixel capture runs in the background.

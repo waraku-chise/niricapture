@@ -6,6 +6,7 @@
 
 #include <QFont>
 #include <QFontDatabase>
+#include <QFontMetricsF>
 #include <QPainter>
 
 #include <algorithm>
@@ -18,15 +19,17 @@ constexpr qreal kGroupGap = 6.0;
 constexpr qreal kHeight = 38.0;
 
 QVector<QString> commandIds() {
-  return {QStringLiteral("palette"), QStringLiteral("undo"),
-          QStringLiteral("redo"),    QStringLiteral("ocr"),
-          QStringLiteral("copy"),    QStringLiteral("save"),
-          QStringLiteral("close")};
+  return {QStringLiteral("palette"), QStringLiteral("font"),
+          QStringLiteral("undo"),    QStringLiteral("redo"),
+          QStringLiteral("ocr"),     QStringLiteral("copy"),
+          QStringLiteral("save"),    QStringLiteral("close")};
 }
 
 QString commandIcon(const QString &id) {
   if (id == QStringLiteral("palette"))
     return QStringLiteral("palette");
+  if (id == QStringLiteral("font"))
+    return QStringLiteral("tool-text");
   if (id == QStringLiteral("ocr"))
     return QStringLiteral("tool-ocr");
   return id;
@@ -35,6 +38,8 @@ QString commandIcon(const QString &id) {
 QString commandTooltip(const QString &id) {
   if (id == QStringLiteral("palette"))
     return ui("Colour / width", "颜色 / 线宽");
+  if (id == QStringLiteral("font"))
+    return ui("Text font", "文字字体");
   if (id == QStringLiteral("undo"))
     return ui("Undo", "撤销");
   if (id == QStringLiteral("redo"))
@@ -128,7 +133,7 @@ QRectF ToolBar::rect(const QRectF &viewport, const QRectF &selection) const {
     const qreal dockX = std::clamp(
         (viewport.width() - width) / 2.0, 8.0,
         std::max(8.0, viewport.width() - width - 8.0));
-    return {dockX, viewport.top() + 8, width, kHeight};
+    return {dockX, viewport.top() + 32, width, kHeight};
   }
   qreal y = selection.top() - kHeight - 10;
   if (y < 8)
@@ -259,7 +264,8 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
 
   QFont font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
   font.setPixelSize(11);
-  for (const ToolButton &button : buttons(viewport, selection)) {
+  const QVector<ToolButton> all = buttons(viewport, selection);
+  for (const ToolButton &button : all) {
     const bool paletteSwatch =
         button.id.startsWith(QStringLiteral("color-")) ||
         button.id.startsWith(QStringLiteral("size-"));
@@ -315,5 +321,34 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
     drawToolbarIcon(painter, button.rect, button.icon, {},
                     button.enabled ? QColor(245, 245, 247)
                                    : QColor(245, 245, 247, 70));
+  }
+
+  for (const ToolButton &button : all) {
+    if (!button.hovered ||
+        button.id.startsWith(QStringLiteral("color-")) ||
+        button.id.startsWith(QStringLiteral("size-")) ||
+        button.id == QStringLiteral("fill"))
+      continue;
+    const QString text =
+        button.tooltip.section(QStringLiteral(" · "), 0, 0).trimmed();
+    if (text.isEmpty())
+      continue;
+    const QFontMetricsF metrics(font);
+    const qreal width = std::min(
+        metrics.horizontalAdvance(text) + 18.0, viewport.width() - 8.0);
+    const qreal height = 22.0;
+    qreal x = button.rect.center().x() - width / 2.0;
+    x = std::clamp(x, 4.0, std::max(4.0, viewport.width() - width - 4.0));
+    qreal y = button.rect.top() - height - 5.0;
+    if (y < 4.0)
+      y = button.rect.bottom() + 5.0;
+    const QRectF bubble(x, y, width, height);
+    painter.setPen(QPen(QColor(255, 255, 255, 40), 1));
+    painter.setBrush(QColor(12, 15, 21, 246));
+    painter.drawRoundedRect(bubble, 6, 6);
+    painter.setPen(QColor(235, 239, 246));
+    painter.setFont(font);
+    painter.drawText(bubble, Qt::AlignCenter, text);
+    break;
   }
 }

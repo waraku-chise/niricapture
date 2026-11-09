@@ -78,6 +78,7 @@ private:
   [[nodiscard]] bool toolbarContains(RegionOverlay *overlay,
                                      const QPointF &local) const;
   void handleToolbarHit(const ToolBarHit &hit);
+  void chooseFont();
   void setToolbarHover(RegionOverlay *overlay, const QPointF &local);
   void syncToolbar();
 

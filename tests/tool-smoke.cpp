@@ -152,6 +152,62 @@ bool runEditorToolSmoke(QString &error) {
              "Eyedropper did not update the active colour", error))
     return false;
 
+  {
+    EditorCanvas resizeCanvas;
+    resizeCanvas.setSelection(QRectF(0, 0, 500, 500));
+    resizeCanvas.setTool(QStringLiteral("rectangle"));
+    ToolEvent draw;
+    draw.pos = {100, 100};
+    ToolEvent drawEnd = draw;
+    drawEnd.pos = {300, 200};
+    resizeCanvas.press(draw);
+    resizeCanvas.move(drawEnd);
+    resizeCanvas.release(drawEnd);
+    resizeCanvas.setTool(QStringLiteral("select"));
+    ToolEvent handlePress;
+    handlePress.pos = {100, 100};
+    if (!check(resizeCanvas.press(handlePress), "Could not grab resize handle",
+               error))
+      return false;
+    ToolEvent shiftMove;
+    shiftMove.pos = {150, 150};
+    shiftMove.modifiers = Qt::ShiftModifier;
+    resizeCanvas.move(shiftMove);
+    const Annotation shifted = resizeCanvas.document().annotations().first();
+    const qreal shiftedWidth = std::abs(shifted.end.x() - shifted.start.x());
+    const qreal shiftedHeight = std::abs(shifted.end.y() - shifted.start.y());
+    if (!check(shiftedHeight > 0 &&
+                   qAbs(shiftedWidth / shiftedHeight - 2.0) < 0.02,
+               "Shift resize did not preserve aspect ratio", error))
+      return false;
+    resizeCanvas.release(shiftMove);
+
+    EditorCanvas centeredCanvas;
+    centeredCanvas.setSelection(QRectF(0, 0, 500, 500));
+    centeredCanvas.setTool(QStringLiteral("rectangle"));
+    centeredCanvas.press(draw);
+    centeredCanvas.move(drawEnd);
+    centeredCanvas.release(drawEnd);
+    centeredCanvas.setTool(QStringLiteral("select"));
+    centeredCanvas.press(handlePress);
+    ToolEvent centeredMove;
+    centeredMove.pos = {80, 90};
+    centeredMove.modifiers = Qt::ControlModifier;
+    centeredCanvas.move(centeredMove);
+    const Annotation centered =
+        centeredCanvas.document().annotations().first();
+    const QPointF center = (centered.start + centered.end) / 2.0;
+    if (!check(QLineF(center, QPointF(200, 150)).length() < 0.1,
+               "Ctrl resize did not keep the centre", error))
+      return false;
+  }
+
+  const QFont customFont =
+      annotationTextFont(5.0, QStringLiteral("DejaVu Sans"));
+  if (!check(customFont.family().contains(QStringLiteral("DejaVu")),
+             "Custom text font was not applied", error))
+    return false;
+
   bool textRequested = false;
   canvas.setTextCallback([&](const QPointF &) { textRequested = true; });
   canvas.setTool(QStringLiteral("text"));
@@ -218,7 +274,7 @@ bool runEditorToolSmoke(QString &error) {
   ToolBar dockBar(registry);
   dockBar.setDock(ToolBar::Dock::Top);
   const QRectF docked = dockBar.rect(viewport, selection);
-  if (!check(qFuzzyCompare(docked.top(), viewport.top() + 8.0),
+  if (!check(qFuzzyCompare(docked.top(), viewport.top() + 32.0),
              "Docked toolbar is not on the top border", error))
     return false;
 

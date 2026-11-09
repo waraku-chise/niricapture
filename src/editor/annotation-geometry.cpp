@@ -27,7 +27,7 @@ QRectF annotationBounds(const Annotation &annotation) {
                   size * 2, size * 2);
   }
   if (annotation.kind == Annotation::Kind::Text) {
-    const QFontMetricsF metrics(annotationTextFont(annotation.size));
+    const QFontMetricsF metrics(annotationTextFont(annotation.size, annotation.fontFamily));
     const qreal width = metrics.horizontalAdvance(annotation.text);
     return QRectF(annotation.start.x(), annotation.start.y() - metrics.ascent(),
                   std::max<qreal>(4.0, width), metrics.height());

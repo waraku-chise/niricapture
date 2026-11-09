@@ -37,9 +37,12 @@ bool loadCaptureFonts() {
   return fontId >= 0;
 }
 
-QFont annotationTextFont(qreal size) {
+QFont annotationTextFont(qreal size, const QString &family) {
   static_cast<void>(loadCaptureFonts());
-  QFont font(QStringLiteral("Neucha"));
+  const QString requested = family.trimmed();
+  QFont font(requested.isEmpty() ? QStringLiteral("Neucha") : requested);
+  if (font.family().isEmpty())
+    font.setFamily(QStringLiteral("Neucha"));
   font.setWeight(QFont::Normal);
   font.setItalic(false);
   font.setPixelSize(qRound(std::max<qreal>(18.0, size * 5.0)));
@@ -452,7 +455,7 @@ void drawAnnotation(QPainter &painter, const Annotation &annotation) {
     return;
   }
 
-  const QFont font = annotationTextFont(annotation.size);
+  const QFont font = annotationTextFont(annotation.size, annotation.fontFamily);
   painter.setFont(font);
   painter.setPen(annotation.color);
   painter.setBrush(Qt::NoBrush);

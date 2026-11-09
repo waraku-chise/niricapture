@@ -1,5 +1,6 @@
 #include "editor/tools/select-tool.hpp"
 
+#include "i18n.hpp"
 #include "editor/annotation-document.hpp"
 #include "editor/annotation-geometry.hpp"
 
@@ -8,6 +9,42 @@
 #include <algorithm>
 #include <QLineF>
 #include <QWheelEvent>
+#include <cmath>
+
+namespace {
+QPointF aspectConstrained(const Annotation &original, const QPointF &anchor,
+                          const QPointF &point) {
+  const qreal width = std::abs(original.end.x() - original.start.x());
+  const qreal height = std::abs(original.end.y() - original.start.y());
+  if (width < 1.0 || height < 1.0)
+    return point;
+  const qreal ratio = width / height;
+  const qreal dx = point.x() - anchor.x();
+  const qreal dy = point.y() - anchor.y();
+  qreal x = std::abs(dx);
+  qreal y = std::abs(dy);
+  if (x / ratio >= y)
+    y = x / ratio;
+  else
+    x = y * ratio;
+  return {anchor.x() + (dx < 0 ? -x : x),
+          anchor.y() + (dy < 0 ? -y : y)};
+}
+
+QPointF angleConstrained(const Annotation &original, const QPointF &anchor,
+                         const QPointF &point, bool movingStart) {
+  const QPointF moving = movingStart ? original.start : original.end;
+  QPointF direction = moving - anchor;
+  const qreal length = std::hypot(direction.x(), direction.y());
+  if (length < 0.01)
+    return point;
+  direction /= length;
+  const QPointF delta = point - anchor;
+  const qreal projection = delta.x() * direction.x() +
+                           delta.y() * direction.y();
+  return anchor + direction * projection;
+}
+} // namespace
 
 void SelectTool::reset() {
   mode_ = Mode::None;
@@ -30,7 +67,9 @@ bool SelectTool::mousePress(const ToolEvent &event, ToolContext &context) {
       start_ = event.pos;
       mode_ = Mode::Resize;
       context.document.pushUndo();
-      context.setStatus(QStringLiteral("Resize"));
+      context.setStatus(
+          ui("Resize · Shift keeps ratio · Ctrl resizes from center",
+             "缩放 · Shift 等比例 · Ctrl 中心缩放"));
       return true;
     }
   }
@@ -57,10 +96,32 @@ bool SelectTool::mouseMove(const ToolEvent &event, ToolContext &context) {
   Annotation changed = original_;
   if (mode_ == Mode::Move) {
     changed = translatedAnnotation(original_, event.pos - start_);
-  } else if (handle_ == AnnotationHandle::Start) {
-    changed.start = event.pos;
-  } else if (handle_ == AnnotationHandle::End) {
-    changed.end = event.pos;
+  } else if (handle_ != AnnotationHandle::None) {
+    const bool movingStart = handle_ == AnnotationHandle::Start;
+    const QPointF center =
+        (original_.start + original_.end) / 2.0;
+    const bool fromCenter =
+        event.modifiers.testFlag(Qt::ControlModifier);
+    QPointF anchor = movingStart ? original_.end : original_.start;
+    if (fromCenter)
+      anchor = center;
+    QPointF target = event.pos;
+    if (event.modifiers.testFlag(Qt::ShiftModifier)) {
+      if (original_.kind == Annotation::Kind::Line ||
+          original_.kind == Annotation::Kind::Arrow) {
+        target = angleConstrained(original_, anchor, target, movingStart);
+      } else {
+        target = aspectConstrained(original_, anchor, target);
+      }
+    }
+    if (fromCenter) {
+      changed.start = target;
+      changed.end = center * 2.0 - target;
+    } else if (movingStart) {
+      changed.start = target;
+    } else {
+      changed.end = target;
+    }
   }
   context.document.annotations()[index_] = std::move(changed);
   context.requestRepaint();

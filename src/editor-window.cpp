@@ -14,6 +14,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
+#include <QFontDialog>
 #include <QFontMetricsF>
 #include <QFormLayout>
 #include <QFrame>
@@ -44,7 +45,7 @@ namespace {
 constexpr int kDefaultCanvasWidth = 1600;
 constexpr int kDefaultCanvasHeight = 900;
 constexpr int kEditorMargin = 48;
-constexpr qreal kToolbarStrip = 56.0;
+constexpr qreal kToolbarStrip = 80.0;
 
 QString imageFilter() {
   return QObject::tr("Images (*.png *.jpg *.jpeg *.webp *.bmp *.gif);;All files (*)");
@@ -84,6 +85,7 @@ public:
     EditorStyle style;
     style.color = config_.theme.defaultColor;
     style.width = config_.theme.defaultWidth;
+    style.fontFamily = config_.theme.fontFamily;
     canvas_.setDefaultStyle(style);
     canvas_.setTool(canvas_.registry().defaultToolId());
     bar_.setCommands(config_.commands);
@@ -225,7 +227,8 @@ public:
                        "border: 1px solid rgba(255,255,255,45); "
                        "border-radius: 5px; padding: 2px 4px; }")
             .arg(canvas_.style().color.name()));
-    textEditor_->setFont(annotationTextFont(5.0));
+    textEditor_->setFont(
+        annotationTextFont(5.0, canvas_.style().fontFamily));
     textEditor_->resize(240, 34);
     const QRectF image = imageRect();
     const QPointF local = image.topLeft() + point * zoom_;
@@ -545,6 +548,26 @@ private:
     return (local - image.topLeft()) / std::max<qreal>(zoom_, 0.001);
   }
 
+  void chooseFont() {
+    QFont initial(canvas_.style().fontFamily);
+    initial.setPixelSize(18);
+    bool accepted = false;
+    const QFont chosen = QFontDialog::getFont(
+        &accepted, initial, this, ui("Text font", "文字字体"));
+    if (!accepted)
+      return;
+    canvas_.style().fontFamily = chosen.family();
+    if (canvas_.document().selected() >= 0) {
+      Annotation &annotation =
+          canvas_.document().annotations()[canvas_.document().selected()];
+      if (annotation.kind == Annotation::Kind::Text) {
+        canvas_.document().pushUndo();
+        annotation.fontFamily = chosen.family();
+      }
+    }
+    update();
+  }
+
   void handleToolbarHit(const ToolBarHit &hit) {
     if (!hit.valid)
       return;
@@ -552,6 +575,8 @@ private:
       canvas_.setTool(hit.id);
     } else if (hit.id == QStringLiteral("palette")) {
       bar_.setPaletteOpen(!bar_.paletteOpen());
+    } else if (hit.id == QStringLiteral("font")) {
+      chooseFont();
     } else if (hit.id == QStringLiteral("undo")) {
       canvas_.document().undo();
     } else if (hit.id == QStringLiteral("redo")) {
@@ -615,8 +640,10 @@ private:
       annotation.kind = Annotation::Kind::Text;
       annotation.start = textPoint_;
       annotation.start.ry() +=
-          QFontMetricsF(annotationTextFont(5.0)).ascent();
+          QFontMetricsF(annotationTextFont(5.0, canvas_.style().fontFamily))
+          .ascent();
       annotation.text = text;
+      annotation.fontFamily = canvas_.style().fontFamily;
       annotation.color = canvas_.style().color;
       annotation.size = 5.0;
       canvas_.document().add(std::move(annotation));

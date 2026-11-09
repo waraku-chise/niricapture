@@ -118,6 +118,7 @@ QJsonObject AppConfig::toJson() const {
   editorObject.insert(QStringLiteral("default_color"),
                       colorValue(theme.defaultColor));
   editorObject.insert(QStringLiteral("default_width"), theme.defaultWidth);
+  editorObject.insert(QStringLiteral("font"), theme.fontFamily);
   root.insert(QStringLiteral("editor"), editorObject);
 
   QJsonObject ocrObject = section(root, QStringLiteral("ocr"));
@@ -241,6 +242,13 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
         readStrings(root.value(QStringLiteral("commands")));
     if (!commands.isEmpty())
       config.commands = commands;
+    const QStringList legacyCommands{
+        QStringLiteral("palette"), QStringLiteral("undo"),
+        QStringLiteral("redo"), QStringLiteral("ocr"),
+        QStringLiteral("copy"), QStringLiteral("save"),
+        QStringLiteral("close")};
+    if (config.commands == legacyCommands)
+      config.commands.insert(1, QStringLiteral("font"));
   }
   const QJsonObject shortcuts =
       section(root, QStringLiteral("shortcuts"));
@@ -314,6 +322,10 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
       editor.value(QStringLiteral("default_width"))
           .toDouble(config.theme.defaultWidth),
       1.0, 96.0);
+  const QString fontFamily =
+      editor.value(QStringLiteral("font")).toString().trimmed();
+  if (!fontFamily.isEmpty())
+    config.theme.fontFamily = fontFamily;
 
   const QJsonObject ocr = section(root, QStringLiteral("ocr"));
   config.ocrLanguages =

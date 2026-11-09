@@ -41,7 +41,7 @@ and the Qt error string.
     "text", "highlighter", "mosaic", "blur", "marker", "eyedropper"
   ],
   "commands": [
-    "palette", "undo", "redo", "ocr", "copy", "save", "close"
+    "palette", "font", "undo", "redo", "ocr", "copy", "save", "close"
   ],
   "shortcuts": {
     "select": "V",
@@ -77,7 +77,8 @@ and the Qt error string.
     "checker_light": "#242a35",
     "checker_dark": "#1b1f27",
     "default_color": "#ff375f",
-    "default_width": 4
+    "default_width": 4,
+    "font": "Neucha"
   },
   "ocr": {"languages": ""},
   "paths": {"screenshots": ""}
@@ -141,7 +142,8 @@ the JSON values are the starting defaults for new documents.
 
 Theme colors for the standalone editor. `accent` is used for selected tool
 states, `checker_light`/`checker_dark` for the transparency checkerboard, and
-`default_color`/`default_width` for the initial annotation style.
+`default_color`/`default_width` for the initial annotation style, and `font`
+for the initial text font (the toolbar "文字字体" action can override it).
 
 ## ocr
 

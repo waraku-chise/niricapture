@@ -279,3 +279,13 @@ honored it.
 - Tray actions spawn child processes, so they do not contend with the capture
   instance lock.
 - Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.
+
+
+## 1.0 resize/font checks
+
+- `Shift` preserves a rectangle's aspect ratio while dragging a resize handle.
+- `Ctrl` keeps the annotation centre fixed.
+- `annotationTextFont` accepts a custom family and `editor.font` is parsed and
+  serialized by config v2.
+- Toolbar hover labels are painted above the button (or below when the toolbar
+  is too close to the top edge).

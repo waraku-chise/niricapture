@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QFont>
 #include <QFontDatabase>
+#include <QFontDialog>
 #include <QFontMetricsF>
 #include <QGuiApplication>
 #include <QKeyEvent>
@@ -279,6 +280,7 @@ RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
   EditorStyle style;
   style.color = config.theme.defaultColor;
   style.width = config.theme.defaultWidth;
+  style.fontFamily = config.theme.fontFamily;
   canvas_.setDefaultStyle(style);
   canvas_.setTool(canvas_.registry().defaultToolId());
   toolBar_.setCommands(config.commands);
@@ -629,6 +631,27 @@ void RegionSelector::setToolbarHover(RegionOverlay *overlay,
   overlay->update();
 }
 
+void RegionSelector::chooseFont() {
+  QFont initial(canvas_.style().fontFamily);
+  initial.setPixelSize(18);
+  bool accepted = false;
+  QWidget *parent = overlays_.isEmpty() ? nullptr : overlays_.first();
+  const QFont chosen = QFontDialog::getFont(
+      &accepted, initial, parent, ui("Text font", "文字字体"));
+  if (!accepted)
+    return;
+  canvas_.style().fontFamily = chosen.family();
+  if (canvas_.document().selected() >= 0) {
+    Annotation &annotation =
+        canvas_.document().annotations()[canvas_.document().selected()];
+    if (annotation.kind == Annotation::Kind::Text) {
+      canvas_.document().pushUndo();
+      annotation.fontFamily = chosen.family();
+    }
+  }
+  selectionChanged();
+}
+
 void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
   if (!hit.valid)
     return;
@@ -636,6 +659,8 @@ void RegionSelector::handleToolbarHit(const ToolBarHit &hit) {
     canvas_.setTool(hit.id);
   } else if (hit.id == QStringLiteral("palette")) {
     toolBar_.setPaletteOpen(!toolBar_.paletteOpen());
+  } else if (hit.id == QStringLiteral("font")) {
+    chooseFont();
   } else if (hit.id == QStringLiteral("undo")) {
     canvas_.document().undo();
   } else if (hit.id == QStringLiteral("redo")) {
@@ -849,7 +874,8 @@ void RegionSelector::beginText(const QPointF &global, RegionOverlay *overlay) {
                      "border: 1px solid rgba(255,255,255,45); "
                      "border-radius: 5px; padding: 2px 4px; }")
           .arg(canvas_.style().color.name()));
-  textEditor_->setFont(annotationTextFont(5.0));
+  textEditor_->setFont(
+      annotationTextFont(5.0, canvas_.style().fontFamily));
   textEditor_->resize(240, 34);
   textEditor_->move(
       std::clamp(qRound(local.x()), 8,
@@ -875,8 +901,10 @@ void RegionSelector::commitText() {
     annotation.kind = Annotation::Kind::Text;
     annotation.start = textPoint_;
     annotation.start.ry() +=
-        QFontMetricsF(annotationTextFont(5.0)).ascent();
+        QFontMetricsF(annotationTextFont(5.0, canvas_.style().fontFamily))
+        .ascent();
     annotation.text = text;
+    annotation.fontFamily = canvas_.style().fontFamily;
     annotation.color = canvas_.style().color;
     annotation.size = 5.0;
     canvas_.document().add(std::move(annotation));

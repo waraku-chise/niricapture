@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include <QDialogButtonBox>
 #include <QFileDialog>
+#include <QFontComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -63,10 +64,10 @@ int backgroundIndex(const AppConfig &config) {
 }
 
 QStringList commandIds() {
-  return {QStringLiteral("palette"), QStringLiteral("undo"),
-          QStringLiteral("redo"),    QStringLiteral("ocr"),
-          QStringLiteral("copy"),    QStringLiteral("save"),
-          QStringLiteral("close")};
+  return {QStringLiteral("palette"), QStringLiteral("font"),
+          QStringLiteral("undo"),    QStringLiteral("redo"),
+          QStringLiteral("ocr"),     QStringLiteral("copy"),
+          QStringLiteral("save"),    QStringLiteral("close")};
 }
 } // namespace
 
@@ -210,6 +211,7 @@ void SettingsWindow::buildUi() {
   defaultColor_ = new QPushButton(themePage);
   defaultWidth_ = new QSpinBox(themePage);
   defaultWidth_->setRange(1, 96);
+  font_ = new QFontComboBox(themePage);
   for (QPushButton *button : {accent_, editorBackground_, panel_, checkerLight_,
                               checkerDark_, defaultColor_})
     button->setMinimumWidth(120);
@@ -220,6 +222,7 @@ void SettingsWindow::buildUi() {
   themeForm->addRow(QStringLiteral("棋盘格暗色"), checkerDark_);
   themeForm->addRow(QStringLiteral("默认标注颜色"), defaultColor_);
   themeForm->addRow(QStringLiteral("默认线宽"), defaultWidth_);
+  themeForm->addRow(QStringLiteral("文字字体"), font_);
   connect(accent_, &QPushButton::clicked, this,
           [this] { chooseColor(accent_, config_.theme.accent); });
   connect(editorBackground_, &QPushButton::clicked, this,
@@ -361,6 +364,7 @@ void SettingsWindow::loadConfig() {
   refreshColorButton(checkerDark_, config_.theme.checkerDark);
   refreshColorButton(defaultColor_, config_.theme.defaultColor);
   defaultWidth_->setValue(qRound(config_.theme.defaultWidth));
+  font_->setCurrentFont(QFont(config_.theme.fontFamily));
   ocrLanguages_->setText(config_.ocrLanguages);
   screenshotDir_->setText(config_.screenshotDir);
   autostart_->setChecked(isAutostartEnabled());
@@ -396,6 +400,7 @@ void SettingsWindow::resetUi() {
   refreshColorButton(checkerDark_, config_.theme.checkerDark);
   refreshColorButton(defaultColor_, config_.theme.defaultColor);
   defaultWidth_->setValue(qRound(defaults.theme.defaultWidth));
+  font_->setCurrentFont(QFont(defaults.theme.fontFamily));
   ocrLanguages_->clear();
   screenshotDir_->clear();
   autostart_->setChecked(false);
@@ -474,6 +479,7 @@ void SettingsWindow::saveConfig() {
   config_.theme.checkerDark = QColor(checkerDark_->text());
   config_.theme.defaultColor = QColor(defaultColor_->text());
   config_.theme.defaultWidth = defaultWidth_->value();
+  config_.theme.fontFamily = font_->currentFont().family();
   config_.ocrLanguages = ocrLanguages_->text().trimmed();
   config_.screenshotDir = screenshotDir_->text().trimmed();
   QString error;

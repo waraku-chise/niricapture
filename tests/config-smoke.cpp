@@ -16,7 +16,8 @@ bool runConfigSmoke(QString &error) {
     "palette": {"colors": ["#00ff00", "#ff00ff"], "widths": [3, 9]},
     "canvas": {"width": 800, "height": 600, "padding": 24,
                 "background": "white"},
-    "editor": {"default_color": "#00ff00", "default_width": 3},
+    "editor": {"default_color": "#00ff00", "default_width": 3,
+               "font": "DejaVu Sans"},
     "ocr": {"languages": "eng"},
     "paths": {"screenshots": "/tmp/niricapture-shots"}
   })";
@@ -50,7 +51,8 @@ bool runConfigSmoke(QString &error) {
     return false;
   }
   if (config.theme.defaultColor != QColor(QStringLiteral("#00ff00")) ||
-      config.theme.defaultWidth != 3.0) {
+      config.theme.defaultWidth != 3.0 ||
+      config.theme.fontFamily != QStringLiteral("DejaVu Sans")) {
     error = QStringLiteral("Config editor style was not applied");
     return false;
   }
