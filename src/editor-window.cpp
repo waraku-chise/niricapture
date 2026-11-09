@@ -638,16 +638,12 @@ private:
 
 EditorWindow::EditorWindow(const AppConfig &config, QWidget *parent)
     : QWidget(parent), config_(config) {
-  setWindowTitle(QStringLiteral("NiriCapture"));
+  setWindowTitle(ui("Editor", "编辑器"));
   resize(1200, 820);
   setMinimumSize(760, 520);
   QString style = QStringLiteral(R"(
     QWidget { background: #0f1116; color: #eef1f7; }
     QLabel { background: transparent; }
-    QLabel#title { font-size: 34px; font-weight: 700; color: #ffffff; }
-    QLabel#subtitle { font-size: 14px; color: #9aa3b2; }
-    QFrame#homeCard { background: #151922; border: 1px solid #262c38;
-                      border-radius: 18px; }
     QPushButton { background: #202633; color: #eef1f7; border: 1px solid #303849;
                   border-radius: 8px; padding: 7px 12px; }
     QPushButton:hover { background: #2a3343; }
@@ -703,60 +699,32 @@ void EditorWindow::buildHome() {
   outer->setContentsMargins(80, 64, 80, 64);
   outer->addStretch(1);
 
-  auto *card = new QFrame(home_);
-  card->setObjectName(QStringLiteral("homeCard"));
-  card->setMinimumWidth(620);
-  card->setMaximumWidth(760);
-  auto *cardLayout = new QVBoxLayout(card);
-  cardLayout->setContentsMargins(52, 46, 52, 46);
-  cardLayout->setSpacing(14);
-
-  auto *title = new QLabel(QStringLiteral("NiriCapture"), card);
-  title->setObjectName(QStringLiteral("title"));
-  auto *subtitle = new QLabel(
-      ui("A quiet screenshot editor for Niri. Start with a blank canvas or "
-         "open an image.",
-         "为 Niri 打造的轻量截图编辑器。新建画布，或打开一张图片开始。"),
-      card);
-  subtitle->setObjectName(QStringLiteral("subtitle"));
-  subtitle->setWordWrap(true);
-  cardLayout->addWidget(title);
-  cardLayout->addWidget(subtitle);
-  cardLayout->addSpacing(18);
-
-  auto *buttons = new QHBoxLayout;
-  buttons->setSpacing(12);
-  auto *newButton = new QPushButton(ui("New canvas", "新建画布"), card);
+  auto *row = new QWidget(home_);
+  auto *buttons = new QHBoxLayout(row);
+  buttons->setContentsMargins(0, 0, 0, 0);
+  buttons->setSpacing(14);
+  auto *newButton = new QPushButton(ui("New canvas", "新建画布"), row);
   newButton->setObjectName(QStringLiteral("primary"));
+  newButton->setMinimumSize(190, 54);
   newButton->setCursor(Qt::PointingHandCursor);
-  auto *openButton = new QPushButton(ui("Open image", "打开图片"), card);
+  auto *openButton = new QPushButton(ui("Open image", "打开图片"), row);
   openButton->setObjectName(QStringLiteral("primary"));
+  openButton->setMinimumSize(190, 54);
   openButton->setCursor(Qt::PointingHandCursor);
+  buttons->addStretch(1);
   buttons->addWidget(newButton);
   buttons->addWidget(openButton);
   buttons->addStretch(1);
-  cardLayout->addLayout(buttons);
-
-  auto *hint = new QLabel(
-      ui("Tip: Ctrl+F1 captures a window. The screenshot tools stay available "
-         "from the launcher.",
-         "提示：Ctrl+F1 截取窗口；也可以从启动器打开这个编辑器处理图片。"),
-      card);
-  hint->setObjectName(QStringLiteral("subtitle"));
-  hint->setWordWrap(true);
-  cardLayout->addSpacing(18);
-  cardLayout->addWidget(hint);
-
-  outer->addWidget(card, 0, Qt::AlignHCenter);
+  outer->addWidget(row);
   outer->addStretch(1);
-  stack_->addWidget(home_);
-
-  connect(newButton, &QPushButton::clicked, this, &EditorWindow::newFromDialog);
-  connect(openButton, &QPushButton::clicked, this, &EditorWindow::openFromDialog);
 
   auto *quit = new QPushButton(ui("Quit", "退出"), home_);
   quit->setCursor(Qt::PointingHandCursor);
   outer->addWidget(quit, 0, Qt::AlignHCenter);
+  stack_->addWidget(home_);
+
+  connect(newButton, &QPushButton::clicked, this, &EditorWindow::newFromDialog);
+  connect(openButton, &QPushButton::clicked, this, &EditorWindow::openFromDialog);
   connect(quit, &QPushButton::clicked, this, &QWidget::close);
 }
 
@@ -829,7 +797,7 @@ void EditorWindow::buildEditor() {
 
 void EditorWindow::showHome() {
   stack_->setCurrentWidget(home_);
-  setWindowTitle(QStringLiteral("NiriCapture"));
+  setWindowTitle(ui("Editor", "编辑器"));
 }
 
 void EditorWindow::showCanvas() {

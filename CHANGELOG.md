@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4] — 2026-11-09
+
+- The standalone editor start page no longer uses a card or displays the
+  application name. It shows only the New canvas / Open image actions, with a
+  Quit button at the bottom.
+- Window title is now “Editor” / “编辑器” rather than the product name.
+
 ## [0.6.3] — 2026-11-09
 
 ### Editor fixes
