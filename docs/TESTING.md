@@ -329,6 +329,18 @@ In the live Niri 26.04 / DMS session (single 1920×1080 output):
   `QQuickWidget` (“parent window … is not a QQuickWindow”), which is why the
   colour picker is an in-app popup and the folder picker is a widget dialog.
 
+## Material 3 Widgets chrome (2026-11-11)
+
+- The editor home/top bar, font picker, file dialogs, OCR dialogs, context
+  menus and message boxes use the shared `md3WidgetStyleSheet()` tokens and the
+  dark application palette.
+- Live X11/Xvfb checks: editor home and canvas render with the MD3 top bar and
+  tonal/filled home actions; the font picker shows the rounded container,
+  outlined combo with a visible arrow and filled accept button; the non-native
+  QFileDialog renders dark with readable labels and a filled default button.
+- File dialogs are created with `DontUseNativeDialog` so the stylesheet applies;
+  Qt native/portal dialogs would ignore it.
+
 ## Snapping checks
 
 - Edge snapping produces guide lines and aligns to the image/annotation bounds.

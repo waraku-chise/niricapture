@@ -31,6 +31,14 @@
 - Added Roboto and Material Symbols assets (Apache-2.0) and the
   `qt6-declarative` runtime dependency.
 
+### Material 3 Widgets chrome
+
+- Editor home and top bar, the annotation toolbar palette, the embedded font
+  picker, OCR dialogs/panels, file dialogs, message boxes and the tray menu now
+  share the Material 3 token layer with the settings window.
+- Editor home gained a headline; file dialogs are forced non-native so the app
+  palette and stylesheet apply.
+
 ### Font picker / dialogs
 
 - Replaced the top-level font dialog with the in-surface `FontPicker`; this

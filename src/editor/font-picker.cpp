@@ -15,23 +15,7 @@ FontPicker::FontPicker(const QString &family, QWidget *parent,
                        std::function<void(const QString &)> accepted)
     : QFrame(parent), accepted_(std::move(accepted)) {
   setObjectName(QStringLiteral("fontPicker"));
-  setStyleSheet(QStringLiteral(R"(
-    QFrame#fontPicker { background: #151922; border: 1px solid #3a4352;
-                        border-radius: 10px; }
-    QLabel { color: #eef1f7; background: transparent; }
-    QLabel#fontTitle { font-size: 14px; font-weight: 600; }
-    QLabel#fontPreview { background: #0f1116; border: 1px solid #303849;
-                         border-radius: 6px; padding: 12px; }
-    QFontComboBox { background: #171c25; color: #eef1f7;
-                    border: 1px solid #303849; border-radius: 6px;
-                    padding: 6px; }
-    QPushButton { background: #202633; color: #eef1f7;
-                  border: 1px solid #303849; border-radius: 6px;
-                  padding: 6px 16px; }
-    QPushButton#fontAccept { background: #2f6fed; border-color: #4b83ff; }
-    QPushButton:hover { background: #2a3343; }
-    QPushButton#fontAccept:hover { background: #3f7df7; }
-  )"));
+  setAttribute(Qt::WA_StyledBackground, true);
   setAttribute(Qt::WA_StyledBackground, true);
   setFixedSize(370, 205);
 

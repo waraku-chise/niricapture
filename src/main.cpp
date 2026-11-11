@@ -5,6 +5,7 @@
 #include "editor-window.hpp"
 #include "instance-lock.hpp"
 #include "i18n.hpp"
+#include "md3.hpp"
 #include "pin.hpp"
 #include "region-selector.hpp"
 #include "settings-window.hpp"
@@ -18,6 +19,8 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QFile>
+#include <QFontDatabase>
+#include <QPalette>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -649,6 +652,28 @@ int main(int argc, char **argv) {
   const AppConfig config = AppConfig::load(&configError);
   if (!configError.isEmpty())
     qWarning().noquote() << configError;
+
+  const Md3Tokens md3 = md3Tokens(config.theme);
+  QPalette uiPalette = application.palette();
+  uiPalette.setColor(QPalette::Window, md3.surface);
+  uiPalette.setColor(QPalette::WindowText, md3.onSurface);
+  uiPalette.setColor(QPalette::Base, md3.surfaceContainerLow);
+  uiPalette.setColor(QPalette::AlternateBase, md3.surfaceContainer);
+  uiPalette.setColor(QPalette::Text, md3.onSurface);
+  uiPalette.setColor(QPalette::Button, md3.surfaceContainer);
+  uiPalette.setColor(QPalette::ButtonText, md3.onSurface);
+  uiPalette.setColor(QPalette::Highlight, md3.primary);
+  uiPalette.setColor(QPalette::HighlightedText, md3.onPrimary);
+  uiPalette.setColor(QPalette::PlaceholderText, md3.onSurfaceVariant);
+  uiPalette.setColor(QPalette::ToolTipBase, md3.surfaceContainerHigh);
+  uiPalette.setColor(QPalette::ToolTipText, md3.onSurface);
+  application.setPalette(uiPalette);
+  application.setStyleSheet(md3WidgetStyleSheet(md3));
+  if (QFontDatabase::hasFamily(QStringLiteral("Roboto"))) {
+    QFont uiFont(QStringLiteral("Roboto"));
+    uiFont.setPointSizeF(10.5);
+    QApplication::setFont(uiFont);
+  }
   if (!config.ocrLanguages.isEmpty() &&
       qEnvironmentVariableIsEmpty("NIRICAPTURE_OCR_LANGS"))
     qputenv("NIRICAPTURE_OCR_LANGS", config.ocrLanguages.toUtf8());

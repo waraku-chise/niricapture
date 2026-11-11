@@ -995,24 +995,16 @@ void RegionSelector::showOcrPanel(const QString &text, RegionOverlay *overlay) {
   ocrText_ = new QPlainTextEdit(overlay);
   ocrText_->setPlainText(text);
   ocrText_->setReadOnly(true);
-  ocrText_->setStyleSheet(
-      QStringLiteral("QPlainTextEdit { color: #f5f7fa; background: rgba(18,20,26,245); "
-                     "border: 1px solid rgba(255,255,255,40); "
-                     "border-radius: 9px; padding: 9px; }"));
   const QRectF panel =
       QRectF(overlay->width() * 0.2, overlay->height() * 0.2,
              overlay->width() * 0.6, overlay->height() * 0.45);
   ocrText_->setGeometry(panel.toRect());
   ocrText_->show();
   ocrCopy_ = new QPushButton(ui("Copy text", "复制文本"), overlay);
+  ocrCopy_->setObjectName(QStringLiteral("primary"));
   ocrClose_ = new QPushButton(ui("Close", "关闭"), overlay);
-  for (QPushButton *button : {ocrCopy_.data(), ocrClose_.data()}) {
-    button->setStyleSheet(
-        QStringLiteral("QPushButton { color: #f5f7fa; background: #2a2d35; "
-                       "border: 1px solid rgba(255,255,255,35); "
-                       "border-radius: 7px; padding: 6px 12px; }"));
-    button->show();
-  }
+  ocrCopy_->show();
+  ocrClose_->show();
   ocrCopy_->setGeometry(panel.left(), panel.bottom() + 8, 110, 32);
   ocrClose_->setGeometry(panel.left() + 120, panel.bottom() + 8, 90, 32);
   connect(ocrCopy_, &QPushButton::clicked, this, [this] {

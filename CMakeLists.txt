@@ -104,6 +104,8 @@ qt_add_executable(niricapture
   src/editor-window.hpp
   src/settings-window.cpp
   src/settings-window.hpp
+  src/md3.cpp
+  src/md3.hpp
   src/settings/settings-bridge.cpp
   src/settings/settings-bridge.hpp
   src/autostart.cpp
@@ -164,6 +166,8 @@ qt_add_executable(niricapture-smoke
   tests/editor-window-smoke.hpp
   src/settings-window.cpp
   src/settings-window.hpp
+  src/md3.cpp
+  src/md3.hpp
   src/settings/settings-bridge.cpp
   src/settings/settings-bridge.hpp
   src/autostart.cpp

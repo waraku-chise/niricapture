@@ -1,5 +1,7 @@
 #include "settings-bridge.hpp"
 
+#include "md3.hpp"
+
 #include "autostart.hpp"
 
 #include <QApplication>
@@ -319,9 +321,8 @@ QVariantMap SettingsBridge::defaults() const {
 }
 
 void SettingsBridge::chooseDirectory(const QString &current) {
-  const QString directory = QFileDialog::getExistingDirectory(
-      QApplication::activeWindow(), QStringLiteral("选择截图目录"), current,
-      QFileDialog::ShowDirsOnly | QFileDialog::DontUseNativeDialog);
+  const QString directory = md3ChooseDirectory(
+      QApplication::activeWindow(), QStringLiteral("选择截图目录"), current);
   if (!directory.isEmpty())
     emit directoryChosen(directory);
 }

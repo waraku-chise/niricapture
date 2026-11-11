@@ -1,5 +1,7 @@
 #include "editor-window.hpp"
 
+#include "md3.hpp"
+
 #include "editor/editor-canvas.hpp"
 #include "editor/font-picker.hpp"
 #include "editor/tool-bar.hpp"
@@ -726,27 +728,7 @@ EditorWindow::EditorWindow(const AppConfig &config, QWidget *parent)
   setWindowTitle(ui("Editor", "编辑器"));
   resize(1200, 820);
   setMinimumSize(760, 520);
-  QString style = QStringLiteral(R"(
-    QWidget { background: #0f1116; color: #eef1f7; }
-    QLabel { background: transparent; }
-    QPushButton { background: #202633; color: #eef1f7; border: 1px solid #303849;
-                  border-radius: 8px; padding: 7px 12px; }
-    QPushButton:hover { background: #2a3343; }
-    QPushButton:pressed { background: #18202c; }
-    QPushButton#primary { background: #2f6fed; border-color: #4b83ff;
-                          font-weight: 600; padding: 12px 22px; font-size: 15px; }
-    QPushButton#primary:hover { background: #3f7df7; }
-    QLineEdit, QSpinBox, QComboBox, QPlainTextEdit {
-      background: #171c25; color: #eef1f7; border: 1px solid #303849;
-      border-radius: 7px; padding: 5px 7px; }
-    QLabel#status { color: #9aa3b2; padding: 5px 12px; }
-    QLabel#zoom { color: #cfd6e2; min-width: 52px; }
-  )");
-  style.replace(QStringLiteral("#0f1116"), config_.theme.background.name());
-  style.replace(QStringLiteral("#151922"), config_.theme.panel.name());
-  style.replace(QStringLiteral("#2f6fed"), config_.theme.accent.name());
-  style.replace(QStringLiteral("#3f7df7"), config_.theme.accent.lighter(115).name());
-  setStyleSheet(style);
+  setObjectName(QStringLiteral("editorRoot"));
   auto *layout = new QVBoxLayout(this);
   layout->setContentsMargins(0, 0, 0, 0);
   stack_ = new QStackedWidget(this);
@@ -784,6 +766,18 @@ void EditorWindow::buildHome() {
   outer->setContentsMargins(80, 64, 80, 64);
   outer->addStretch(1);
 
+  auto *title = new QLabel(QStringLiteral("NiriCapture"), home_);
+  title->setObjectName(QStringLiteral("homeTitle"));
+  title->setAlignment(Qt::AlignHCenter);
+  auto *subtitle = new QLabel(
+      ui("Create a canvas or open an image to start", "新建画布或打开图片开始"),
+      home_);
+  subtitle->setObjectName(QStringLiteral("homeSubtitle"));
+  subtitle->setAlignment(Qt::AlignHCenter);
+  outer->addWidget(title);
+  outer->addWidget(subtitle);
+  outer->addSpacing(20);
+
   auto *row = new QWidget(home_);
   auto *buttons = new QHBoxLayout(row);
   buttons->setContentsMargins(0, 0, 0, 0);
@@ -793,7 +787,7 @@ void EditorWindow::buildHome() {
   newButton->setMinimumSize(190, 54);
   newButton->setCursor(Qt::PointingHandCursor);
   auto *openButton = new QPushButton(ui("Open image", "打开图片"), row);
-  openButton->setObjectName(QStringLiteral("primary"));
+  openButton->setObjectName(QStringLiteral("tonal"));
   openButton->setMinimumSize(190, 54);
   openButton->setCursor(Qt::PointingHandCursor);
   buttons->addStretch(1);
@@ -820,12 +814,15 @@ void EditorWindow::buildEditor() {
   layout->setSpacing(0);
 
   auto *bar = new QWidget(editorPage_);
-  bar->setStyleSheet(QStringLiteral(
-      "QWidget#topbar { background: #151922; border-bottom: 1px solid #262c38; }"));
   bar->setObjectName(QStringLiteral("topbar"));
   auto *barLayout = new QHBoxLayout(bar);
   barLayout->setContentsMargins(12, 8, 12, 8);
   barLayout->setSpacing(6);
+
+  auto *barTitle = new QLabel(ui("Editor", "编辑器"), bar);
+  barTitle->setObjectName(QStringLiteral("topbarTitle"));
+  barLayout->addWidget(barTitle);
+  barLayout->addSpacing(14);
 
   auto addButton = [&](const QString &text, auto handler) {
     auto *button = new QPushButton(text, bar);
@@ -922,8 +919,9 @@ void EditorWindow::newCanvas(const QSize &size) {
 }
 
 void EditorWindow::openFromDialog() {
-  const QString path = QFileDialog::getOpenFileName(
-      this, ui("Open image", "打开图片"), lastImageDirectory_, imageFilter());
+  const QString path =
+      md3OpenImage(this, ui("Open image", "打开图片"), lastImageDirectory_,
+                   imageFilter());
   if (path.isEmpty())
     return;
   lastImageDirectory_ = QFileInfo(path).absolutePath();
@@ -1049,10 +1047,9 @@ void EditorWindow::saveImage() {
     start = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
   if (start.isEmpty())
     start = QDir::homePath();
-  QString path = QFileDialog::getSaveFileName(
-      this, ui("Save image", "保存图片"),
-      QDir(start).filePath(QStringLiteral("niricapture.png")),
-      QStringLiteral("PNG (*.png)"));
+  QString path = md3SaveImage(
+      this, ui("Save image", "保存图片"), start, QStringLiteral("PNG (*.png)"),
+      QStringLiteral("niricapture.png"));
   if (path.isEmpty())
     return;
   if (!path.endsWith(QStringLiteral(".png"), Qt::CaseInsensitive))
@@ -1126,11 +1123,14 @@ void EditorWindow::showOcrDialog(const QString &text) {
   dialog->setWindowTitle(ui("OCR result", "OCR 结果"));
   dialog->resize(560, 420);
   auto *layout = new QVBoxLayout(dialog);
+  layout->setContentsMargins(20, 20, 20, 20);
+  layout->setSpacing(12);
   auto *edit = new QPlainTextEdit(text, dialog);
   edit->setReadOnly(true);
   layout->addWidget(edit, 1);
   auto *buttons = new QHBoxLayout;
   auto *copy = new QPushButton(ui("Copy text", "复制文本"), dialog);
+  copy->setObjectName(QStringLiteral("primary"));
   auto *close = new QPushButton(ui("Close", "关闭"), dialog);
   buttons->addWidget(copy);
   buttons->addWidget(close);
