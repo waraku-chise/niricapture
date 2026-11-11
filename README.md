@@ -31,9 +31,10 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 | <img src="docs/screenshots/palette.png" width="420" alt="颜色与线宽弹出面板"> | <img src="docs/screenshots/shapes.png" width="420" alt="形状弹出面板"> |
 | **OCR 结果** | **Niri 原生窗口截图** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="可选中的 OCR 结果面板"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri 原生窗口截图"> |
+| **编辑器** | **设置窗口（Material 3）** |
+| <img src="docs/screenshots/editor-home.png" width="420" alt="编辑器首页：新建和打开"> | <img src="docs/screenshots/settings.png" width="420" alt="Material 3 设置窗口：工具栏"> |
+| <img src="docs/screenshots/editor-canvas.png" width="420" alt="独立编辑器画布"> | <img src="docs/screenshots/settings-appearance.png" width="420" alt="Material 3 设置窗口：外观"> |
 | **标注导出** | |
-| <img src="docs/screenshots/editor-home.png" width="420" alt="编辑器首页：新建和打开"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="独立编辑器画布"> |
-| <img src="docs/screenshots/settings.png" width="420" alt="设置窗口"> | |
 | <img src="docs/screenshots/annotations.png" width="420" alt="合成后的标注"> | |
 
 ## 已实现功能
@@ -50,7 +51,7 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 - 文字支持自定义字体；工具栏“文字字体”按钮或设置中的默认字体。
 - 智能磁吸：画布/标注边缘与中心、垂直/水平/45° 线，显示参考线；`Alt` 开关。
 - `niricapture --tray` 提供常驻托盘：区域/窗口/当前输出截图、编辑器、设置、开机启动、退出。
-- `niricapture --settings` 打开设置窗口；工具、命令、调色板、画布、主题、OCR 和路径均可写入配置。
+- `niricapture --settings` 打开 Material 3 设置窗口（内嵌 Qt Quick）：工具、命令、调色板、画布、主题、OCR 和路径均可编辑，带未保存提示、字段校验与只读保护。
 - 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
   窗口，也不会发生图像跳动。
 - 选区手柄基于完整冻结画面调整：缩小时不是裁剪，之后仍可重新放大。
@@ -133,6 +134,7 @@ NiriCapture 使用 Qt 6.8+ 与 LayerShellQt 构建，面向 Wayland/Niri。
 
 - CMake 3.24+、Ninja、pkgconf、C++23 编译器
 - Qt 6.8+ 的 Core / Gui / Widgets / Concurrent 开发包
+- Qt Quick / QuickWidgets（`qt6-declarative`，设置窗口使用）
 - LayerShellQt 开发包
 
 运行时依赖：
@@ -141,6 +143,7 @@ NiriCapture 使用 Qt 6.8+ 与 LayerShellQt 构建，面向 Wayland/Niri。
 |---|---|---|
 | Niri 26.04（已测试） | 截图模式必需 | JSON IPC、窗口选择与原生窗口截图 |
 | Qt 6 + LayerShellQt | 是 | 覆盖层、编辑器和钉图 |
+| Qt Quick / QML 模块（`qt6-declarative`） | 是 | 内嵌的 Material 3 设置窗口 |
 | `dms`（`dux-shell`） | 可选 | 区域/整屏的首选冻结后端 |
 | `grim` | 可选 | 没有 DMS 时区域/整屏的回退 |
 | `wl-clipboard` | 复制/剪贴板输入时需要 | Wayland 剪贴板 |
@@ -183,7 +186,7 @@ cmake --build build --parallel
 ```bash
 sudo pacman -S --needed \
   base-devel cmake ninja pkgconf \
-  qt6-base layer-shell-qt \
+  qt6-base qt6-declarative layer-shell-qt \
   grim wl-clipboard libnotify \
   tesseract tesseract-data-eng
 # 中文 OCR 可选但推荐：
@@ -316,13 +319,13 @@ spawn-at-startup "niricapture" "--tray";
 ### 设置窗口
 
 ```bash
-niricapture --settings   # 设置窗口
+niricapture --settings   # Material 3 设置窗口
 ```
 
-编辑器顶部的“设置”按钮、托盘菜单和命令行都能打开它。标签页对应配置文件的各个
+编辑器顶部的“设置”按钮、托盘菜单和命令行都能打开它。左侧导航对应配置文件的各个
 部分：
 
-| 标签页 | 内容 |
+| 页面 | 内容 |
 |---|---|
 | 工具栏 | 勾选要显示的工具，用 ↑/↓ 调整顺序 |
 | 命令 | 勾选标注工具栏上的命令（调色板、字体、撤销/重做、OCR、复制、保存、关闭） |
@@ -330,6 +333,10 @@ niricapture --settings   # 设置窗口
 | 画布 | 新文档的默认宽高、内边距、背景样式与背景色 |
 | 外观 | 强调色、编辑器背景、面板、棋盘格亮/暗色、默认标注颜色与线宽、文字字体 |
 | 截图 / 数据 | OCR 语言（如 `eng+chi_sim`）、截图目录、开机启动、配置文件路径 |
+
+设置窗口是普通窗口，Niri 会平铺它；想让它浮动，可把
+`packaging/niricapture-settings-window.kdl` 里的规则复制进 Niri 配置（NiriCapture
+不会改动你的配置）。
 
 底部是“打开配置文件”“恢复默认”“保存/取消”。恢复默认只重置界面，点保存后才写回。
 保存前会校验：至少保留一个工具、一个命令、一个颜色，线宽必须是用逗号分隔的正整数。
@@ -444,7 +451,8 @@ tests/                   离屏 Qt 冒烟、合成与契约测试
 packaging/               安装/卸载脚本、打包模板、快捷键
 ```
 
-使用纯 Qt 6 Widgets + LayerShellQt。没有 QML 运行时、没有 Quickshell、
+采集、覆盖层与编辑器使用 Qt 6 Widgets + LayerShellQt；设置窗口是内嵌的 Qt Quick
+（QML + Material 3）界面，随程序一起打包，不需要独立的 QML 运行时或 Quickshell。
 没有合成器插件、没有特权 helper。截图进程只通过公开的 Niri IPC；DMS 仅在可用时调用
 通信。
 

@@ -29,6 +29,8 @@ install -Dm644 "${repo_root}/NOTICE" \
   "${root}/usr/share/doc/niricapture/NOTICE"
 install -Dm644 "${repo_root}/LICENSES/MIT-nirisnap.txt" \
   "${root}/usr/share/doc/niricapture/MIT-nirisnap.txt"
+install -Dm644 "${repo_root}/LICENSES/Apache-2.0.txt" \
+  "${root}/usr/share/doc/niricapture/Apache-2.0.txt"
 install -Dm644 "${repo_root}/LICENSE" \
   "${root}/usr/share/doc/niricapture/copyright"
 chmod 0755 "${root}/usr/bin/niricapture"
@@ -43,7 +45,7 @@ Priority: optional
 Architecture: amd64
 Maintainer: NiriCapture contributors <niricapture@users.noreply.github.com>
 Installed-Size: ${installed_kb}
-Depends: libc6 (>= 2.35), libstdc++6 (>= 12), libqt6core6 (>= 6.12) | libqt6core6t64 (>= 6.12), libqt6gui6 (>= 6.12) | libqt6gui6t64 (>= 6.12), libqt6widgets6 (>= 6.12) | libqt6widgets6t64 (>= 6.12), libqt6concurrent6 (>= 6.12) | libqt6concurrent6t64 (>= 6.12), libqt6dbus6 (>= 6.12) | libqt6dbus6t64 (>= 6.12), libqt6waylandclient6 (>= 6.12) | libqt6waylandclient6t64 (>= 6.12), liblayershellqtinterface6, libwayland-client0, libxkbcommon0, libgl1, libegl1, libfontconfig1, libfreetype6, libharfbuzz0b, libpng16-16
+Depends: libc6 (>= 2.35), libstdc++6 (>= 12), libqt6core6 (>= 6.12) | libqt6core6t64 (>= 6.12), libqt6gui6 (>= 6.12) | libqt6gui6t64 (>= 6.12), libqt6widgets6 (>= 6.12) | libqt6widgets6t64 (>= 6.12), libqt6concurrent6 (>= 6.12) | libqt6concurrent6t64 (>= 6.12), libqt6dbus6 (>= 6.12) | libqt6dbus6t64 (>= 6.12), libqt6waylandclient6 (>= 6.12) | libqt6waylandclient6t64 (>= 6.12), libqt6quick6 (>= 6.12), libqt6quickwidgets6 (>= 6.12), qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-layouts, qml6-module-qtquick-shapes, liblayershellqtinterface6, libwayland-client0, libxkbcommon0, libgl1, libegl1, libfontconfig1, libfreetype6, libharfbuzz0b, libpng16-16
 Recommends: grim, wl-clipboard, libnotify-bin, tesseract-ocr, tesseract-ocr-eng, tesseract-ocr-chi-sim
 Homepage: https://github.com/waraku-chise/niricapture
 Description: Native Niri screenshot tool with optional DMS frozen frames

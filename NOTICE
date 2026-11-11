@@ -25,5 +25,15 @@ Architectural research was performed on:
   HyprCapture code is included, and NiriCapture does not link against or
   depend on Hyprland.
 
+UI assets:
+
+* Roboto (https://fonts.google.com/specimen/Roboto), Copyright (c) Google,
+  Apache License 2.0. Font files: assets/Roboto-Regular.ttf and
+  assets/Roboto-Medium.ttf.
+* Material Symbols (https://fonts.google.com/icons), Copyright (c) Google,
+  Apache License 2.0. Outline path data is embedded in
+  src/settings/qml/Icons.js.
+The Apache-2.0 license text is reproduced in LICENSES/Apache-2.0.txt.
+
 NiriCapture talks to Niri through its documented JSON IPC and compositor
 actions. It does not modify Niri, DMS, Quickshell or their source trees.

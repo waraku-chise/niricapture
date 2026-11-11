@@ -310,6 +310,25 @@ In the live Niri 26.04 / DMS session (single 1920×1080 output):
   is too close to the top edge).
 
 
+## Material 3 settings window (2026-11-10)
+
+- `QQuickWidget` + Qt Quick Controls Material style renders under
+  `QT_QPA_PLATFORM=offscreen`, so the existing `SettingsWindow` smoke still
+  passes without a compositor.
+- Live X11/Xvfb render checks at 920×700 and 946×720 covered all six pages,
+  hover states, the dirty-state footer and the read-only banner.
+- Save roundtrip: toggling a tool off and saving wrote a config v2 file whose
+  `tools` array no longer contained `select`; the snackbar showed the path.
+- Read-only config (`version: 99`) disabled Save, dimmed the pages and showed
+  the error-container banner.
+- Closing with unsaved changes opened the in-app discard dialog; “继续编辑”
+  stays, “放弃并关闭” exits.
+- The in-app MD3 colour picker changed the accent and the saved config
+  (`#2f6fe6`); the directory picker opens the widget `QFileDialog`.
+- Known: `QtQuick.Dialogs` cannot open its non-native dialogs inside a
+  `QQuickWidget` (“parent window … is not a QQuickWindow”), which is why the
+  colour picker is an in-app popup and the folder picker is a widget dialog.
+
 ## Snapping checks
 
 - Edge snapping produces guide lines and aligns to the image/annotation bounds.

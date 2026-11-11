@@ -32,9 +32,10 @@ the in-place editor, and the colour panel is shown with `Q`.
 | <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/shapes.png" width="420" alt="Shape popup"> |
 | **OCR result** | **Native window capture** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
+| **Editor** | **Settings (Material 3)** |
+| <img src="docs/screenshots/editor-home.png" width="420" alt="Editor home with New and Open"> | <img src="docs/screenshots/settings.png" width="420" alt="Material 3 settings: tools"> |
+| <img src="docs/screenshots/editor-canvas.png" width="420" alt="Standalone editor canvas"> | <img src="docs/screenshots/settings-appearance.png" width="420" alt="Material 3 settings: appearance"> |
 | **Annotation export** | |
-| <img src="docs/screenshots/editor-home.png" width="420" alt="Editor home with New and Open"> | <img src="docs/screenshots/editor-canvas.png" width="420" alt="Standalone editor canvas"> |
-| <img src="docs/screenshots/settings.png" width="420" alt="Settings"> | |
 | <img src="docs/screenshots/annotations.png" width="420" alt="Rendered annotations"> | |
 
 ## What works
@@ -56,7 +57,7 @@ the in-place editor, and the colour panel is shown with `Q`.
   45° lines, with guide lines. `Alt` toggles it.
 - `--tray` provides a persistent menu for region/window/focused-output capture,
   editor, settings, autostart and quit.
-- `--settings` edits tools, commands, palette, canvas, theme, OCR and paths.
+- `--settings` opens a Material 3 settings window (embedded Qt Quick) for tools, commands, palette, canvas, theme, OCR and paths, with dirty state, validation and a read-only guard.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
 - Selection handles resize against the full frozen output: a region can be
@@ -144,6 +145,7 @@ Build dependencies:
 
 - CMake 3.24+, Ninja, pkgconf, and a C++23 compiler
 - Qt 6.8+ development packages for Core / Gui / Widgets / Concurrent
+- Qt Quick / QuickWidgets (`qt6-declarative`, used by the settings window)
 - LayerShellQt development package
 
 Runtime:
@@ -152,6 +154,7 @@ Runtime:
 |---|---|---|
 | Niri 26.04 (tested) | capture modes | JSON IPC, window picker and native window capture |
 | Qt 6 + LayerShellQt | yes | overlays, editor and pinned images |
+| Qt Quick / QML modules (`qt6-declarative`) | yes | embedded Material 3 settings window |
 | `dms` (`dux-shell`) | optional | preferred freeze backend for region/fullscreen |
 | `grim` | optional | fallback for region/fullscreen when DMS is absent |
 | `wl-clipboard` | for copy/clipboard input | Wayland clipboard |
@@ -195,7 +198,7 @@ not mean NiriCapture only runs on Arch.
 ```bash
 sudo pacman -S --needed \
   base-devel cmake ninja pkgconf \
-  qt6-base layer-shell-qt \
+  qt6-base qt6-declarative layer-shell-qt \
   grim wl-clipboard libnotify \
   tesseract tesseract-data-eng
 # optional, recommended for Chinese OCR:
@@ -337,13 +340,13 @@ spawn-at-startup "niricapture" "--tray";
 ### Settings window
 
 ```bash
-niricapture --settings   # settings window
+niricapture --settings   # Material 3 settings window
 ```
 
-Open it from the editor's top bar, the tray menu or the command line. Its tabs
-map onto the configuration file:
+Open it from the editor's top bar, the tray menu or the command line. Its left
+rail maps onto the configuration file:
 
-| Tab | Contents |
+| Page | Contents |
 |---|---|
 | Tools | Check the tools to show; ↑/↓ reorders them |
 | Commands | Check the annotation toolbar commands (palette, font, undo/redo, OCR, copy, save, close) |
@@ -351,6 +354,10 @@ map onto the configuration file:
 | Canvas | Default width/height, padding, background style and background colour for new documents |
 | Theme | Accent, editor background, panel, checkerboard light/dark, default annotation colour and width, text font |
 | Capture / data | OCR languages (e.g. `eng+chi_sim`), screenshot directory, start at login, config path |
+
+Niri opens it as a normal window and tiles it. To keep it floating, copy the
+optional rule from `packaging/niricapture-settings-window.kdl` into your Niri
+config (NiriCapture never edits your configuration).
 
 The footer has “Open config”, “Reset to defaults” and “Save/Cancel”. Reset only
 resets the UI; nothing is written until Save. Saving validates that at least one
@@ -479,9 +486,11 @@ tests/                   offscreen Qt smoke, composition and contract tests
 packaging/               installer, uninstaller, packaging templates, keybinds
 ```
 
-Plain Qt 6 Widgets + LayerShellQt. No QML runtime, no Quickshell, no
-compositor plugin, no privileged helper. Capture processes communicate only
-through documented Niri IPC; DMS is only used when available.
+Capture, overlays and the editor are Qt 6 Widgets + LayerShellQt; the settings
+window is an embedded Qt Quick (QML + Material 3) surface shipped in the binary.
+No standalone QML runtime, no Quickshell, no compositor plugin, no privileged
+helper. Capture processes communicate only through documented Niri IPC; DMS is
+only used when available.
 
 ## Research, licences and deliberate limits
 

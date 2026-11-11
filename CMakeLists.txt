@@ -4,7 +4,7 @@ include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core DBus Gui Test Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Core DBus Gui Quick QuickWidgets Test Widgets)
 find_package(LayerShellQt REQUIRED)
 
 set(NIRICAPTURE_EDITOR_SOURCES
@@ -57,6 +57,25 @@ set(NIRICAPTURE_EDITOR_SOURCES
   src/editor/tools/blur-tool.hpp
 )
 
+set(NIRICAPTURE_SETTINGS_QML
+  src/settings/qml/Main.qml
+  src/settings/qml/CheckListPage.qml
+  src/settings/qml/PalettePage.qml
+  src/settings/qml/CanvasPage.qml
+  src/settings/qml/ThemePage.qml
+  src/settings/qml/DataPage.qml
+  src/settings/qml/ColorPopup.qml
+  src/settings/qml/Card.qml
+  src/settings/qml/ColorField.qml
+  src/settings/qml/Icon.qml
+  src/settings/qml/IconButton.qml
+  src/settings/qml/MdButton.qml
+  src/settings/qml/MdCheck.qml
+  src/settings/qml/Snackbar.qml
+  src/settings/qml/Md3.js
+  src/settings/qml/Icons.js
+)
+
 qt_add_executable(niricapture
   src/main.cpp
   src/cli-path.cpp
@@ -85,6 +104,8 @@ qt_add_executable(niricapture
   src/editor-window.hpp
   src/settings-window.cpp
   src/settings-window.hpp
+  src/settings/settings-bridge.cpp
+  src/settings/settings-bridge.hpp
   src/autostart.cpp
   src/autostart.hpp
   src/tray.cpp
@@ -93,7 +114,15 @@ qt_add_executable(niricapture
 qt_add_resources(niricapture "capture-fonts"
   PREFIX "/fonts"
   BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-  FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/Neucha.ttf"
+  FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Neucha.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Roboto-Regular.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Roboto-Medium.ttf"
+)
+qt_add_resources(niricapture "settings-qml"
+  PREFIX "/settings"
+  BASE "${CMAKE_CURRENT_SOURCE_DIR}/src/settings"
+  FILES ${NIRICAPTURE_SETTINGS_QML}
 )
 
 target_include_directories(niricapture PRIVATE
@@ -110,6 +139,8 @@ target_link_libraries(niricapture PRIVATE
   Qt6::Core
   Qt6::DBus
   Qt6::Gui
+  Qt6::Quick
+  Qt6::QuickWidgets
   Qt6::Widgets
   LayerShellQt::Interface
 )
@@ -133,6 +164,8 @@ qt_add_executable(niricapture-smoke
   tests/editor-window-smoke.hpp
   src/settings-window.cpp
   src/settings-window.hpp
+  src/settings/settings-bridge.cpp
+  src/settings/settings-bridge.hpp
   src/autostart.cpp
   src/autostart.hpp
   tests/config-smoke.cpp
@@ -163,7 +196,15 @@ qt_add_executable(niricapture-smoke
 qt_add_resources(niricapture-smoke "capture-fonts-smoke"
   PREFIX "/fonts"
   BASE "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-  FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/Neucha.ttf"
+  FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Neucha.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Roboto-Regular.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/Roboto-Medium.ttf"
+)
+qt_add_resources(niricapture-smoke "settings-qml-smoke"
+  PREFIX "/settings"
+  BASE "${CMAKE_CURRENT_SOURCE_DIR}/src/settings"
+  FILES ${NIRICAPTURE_SETTINGS_QML}
 )
 target_include_directories(niricapture-smoke PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}"
@@ -176,6 +217,8 @@ target_link_libraries(niricapture-smoke PRIVATE
   Qt6::Concurrent
   Qt6::Core
   Qt6::Gui
+  Qt6::Quick
+  Qt6::QuickWidgets
   Qt6::Test
   Qt6::Widgets
   LayerShellQt::Interface
@@ -212,13 +255,14 @@ install(FILES assets/OFL.txt
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/niricapture"
   RENAME Neucha-OFL.txt
 )
-install(FILES NOTICE LICENSES/MIT-nirisnap.txt
+install(FILES NOTICE LICENSES/MIT-nirisnap.txt LICENSES/Apache-2.0.txt
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/niricapture"
 )
 install(FILES niricapture.desktop niricapture-editor.desktop
   DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 install(FILES packaging/niricapture-keybinds.kdl
+  packaging/niricapture-settings-window.kdl
   DESTINATION "${CMAKE_INSTALL_DATADIR}/niricapture"
 )
 install(FILES README.md README.en.md

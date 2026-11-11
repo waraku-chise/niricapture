@@ -1,0 +1,7 @@
+// Optional: open the NiriCapture settings window floating instead of tiled.
+// NiriCapture never edits this for you; copy the rule into your Niri config.
+window-rule {
+    match app-id=r#"^niricapture$"#
+    match title=r#"^设置$"#
+    open-floating true
+}

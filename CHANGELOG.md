@@ -21,6 +21,16 @@
 
 ## [Unreleased]
 
+### Material 3 settings window
+
+- Rebuilt `--settings` as an embedded Qt Quick (QQuickWidget) Material 3 UI:
+  navigation rail, cards, MD3 colour roles/type scale, dirty state, inline
+  validation, snackbar and read-only banner.
+- Replaced Qt Quick Dialogs with an in-app MD3 colour picker; directory
+  selection uses the widget file dialog.
+- Added Roboto and Material Symbols assets (Apache-2.0) and the
+  `qt6-declarative` runtime dependency.
+
 ### Font picker / dialogs
 
 - Replaced the top-level font dialog with the in-surface `FontPicker`; this

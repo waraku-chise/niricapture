@@ -3,6 +3,7 @@
 
 #include "editor/annotation-geometry.hpp"
 #include "editor/tool.hpp"
+#include "i18n.hpp"
 
 class SelectTool final : public IEditorTool {
 public:
@@ -11,7 +12,7 @@ public:
   [[nodiscard]] QString icon() const override { return QStringLiteral("tool-select"); }
   [[nodiscard]] QString shortcut() const override { return QStringLiteral("V"); }
   [[nodiscard]] QString tooltip() const override {
-    return QStringLiteral("Select / move");
+    return ui("Select / move", "选择 · 移动 / 缩放");
   }
   [[nodiscard]] ToolGroup group() const override { return ToolGroup::Select; }
   void reset() override;

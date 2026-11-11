@@ -34,6 +34,12 @@
 bool loadCaptureFonts() {
   static const int fontId =
       QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/Neucha.ttf"));
+  static const int uiRegular =
+      QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/Roboto-Regular.ttf"));
+  static const int uiMedium =
+      QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/Roboto-Medium.ttf"));
+  static_cast<void>(uiRegular);
+  static_cast<void>(uiMedium);
   return fontId >= 0;
 }
 
