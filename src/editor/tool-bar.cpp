@@ -71,15 +71,7 @@ void ToolBar::setCommands(const QStringList &commands) {
     commands_ = commands;
 }
 
-void ToolBar::setTheme(const QColor &panel, const QColor &border,
-                       const QColor &accent) {
-  if (panel.isValid())
-    panelColor_ = panel;
-  if (border.isValid())
-    borderColor_ = border;
-  if (accent.isValid())
-    accentColor_ = accent;
-}
+void ToolBar::setTheme(const Md3Tokens &tokens) { tokens_ = tokens; }
 
 void ToolBar::setPalette(const QStringList &colors, const QVector<int> &widths) {
   if (!colors.isEmpty())
@@ -301,34 +293,33 @@ ToolBarHit ToolBar::hitTest(const QRectF &viewport, const QRectF &selection,
 void ToolBar::paint(QPainter &painter, const QRectF &viewport,
                     const QRectF &selection) const {
   const QRectF bar = rect(viewport, selection);
-  painter.setPen(QPen(borderColor_, 1));
-  painter.setBrush(panelColor_);
-  painter.drawRoundedRect(bar.adjusted(-4, -4, 4, 4), 11, 11);
+  painter.setPen(QPen(tokens_.outlineVariant, 1));
+  painter.setBrush(tokens_.surfaceContainerHigh);
+  painter.drawRoundedRect(bar.adjusted(-4, -4, 4, 4), 14, 14);
   if (paletteOpen_) {
-    painter.setPen(QPen(borderColor_, 1));
-    painter.setBrush(panelColor_);
-    painter.drawRoundedRect(paletteRect(viewport, selection), 10, 10);
+    painter.setPen(QPen(tokens_.outlineVariant, 1));
+    painter.setBrush(tokens_.surfaceContainerHigh);
+    painter.drawRoundedRect(paletteRect(viewport, selection), 14, 14);
   }
 
   QFont font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
-  font.setPixelSize(11);
+  font.setPixelSize(12);
+  font.setWeight(QFont::Medium);
   const QVector<ToolButton> all = buttons(viewport, selection);
   for (const ToolButton &button : all) {
     const bool paletteSwatch = button.id.startsWith(QStringLiteral("color-"));
     if (!paletteSwatch && (button.hovered || button.active || button.pressed)) {
       painter.setPen(Qt::NoPen);
-      painter.setBrush(button.pressed ? QColor(255, 255, 255, 38)
-                                     : button.hovered
-                                           ? QColor(255, 255, 255, 22)
-                                           : QColor(accentColor_.red(),
-                                                    accentColor_.green(),
-                                                    accentColor_.blue(), 70));
-      painter.drawRoundedRect(button.rect, 7, 7);
+      painter.setBrush(button.active
+                           ? tokens_.primaryContainer
+                           : button.pressed ? tokens_.surfaceContainerHighest
+                                            : tokens_.hover);
+      painter.drawRoundedRect(button.rect, 9, 9);
     }
     if (button.id == QStringLiteral("line-style")) {
-      painter.setPen(QPen(QColor(255, 255, 255, 75), 1));
-      painter.setBrush(QColor(255, 255, 255, 12));
-      painter.drawRoundedRect(button.rect, 6, 6);
+      painter.setPen(QPen(tokens_.outlineVariant, 1));
+      painter.setBrush(tokens_.surfaceContainer);
+      painter.drawRoundedRect(button.rect, 8, 8);
       Qt::PenStyle penStyle = Qt::SolidLine;
       switch (strokeStyle_) {
       case StrokeStyle::Dashed:
@@ -343,12 +334,12 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
       case StrokeStyle::Solid:
         break;
       }
-      painter.setPen(QPen(QColor(238, 242, 248), 2, penStyle, Qt::RoundCap));
+      painter.setPen(QPen(tokens_.onSurface, 2, penStyle, Qt::RoundCap));
       painter.drawLine(QPointF(button.rect.left() + 14,
                                button.rect.center().y()),
                        QPointF(button.rect.right() - 32,
                                button.rect.center().y()));
-      painter.setPen(QPen(QColor(205, 214, 226), 1.5));
+      painter.setPen(QPen(tokens_.onSurfaceVariant, 1.5));
       const QPointF chevron(button.rect.right() - 18,
                             button.rect.center().y());
       painter.drawLine(chevron + QPointF(-4, -3), chevron + QPointF(0, 1));
@@ -358,11 +349,11 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
     if (button.id.startsWith(QStringLiteral("size-"))) {
       const qreal diameter =
           std::clamp(button.tooltip.toDouble() * 1.5, 4.0, 18.0);
-      painter.setPen(QPen(QColor(255, 255, 255, 110), 1));
-      painter.setBrush(QColor(240, 243, 248));
+      painter.setPen(QPen(tokens_.onSurfaceVariant, 1));
+      painter.setBrush(tokens_.onSurface);
       painter.drawEllipse(button.rect.center(), diameter / 2.0, diameter / 2.0);
       if (button.selected) {
-        painter.setPen(QPen(accentColor_, 2));
+        painter.setPen(QPen(tokens_.primary, 2));
         painter.setBrush(Qt::NoBrush);
         painter.drawEllipse(button.rect.adjusted(1, 1, -1, -1));
       }
@@ -387,17 +378,17 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
       spectrum.setColorAt(1.0, QColor(QStringLiteral("#3388ff")));
       painter.fillPath(rainbow, spectrum);
       painter.restore();
-      painter.setPen(QPen(QColor(255, 255, 255, 140), 1));
+      painter.setPen(QPen(tokens_.outline, 1));
       painter.setBrush(Qt::NoBrush);
-      painter.drawRoundedRect(button.rect, 6, 6);
+      painter.drawRoundedRect(button.rect, 8, 8);
       continue;
     }
     if (button.id.startsWith(QStringLiteral("color-"))) {
-      painter.setPen(QPen(QColor(255, 255, 255, 55), 1));
+      painter.setPen(QPen(tokens_.outlineVariant, 1));
       painter.setBrush(button.swatch);
-      painter.drawRoundedRect(button.rect.adjusted(1, 1, -1, -1), 3, 3);
+      painter.drawRoundedRect(button.rect.adjusted(1, 1, -1, -1), 4, 4);
       if (button.selected) {
-        painter.setPen(QPen(accentColor_, 2));
+        painter.setPen(QPen(tokens_.primary, 2));
         painter.setBrush(Qt::NoBrush);
         painter.drawRoundedRect(button.rect.adjusted(0, 0, -1, -1), 4, 4);
       }
@@ -406,27 +397,31 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
     if (button.id == QStringLiteral("fill")) {
       if (button.active) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(accentColor_.red(), accentColor_.green(),
-                                accentColor_.blue(), 90));
-        painter.drawRoundedRect(button.rect, 5, 5);
+        painter.setBrush(tokens_.primaryContainer);
+        painter.drawRoundedRect(button.rect, 9, 9);
       }
-      painter.setPen(button.enabled ? QColor(240, 243, 248)
-                                    : QColor(240, 243, 248, 70));
+      QColor fillText = button.active ? tokens_.onPrimaryContainer
+                                      : tokens_.onSurface;
+      if (!button.enabled)
+        fillText.setAlpha(110);
+      painter.setPen(fillText);
       painter.setFont(font);
       painter.drawText(button.rect, Qt::AlignCenter, button.tooltip);
       continue;
     }
     if (button.id == QStringLiteral("palette")) {
-      painter.setPen(QPen(QColor(255, 255, 255, 70), 1));
+      painter.setPen(QPen(tokens_.outline, 1));
       painter.setBrush(button.swatch);
       painter.drawEllipse(
           QRectF(button.rect.center().x() - 8, button.rect.center().y() - 8, 16,
                  16));
       continue;
     }
-    drawToolbarIcon(painter, button.rect, button.icon, {},
-                    button.enabled ? QColor(245, 245, 247)
-                                   : QColor(245, 245, 247, 70));
+    QColor iconColor = button.active ? tokens_.onPrimaryContainer
+                                     : tokens_.onSurfaceVariant;
+    if (!button.enabled)
+      iconColor.setAlpha(110);
+    drawToolbarIcon(painter, button.rect, button.icon, {}, iconColor);
   }
 
   for (const ToolButton &button : all) {
@@ -443,17 +438,17 @@ void ToolBar::paint(QPainter &painter, const QRectF &viewport,
     const QFontMetricsF metrics(font);
     const qreal width = std::min(
         metrics.horizontalAdvance(text) + 18.0, viewport.width() - 8.0);
-    const qreal height = 22.0;
+    const qreal height = 24.0;
     qreal x = button.rect.center().x() - width / 2.0;
     x = std::clamp(x, 4.0, std::max(4.0, viewport.width() - width - 4.0));
     qreal y = button.rect.top() - height - 5.0;
     if (y < 4.0)
       y = button.rect.bottom() + 5.0;
     const QRectF bubble(x, y, width, height);
-    painter.setPen(QPen(QColor(255, 255, 255, 40), 1));
-    painter.setBrush(QColor(12, 15, 21, 246));
-    painter.drawRoundedRect(bubble, 6, 6);
-    painter.setPen(QColor(235, 239, 246));
+    painter.setPen(QPen(tokens_.outlineVariant, 1));
+    painter.setBrush(tokens_.surfaceContainerHigh);
+    painter.drawRoundedRect(bubble, 8, 8);
+    painter.setPen(tokens_.onSurface);
     painter.setFont(font);
     painter.drawText(bubble, Qt::AlignCenter, text);
     break;

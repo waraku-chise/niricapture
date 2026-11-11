@@ -4,6 +4,7 @@
 #include "editor/annotation-geometry.hpp"
 #include "editor/font-picker.hpp"
 #include "i18n.hpp"
+#include "md3.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -287,8 +288,7 @@ RegionSelector::RegionSelector(DesktopFrames frames, QuickOutputMode quickMode,
   canvas_.setTool(canvas_.registry().defaultToolId());
   toolBar_.setCommands(config.commands);
   toolBar_.setPalette(config.palette.colors, config.palette.widths);
-  toolBar_.setTheme(config.theme.panel, QColor(255, 255, 255, 30),
-                    config.theme.accent);
+  toolBar_.setTheme(md3Tokens(config.theme));
   canvas_.setColorSampler([this](const QPointF &point) {
     for (const OutputFrame &frame : frames_.outputs) {
       if (!QRectF(frame.monitor.geometry).contains(point) ||

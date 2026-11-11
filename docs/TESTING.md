@@ -340,6 +340,9 @@ In the live Niri 26.04 / DMS session (single 1920×1080 output):
   QFileDialog renders dark with readable labels and a filled default button.
 - File dialogs are created with `DontUseNativeDialog` so the stylesheet applies;
   Qt native/portal dialogs would ignore it.
+- The floating annotation toolbar paints with MD3 surfaces, outline variants,
+  primary-container active pills, MD3 tooltips and the themed colour/width
+  popup; the in-place overlay and the standalone editor share this component.
 
 ## Snapping checks
 

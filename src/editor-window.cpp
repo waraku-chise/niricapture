@@ -94,8 +94,7 @@ public:
     canvas_.setTool(canvas_.registry().defaultToolId());
     bar_.setCommands(config_.commands);
     bar_.setPalette(config_.palette.colors, config_.palette.widths);
-    bar_.setTheme(config_.theme.panel, QColor(255, 255, 255, 30),
-                  config_.theme.accent);
+    bar_.setTheme(md3Tokens(config_.theme));
     bar_.setDock(ToolBar::Dock::Top);
     canvas_.setColorSampler([this](const QPointF &point) {
       if (capture_.source.isNull() || imageSize_.isEmpty())

@@ -38,6 +38,9 @@
   share the Material 3 token layer with the settings window.
 - Editor home gained a headline; file dialogs are forced non-native so the app
   palette and stylesheet apply.
+- The floating annotation toolbar and its colour/width popup now paint with the
+  same MD3 surfaces, state layers, primary-container active state and tooltip
+  styling; the in-place screenshot overlay uses the same component.
 
 ### Font picker / dialogs
 

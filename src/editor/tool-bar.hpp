@@ -3,6 +3,8 @@
 
 #include "editor/tool.hpp"
 
+#include "md3.hpp"
+
 #include <QColor>
 #include <QRectF>
 #include <QString>
@@ -42,8 +44,7 @@ public:
   void setDock(Dock dock) { dock_ = dock; }
   void setCurrentTool(const QString &id);
   void setCommands(const QStringList &commands);
-  void setTheme(const QColor &panel, const QColor &border,
-                const QColor &accent);
+  void setTheme(const Md3Tokens &tokens);
   void setPalette(const QStringList &colors, const QVector<int> &widths);
   [[nodiscard]] QColor colorAt(int index) const;
   [[nodiscard]] int widthAt(int index) const;
@@ -88,7 +89,5 @@ private:
   QStringList commands_;
   QStringList paletteColors_;
   QVector<int> paletteWidths_;
-  QColor panelColor_ = QColor(17, 19, 24, 246);
-  QColor borderColor_ = QColor(255, 255, 255, 30);
-  QColor accentColor_ = QColor(124, 196, 255);
+  Md3Tokens tokens_ = md3Tokens(AppConfig::defaults().theme);
 };
