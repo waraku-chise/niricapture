@@ -21,6 +21,12 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the StatusNotifierItem tray (`--tray`), its separate `tray.lock`,
+  the XDG autostart helper and the settings window's “start at login” toggle.
+  The settings window is opened from the editor's top bar or `--settings`.
+
 ### Material 3 settings window
 
 - Rebuilt `--settings` as an embedded Qt Quick (QQuickWidget) Material 3 UI:
@@ -34,8 +40,8 @@
 ### Material 3 Widgets chrome
 
 - Editor home and top bar, the annotation toolbar palette, the embedded font
-  picker, OCR dialogs/panels, file dialogs, message boxes and the tray menu now
-  share the Material 3 token layer with the settings window.
+  picker, OCR dialogs/panels, file dialogs and message boxes now share the
+  Material 3 token layer with the settings window.
 - Editor home gained a headline; file dialogs are forced non-native so the app
   palette and stylesheet apply.
 - The floating annotation toolbar and its colour/width popup now paint with the
@@ -55,10 +61,6 @@
 
 - Added `--settings`, a tabbed settings window for tools/commands, palette,
   canvas defaults, theme, OCR and paths. Writes use the config v2 atomic save.
-- Added `--tray`, a StatusNotifierItem tray menu for region/window/fullscreen
-  capture, editor, settings, autostart and quit, with a separate `tray.lock`.
-- Added XDG autostart helper and settings/tray toggle (Niri may need an
-  explicit `spawn-at-startup` snippet instead).
 - Added the Eyedropper tool (`I`) with source-image sampling in both the
   standalone and in-place editors.
 - Annotation resize honours **Shift** (keep aspect ratio) and **Ctrl** (resize

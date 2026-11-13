@@ -2,8 +2,6 @@
 
 #include "md3.hpp"
 
-#include "autostart.hpp"
-
 #include <QApplication>
 #include <QColor>
 #include <QMetaType>
@@ -43,7 +41,7 @@ QVariantList stringList(const QStringList &values) {
   return result;
 }
 
-QVariantMap serialize(const AppConfig &config, bool autostartEnabled) {
+QVariantMap serialize(const AppConfig &config) {
   QVariantMap map;
   map.insert(QStringLiteral("tools"), stringList(config.tools));
   map.insert(QStringLiteral("commands"), stringList(config.commands));
@@ -89,7 +87,6 @@ QVariantMap serialize(const AppConfig &config, bool autostartEnabled) {
   paths.insert(QStringLiteral("screenshots"), config.screenshotDir);
   map.insert(QStringLiteral("paths"), paths);
 
-  map.insert(QStringLiteral("autostart"), autostartEnabled);
   map.insert(QStringLiteral("config_path"), config.path);
   return map;
 }
@@ -133,7 +130,7 @@ SettingsBridge::SettingsBridge(QObject *parent) : QObject(parent) {
 }
 
 QVariantMap SettingsBridge::initialData() const {
-  return serialize(config_, isAutostartEnabled());
+  return serialize(config_);
 }
 
 bool SettingsBridge::writable() const { return config_.writable(); }
@@ -306,18 +303,11 @@ QVariantMap SettingsBridge::save(const QVariantMap &values) {
   if (!next.save(&error))
     return failure(error);
   config_ = next;
-
-  QString warning;
-  if (!setAutostartEnabled(
-          values.value(QStringLiteral("autostart")).toBool(), &warning))
-    return success(config_.path,
-                   QStringLiteral("配置已保存，但开机启动设置失败：%1")
-                       .arg(warning));
   return success(config_.path, QString());
 }
 
 QVariantMap SettingsBridge::defaults() const {
-  return serialize(AppConfig::defaults(), false);
+  return serialize(AppConfig::defaults());
 }
 
 void SettingsBridge::chooseDirectory(const QString &current) {

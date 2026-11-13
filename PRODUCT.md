@@ -8,7 +8,7 @@ linux
 
 ## Users
 
-- **主用户（已确认）：仓库作者**。Niri + DMS 的 Arch Linux 日常使用者；截图 → 标注 → 复制/保存是高频动作，Niri 键位、托盘、就地编辑器和独立编辑器是每天用的入口。功能取舍以作者的真实工作流为优先。
+- **主用户（已确认）：仓库作者**。Niri + DMS 的 Arch Linux 日常使用者；截图 → 标注 → 复制/保存是高频动作，Niri 键位、就地编辑器和独立编辑器是每天用的入口。功能取舍以作者的真实工作流为优先。
 - **次要用户：Niri 用户**（公开分发：GitHub `waraku-chise/niricapture`、`packaging/PKGBUILD`、Release 里的 deb）。开源是分享：他们可以安装使用，但不是 1.0 的优化目标，不为其牺牲作者日常效率。
 - **典型场景**：单输出 1920×1080（开发机）上的区域/整屏截图；对完全被遮挡、位于非当前工作区或带透明度的窗口做窗口截图；需要快速标注后直接复制或存盘；OCR 文本提取。
 
@@ -25,9 +25,9 @@ NiriCapture 是面向 Niri（Wayland）的原生截图与标注工具：区域/�
 ## Operating Context
 
 - Niri 26.04+ / Wayland；Arch/CachyOS 有本地安装脚本，同时保留通用 CMake 安装；DMS 为可选后端，不是依赖。
-- 入口：Niri 键位 spawn、托盘菜单、CLI；编辑器有两种形态——冻结选区上的就地编辑器，以及独立的新建/打开编辑器窗口。
+- 入口：Niri 键位 spawn、CLI；编辑器有两种形态——冻结选区上的就地编辑器，以及独立的新建/打开编辑器窗口。
 - 产物：复制到 Wayland 剪贴板、保存 PNG、钉图、OCR 文本面板、JSON 配置（`~/.config/niricapture/config.json`，schema v2）。
-- CLI 模式：`--capture-region`、`--capture-fullscreen`、`--capture-all`、`--capture-window`、`--list-windows`、`--window-id`、`--editor`、`--file`、`--clipboard`、`--pin`、`--settings`、`--tray`、`--print-config`、`--config`，以及 `--copy`/`--save`。
+- CLI 模式：`--capture-region`、`--capture-fullscreen`、`--capture-all`、`--capture-window`、`--list-windows`、`--window-id`、`--editor`、`--file`、`--clipboard`、`--pin`、`--settings`、`--print-config`、`--config`，以及 `--copy`/`--save`。
 - 文档：`README.md` 中文默认，`README.en.md` 英文；工程记录在 `docs/`。
 
 ## Capabilities and Constraints
@@ -40,7 +40,7 @@ NiriCapture 是面向 Niri（Wayland）的原生截图与标注工具：区域/�
 - 独立编辑器：新建画布、打开图片、画布尺寸/内边距/背景、缩放平移、保存/复制/钉图/OCR。
 - 标注：选择移动缩放、画笔、箭头、直线、空心/填充矩形与椭圆、文字（自定义字体）、高亮、马赛克、高斯模糊、序号、取色器；撤销/重做；Shift 等比例、Ctrl 中心缩放、Alt 磁吸。
 - 配置 v2：工具/命令顺序与可见性、快捷键、调色板、画布、主题、OCR 语言、截图目录；原子保存、v1 迁移、未知字段保留、更新 schema 只读保护。
-- 设置窗口（`--settings`）、托盘（`--tray`，独立 `tray.lock`）、XDG autostart。
+- 设置窗口（`--settings`）；托盘与 XDG autostart 曾实现并验证，后按作者决定移除。
 - 单实例锁与旧锁恢复；DMS CLI 调用使用参数数组，不经过 shell。
 
 **硬性约束（后续工作必须保持）**
@@ -71,7 +71,7 @@ NiriCapture 是面向 Niri（Wayland）的原生截图与标注工具：区域/�
 
 ## Evidence on Hand
 
-- `docs/TESTING.md`：实机验证记录，包括 DMS 冻结帧与导出逐像素一致、完全遮挡窗口、非当前工作区窗口、透明窗口、OCR、安装脚本与托盘自启（systemd xdg-autostart generator）。
+- `docs/TESTING.md`：实机验证记录，包括 DMS 冻结帧与导出逐像素一致、完全遮挡窗口、非当前工作区窗口、透明窗口、OCR、安装脚本。
 - `docs/screenshots/`：真实截图与录屏预览（部分仍待替换成当前 UI）。
 - `docs/CONFIGURATION.md`：完整配置字段；`docs/EDITOR-ARCHITECTURE.md`：编辑器模块结构。
 - Release 资产（v0.6.2 deb）、`packaging/PKGBUILD`、`install-local.sh --check`。

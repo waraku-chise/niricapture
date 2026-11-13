@@ -50,7 +50,6 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 - 取色器可从冻结帧或打开的图片中采样颜色（`I`）。
 - 文字支持自定义字体；工具栏“文字字体”按钮或设置中的默认字体。
 - 智能磁吸：画布/标注边缘与中心、垂直/水平/45° 线，显示参考线；`Alt` 开关。
-- `niricapture --tray` 提供常驻托盘：区域/窗口/当前输出截图、编辑器、设置、开机启动、退出。
 - `niricapture --settings` 打开 Material 3 设置窗口（内嵌 Qt Quick）：工具、命令、调色板、画布、主题、OCR 和路径均可编辑，带未保存提示、字段校验与只读保护。
 - 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
   窗口，也不会发生图像跳动。
@@ -295,34 +294,13 @@ niricapture --window-id 42 --save
 在滚动布局上实现像素级准确的自定义 hover 覆盖层。Niri 合成器 picker 才是可靠
 的选择入口。
 
-### 托盘
-
-```bash
-niricapture --tray       # 常驻托盘，使用独立的 tray.lock
-```
-
-托盘基于 StatusNotifierItem，需要 DMS 顶栏或 waybar 之类的托盘宿主；没有宿主时
-进程以退出码 1 退出并打印原因。左键点击图标也会弹出同一个菜单。菜单项依次为：
-区域截图、窗口截图、当前输出、打开编辑器、设置、开机启动（勾选）、退出。菜单里的
-截图、编辑器、设置都是另起的 `niricapture` 进程，托盘本身不参与截图。
-
-托盘使用独立的 `tray.lock`：已经有一个托盘在运行时，再次启动会静默退出（退出码
-0），不会出现第二个图标。勾选“开机启动”会写入
-`~/.config/autostart/niricapture-tray.desktop`（`Exec="…/niricapture" --tray`），
-取消时删除该文件；勾选状态始终以文件是否存在为准。如果 Niri 或桌面不处理 XDG
-autostart，改用：
-
-```kdl
-spawn-at-startup "niricapture" "--tray";
-```
-
 ### 设置窗口
 
 ```bash
 niricapture --settings   # Material 3 设置窗口
 ```
 
-编辑器顶部的“设置”按钮、托盘菜单和命令行都能打开它。左侧导航对应配置文件的各个
+编辑器顶部的“设置”按钮和命令行都能打开它。左侧导航对应配置文件的各个
 部分：
 
 | 页面 | 内容 |
@@ -332,7 +310,7 @@ niricapture --settings   # Material 3 设置窗口
 | 调色板 | 颜色列表（添加/删除）、线宽列表（逗号分隔的正整数） |
 | 画布 | 新文档的默认宽高、内边距、背景样式与背景色 |
 | 外观 | 强调色、编辑器背景、面板、棋盘格亮/暗色、默认标注颜色与线宽、文字字体 |
-| 截图 / 数据 | OCR 语言（如 `eng+chi_sim`）、截图目录、开机启动、配置文件路径 |
+| 截图 / 数据 | OCR 语言（如 `eng+chi_sim`）、截图目录、配置文件路径 |
 
 设置窗口是普通窗口，Niri 会平铺它；想让它浮动，可把
 `packaging/niricapture-settings-window.kdl` 里的规则复制进 Niri 配置（NiriCapture
@@ -344,7 +322,7 @@ niricapture --settings   # Material 3 设置窗口
 
 配置只读时（文件 schema 版本比程序新，或文件损坏）保存按钮会禁用，并提示原因。
 配置在进程启动时读取一次，保存后的提示是“新建编辑器会使用新配置”：已经打开的
-编辑器和托盘不会热更新，下次从菜单或快捷键启动的进程才会用新值。自定义路径用
+编辑器不会热更新，下次从快捷键启动的进程才会用新值。自定义路径用
 `--config` 或 `NIRICAPTURE_CONFIG`，字段说明见
 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)。
 

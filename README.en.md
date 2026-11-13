@@ -55,8 +55,6 @@ the in-place editor, and the colour panel is shown with `Q`.
   command or the settings default.
 - Smart snapping to canvas/annotation edges and centres, vertical/horizontal/
   45° lines, with guide lines. `Alt` toggles it.
-- `--tray` provides a persistent menu for region/window/focused-output capture,
-  editor, settings, autostart and quit.
 - `--settings` opens a Material 3 settings window (embedded Qt Quick) for tools, commands, palette, canvas, theme, OCR and paths, with dirty state, validation and a read-only guard.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
@@ -313,38 +311,14 @@ viewport offset or absolute screen position of every window, so NiriCapture
 does not pretend it can build a pixel-accurate custom hover overlay across the
 scrolling layout. The compositor picker is the reliable selection surface.
 
-### Tray
-
-```bash
-niricapture --tray       # persistent tray, separate tray.lock
-```
-
-The tray uses StatusNotifierItem and needs a host such as the DMS bar or waybar;
-without one it exits with status 1 and prints the reason. A left click on the
-icon also pops up the same menu. The items are, in order: region capture, window
-capture, focused output, open editor, settings, start at login (checkable),
-quit. Every capture, editor and settings entry starts a separate `niricapture`
-process; the tray itself never captures.
-
-The tray takes its own `tray.lock`: when a tray is already running, another
-`--tray` exits silently (status 0) instead of adding a second icon. “Start at
-login” writes `~/.config/autostart/niricapture-tray.desktop`
-(`Exec="…/niricapture" --tray`) and removes it when unchecked; the check mark
-always reflects whether that file exists. If Niri or the desktop does not
-process XDG autostart, use:
-
-```kdl
-spawn-at-startup "niricapture" "--tray";
-```
-
 ### Settings window
 
 ```bash
 niricapture --settings   # Material 3 settings window
 ```
 
-Open it from the editor's top bar, the tray menu or the command line. Its left
-rail maps onto the configuration file:
+Open it from the editor's top bar or the command line. Its left rail maps onto
+the configuration file:
 
 | Page | Contents |
 |---|---|
@@ -353,7 +327,7 @@ rail maps onto the configuration file:
 | Palette | Colour list (add/remove) and line widths (comma-separated positive integers) |
 | Canvas | Default width/height, padding, background style and background colour for new documents |
 | Theme | Accent, editor background, panel, checkerboard light/dark, default annotation colour and width, text font |
-| Capture / data | OCR languages (e.g. `eng+chi_sim`), screenshot directory, start at login, config path |
+| Capture / data | OCR languages (e.g. `eng+chi_sim`), screenshot directory, config path |
 
 Niri opens it as a normal window and tiles it. To keep it floating, copy the
 optional rule from `packaging/niricapture-settings-window.kdl` into your Niri
@@ -368,9 +342,9 @@ the path and the Qt error string.
 When the file is read-only (its schema version is newer than the binary, or the
 file is malformed) the Save button is disabled with the reason shown. The
 configuration is read once per process, so the confirmation says “new editors
-will use the new configuration”: already open editors and the tray are not hot
-reloaded, while processes started later from the menu or a keybind pick up the
-new values. Use `--config` or `NIRICAPTURE_CONFIG` for a custom path; see
+will use the new configuration”: already open editors are not hot reloaded,
+while processes started later from a keybind pick up the new values. Use
+`--config` or `NIRICAPTURE_CONFIG` for a custom path; see
 [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for every field.
 
 ### Eyedropper

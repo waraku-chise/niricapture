@@ -44,8 +44,7 @@ Rectangle {
             "canvas": canvasPage.collect(),
             "editor": themePage.collect(),
             "ocr": { "languages": collected.ocrText },
-            "paths": { "screenshots": collected.directory },
-            "autostart": collected.autostart
+            "paths": { "screenshots": collected.directory }
         })
         if (result.ok) {
             dirty = false

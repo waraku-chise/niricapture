@@ -269,35 +269,11 @@ honored it.
 - atomic `QSaveFile` save and reload from a nested directory.
 
 
-## 1.0 settings/tray checks
+## 1.0 settings checks
 
 - `niricapture --settings` stays alive in a normal Wayland session; settings
   fields load from config v2 and save atomically.
-- `niricapture --tray` creates a separate `tray.lock` and waits for a
-  StatusNotifierItem host; under a session without a tray it exits with a clear
-  error.
-- Tray actions spawn child processes, so they do not contend with the capture
-  instance lock.
 - Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.
-
-### Live tray and autostart check (2026-11-09)
-
-In the live Niri 26.04 / DMS session (single 1920×1080 output):
-
-- `niricapture --tray` registered a StatusNotifierItem with the
-  `org.kde.StatusNotifierWatcher` hosted by the DMS shell (`qs`); the icon was
-  visible in the bar and the watcher's `RegisteredStatusNotifierItems` listed
-  it.
-- The “Start at login” toggle wrote
-  `~/.config/autostart/niricapture-tray.desktop` with
-  `Exec="/home/chise/.local/bin/niricapture" --tray`, and the file passed
-  `desktop-file-validate`.
-- systemd's `systemd-xdg-autostart-generator` produced
-  `app-niricapture-tray@autostart.service`
-  (`WantedBy=xdg-desktop-autostart.target`, active in this session). Starting
-  that unit launched the tray while the DMS bar was up, so this machine does
-  not need the `spawn-at-startup` fallback.
-- A second `--tray` exits with status 0 because of the separate `tray.lock`.
 
 
 ## 1.0 resize/font checks

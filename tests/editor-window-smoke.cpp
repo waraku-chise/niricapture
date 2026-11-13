@@ -1,7 +1,6 @@
 #include "editor-window-smoke.hpp"
 
 #include "editor-window.hpp"
-#include "autostart.hpp"
 #include "settings-window.hpp"
 #include "editor/font-picker.hpp"
 
@@ -9,7 +8,6 @@
 #include <QImage>
 #include <QSize>
 #include <QTemporaryDir>
-#include <QFile>
 #include <QPushButton>
 #include <QDir>
 
@@ -67,18 +65,6 @@ bool runEditorWindowSmoke(QString &error) {
     return false;
   }
   picker.close();
-  if (!setAutostartEnabled(true)) {
-    error = QStringLiteral("Could not enable test autostart");
-    return false;
-  }
-  if (!QFile::exists(autostartFilePath())) {
-    error = QStringLiteral("Autostart file was not created");
-    return false;
-  }
-  if (!setAutostartEnabled(false) || QFile::exists(autostartFilePath())) {
-    error = QStringLiteral("Autostart file was not removed");
-    return false;
-  }
   qunsetenv("NIRICAPTURE_CONFIG");
   qunsetenv("XDG_CONFIG_HOME");
   QApplication::processEvents();

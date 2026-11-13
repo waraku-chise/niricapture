@@ -33,7 +33,7 @@ ScrollView {
             Layout.rightMargin: 24
             Layout.topMargin: 4
             Layout.fillWidth: true
-            text: "OCR、保存目录与登录启动；这些值不会改动 Niri 或 DMS 配置。"
+            text: "OCR 与保存目录；这些值不会改动 Niri 或 DMS 配置。"
             color: page.colors.onSurfaceVariant
             font.pixelSize: 13
             wrapMode: Text.WordWrap
@@ -99,37 +99,6 @@ ScrollView {
             Layout.fillWidth: true
             colors: page.colors
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 12
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-                    Label { text: "登录时启动托盘"; color: page.colors.onSurface; font.pixelSize: 14 }
-                    Label {
-                        text: "写入 XDG autostart；若 Niri 不读取，请改用 spawn-at-startup。"
-                        color: page.colors.onSurfaceVariant
-                        font.pixelSize: 11
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
-                    }
-                }
-                Switch {
-                    id: autostartSwitch
-                    checked: page.source.autostart
-                    Material.accent: page.colors.primary
-                    onToggled: page.edited()
-                }
-            }
-        }
-
-        Card {
-            Layout.leftMargin: 24
-            Layout.rightMargin: 24
-            Layout.topMargin: 12
-            Layout.fillWidth: true
-            colors: page.colors
-
             Label { text: "配置文件"; color: page.colors.onSurfaceVariant; font.pixelSize: 12 }
             Label {
                 text: page.bridge.configPath
@@ -170,14 +139,12 @@ ScrollView {
         if (!page.source) return
                 ocrField.text = page.source.ocr ? page.source.ocr.languages : ""
         directoryField.text = page.source.paths ? page.source.paths.screenshots : ""
-        autostartSwitch.checked = page.source.autostart === true
     }
 
     function collect() {
         return {
             "ocrText": ocrField.text,
-            "directory": directoryField.text,
-            "autostart": autostartSwitch.checked
+            "directory": directoryField.text
         }
     }
 }

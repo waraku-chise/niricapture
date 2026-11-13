@@ -108,10 +108,6 @@ qt_add_executable(niricapture
   src/md3.hpp
   src/settings/settings-bridge.cpp
   src/settings/settings-bridge.hpp
-  src/autostart.cpp
-  src/autostart.hpp
-  src/tray.cpp
-  src/tray.hpp
 )
 qt_add_resources(niricapture "capture-fonts"
   PREFIX "/fonts"
@@ -170,8 +166,6 @@ qt_add_executable(niricapture-smoke
   src/md3.hpp
   src/settings/settings-bridge.cpp
   src/settings/settings-bridge.hpp
-  src/autostart.cpp
-  src/autostart.hpp
   tests/config-smoke.cpp
   tests/config-smoke.hpp
   src/cli-path.cpp
