@@ -225,6 +225,79 @@ bool runEditorToolSmoke(QString &error) {
   }
 
   {
+    EditorCanvas shiftCanvas;
+    shiftCanvas.setSelection(QRectF(0, 0, 500, 500));
+    shiftCanvas.setTool(QStringLiteral("rectangle"));
+    ToolEvent createStart;
+    createStart.pos = {100, 100};
+    ToolEvent createDrag = createStart;
+    createDrag.pos = {220, 160};
+    createDrag.modifiers = Qt::ShiftModifier;
+    shiftCanvas.press(createStart);
+    shiftCanvas.move(createDrag);
+    const auto square = shiftCanvas.preview();
+    if (!check(square.has_value() &&
+                   qAbs(std::abs(square->end.x() - square->start.x()) -
+                        std::abs(square->end.y() - square->start.y())) < 0.01,
+               "Shift creation did not produce a square", error))
+      return false;
+    shiftCanvas.release(createDrag);
+    const Annotation committed =
+        shiftCanvas.document().annotations().first();
+    if (!check(qAbs(std::abs(committed.end.x() - committed.start.x()) -
+                    std::abs(committed.end.y() - committed.start.y())) < 0.01,
+               "Shift creation was not committed as a square", error))
+      return false;
+  }
+
+  {
+    EditorCanvas centreCanvas;
+    centreCanvas.setSelection(QRectF(0, 0, 500, 500));
+    centreCanvas.setTool(QStringLiteral("ellipse"));
+    ToolEvent centreStart;
+    centreStart.pos = {200, 200};
+    ToolEvent centreDrag = centreStart;
+    centreDrag.pos = {280, 240};
+    centreDrag.modifiers = Qt::ControlModifier;
+    centreCanvas.press(centreStart);
+    centreCanvas.move(centreDrag);
+    const auto centred = centreCanvas.preview();
+    if (!check(centred.has_value() &&
+                   QLineF((centred->start + centred->end) / 2.0,
+                          QPointF(200, 200))
+                           .length() < 0.01,
+               "Ctrl creation did not keep the centre", error))
+      return false;
+    centreCanvas.release(centreDrag);
+    const Annotation committed =
+        centreCanvas.document().annotations().first();
+    if (!check(QLineF((committed.start + committed.end) / 2.0,
+                      QPointF(200, 200))
+                       .length() < 0.01,
+               "Ctrl creation was not committed around the centre", error))
+      return false;
+  }
+
+  {
+    EditorCanvas lineCanvas;
+    lineCanvas.setSelection(QRectF(0, 0, 500, 500));
+    lineCanvas.setTool(QStringLiteral("line"));
+    ToolEvent lineStart;
+    lineStart.pos = {100, 100};
+    ToolEvent lineDrag = lineStart;
+    lineDrag.pos = {260, 130};
+    lineDrag.modifiers = Qt::ShiftModifier;
+    lineCanvas.press(lineStart);
+    lineCanvas.move(lineDrag);
+    const auto snappedLine = lineCanvas.preview();
+    if (!check(snappedLine.has_value() &&
+                   qAbs(snappedLine->end.y() - snappedLine->start.y()) < 0.01,
+               "Shift creation did not snap the line to 45 degrees", error))
+      return false;
+    lineCanvas.release(lineDrag);
+  }
+
+  {
     EditorCanvas wheelCanvas;
     wheelCanvas.setWidthOptions({2, 4, 8, 12});
     wheelCanvas.style().width = 4;

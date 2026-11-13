@@ -65,6 +65,8 @@
   standalone and in-place editors.
 - Annotation resize honours **Shift** (keep aspect ratio) and **Ctrl** (resize
   around the centre), including the combination.
+- Annotation creation honours **Shift** (square/circle, lines snap to 45°) and
+  **Ctrl** (draw from the centre), including the combination.
 - Hovering a toolbar tool now shows its name above the button.
 - The colour popup now uses a compact 9×4 swatch grid, a current-colour swatch
   with custom-colour rainbow corner, a line-style selector, width circles and a

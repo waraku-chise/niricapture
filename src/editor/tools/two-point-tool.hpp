@@ -18,8 +18,12 @@ protected:
   [[nodiscard]] virtual bool supportsFill() const { return false; }
   [[nodiscard]] virtual QString addedStatus() const = 0;
 
+  void updateDrag(const QPointF &point, Qt::KeyboardModifiers modifiers,
+                  ToolContext &context);
+
   QPointF start_;
   QPointF end_;
+  QPointF center_;
   QColor previewColor_;
   qreal previewWidth_ = 4.0;
   StrokeStyle previewStrokeStyle_ = StrokeStyle::Solid;

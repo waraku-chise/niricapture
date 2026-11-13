@@ -234,7 +234,7 @@ protected:
   void mouseMoveEvent(QMouseEvent *event) override {
     const QPointF local = event->position();
     const QPointF global = local + QPointF(frame_->monitor.geometry.topLeft());
-    selector_->editorMove(this, global);
+    selector_->editorMove(this, global, event->modifiers());
     selector_->setToolbarHover(this, local);
     if (!(event->buttons() & Qt::LeftButton) &&
         selector_->toolbarContains(this, local))
@@ -255,7 +255,7 @@ protected:
     }
     const QPointF global =
         event->position() + QPointF(frame_->monitor.geometry.topLeft());
-    selector_->editorRelease(this, global);
+    selector_->editorRelease(this, global, event->modifiers());
     event->accept();
   }
 
@@ -435,14 +435,14 @@ void RegionSelector::start(const QRectF &initialSelection) {
   if (qEnvironmentVariableIsSet("NIRICAPTURE_TEST_GEOMETRY")) {
     QTimer::singleShot(500, this, [this] {
       beginSelection(QPointF(350, 180));
-      editorMove(ownerOverlay(), QPointF(1450, 880));
-      editorRelease(ownerOverlay(), QPointF(1450, 880));
+      editorMove(ownerOverlay(), QPointF(1450, 880), Qt::NoModifier);
+      editorRelease(ownerOverlay(), QPointF(1450, 880), Qt::NoModifier);
       if (ownerOverlay()) {
         dragOriginalSelection_ = selection_;
         drag_ = Drag::ResizeSelection;
         resizeHandle_ = QStringLiteral("br");
-        editorMove(ownerOverlay(), QPointF(1700, 1000));
-        editorRelease(ownerOverlay(), QPointF(1700, 1000));
+        editorMove(ownerOverlay(), QPointF(1700, 1000), Qt::NoModifier);
+        editorRelease(ownerOverlay(), QPointF(1700, 1000), Qt::NoModifier);
       }
       selectionChanged();
     });
@@ -777,7 +777,8 @@ bool RegionSelector::editorPress(RegionOverlay *overlay, const QPointF &global,
   return true;
 }
 
-void RegionSelector::editorMove(RegionOverlay *, const QPointF &global) {
+void RegionSelector::editorMove(RegionOverlay *, const QPointF &global,
+                                Qt::KeyboardModifiers modifiers) {
   if (drag_ == Drag::NewSelection) {
     selection_ = normalizedRect(dragStart_, clampPoint(global));
     selectionChanged();
@@ -797,10 +798,12 @@ void RegionSelector::editorMove(RegionOverlay *, const QPointF &global) {
   }
   ToolEvent event;
   event.pos = global;
+  event.modifiers = modifiers;
   canvas_.move(event);
 }
 
-void RegionSelector::editorRelease(RegionOverlay *, const QPointF &global) {
+void RegionSelector::editorRelease(RegionOverlay *, const QPointF &global,
+                                   Qt::KeyboardModifiers modifiers) {
   if (drag_ == Drag::NewSelection) {
     if (selection_.width() < kMinSelection &&
         selection_.height() < kMinSelection) {
@@ -822,6 +825,7 @@ void RegionSelector::editorRelease(RegionOverlay *, const QPointF &global) {
   }
   ToolEvent event;
   event.pos = global;
+  event.modifiers = modifiers;
   canvas_.release(event);
 }
 

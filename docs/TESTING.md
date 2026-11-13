@@ -276,10 +276,13 @@ honored it.
 - Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.
 
 
-## 1.0 resize/font checks
+## 1.0 resize/create/font checks
 
 - `Shift` preserves a rectangle's aspect ratio while dragging a resize handle.
 - `Ctrl` keeps the annotation centre fixed.
+- Creating with `Shift` produces a square/circle, and lines snap to 45°.
+- Creating with `Ctrl` keeps the first press as the centre; `Ctrl+Shift`
+  combines both.
 - `annotationTextFont` accepts a custom family and `editor.font` is parsed and
   serialized by config v2.
 - Toolbar hover labels are painted above the button (or below when the toolbar

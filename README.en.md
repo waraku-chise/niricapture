@@ -400,6 +400,9 @@ Window captures open this editor directly with the rendered window image.
 | `Alt` | Toggle snapping (on by default) |
 | `Shift` + drag annotation handle | Keep aspect ratio |
 | `Ctrl` + drag annotation handle | Resize around centre |
+| `Shift` + drag to create | Square/circle; lines snap to 45° |
+| `Ctrl` + drag to create | Create around the first press |
+| `Ctrl+Shift` + drag to create | Combine both |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / redo |
 | `Delete` | Delete selected annotation |
 | Wheel | Change line width / selected annotation thickness |

@@ -375,6 +375,7 @@ protected:
       ToolEvent toolEvent;
       toolEvent.pos = toCanvas(event->position());
       toolEvent.local = toolEvent.pos;
+      toolEvent.modifiers = event->modifiers();
       canvas_.release(toolEvent);
       dragging_ = false;
       update();

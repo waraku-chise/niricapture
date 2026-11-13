@@ -87,8 +87,10 @@ private:
   bool editorPress(RegionOverlay *overlay, const QPointF &global,
                    const QPointF &local, Qt::MouseButton button,
                    Qt::KeyboardModifiers modifiers);
-  void editorMove(RegionOverlay *overlay, const QPointF &global);
-  void editorRelease(RegionOverlay *overlay, const QPointF &global);
+  void editorMove(RegionOverlay *overlay, const QPointF &global,
+                  Qt::KeyboardModifiers modifiers);
+  void editorRelease(RegionOverlay *overlay, const QPointF &global,
+                     Qt::KeyboardModifiers modifiers);
   bool editorKey(QKeyEvent *event, RegionOverlay *overlay);
   bool editorWheel(QWheelEvent *event);
 
