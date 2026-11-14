@@ -15,8 +15,8 @@ windows are captured completely.
 
 ## UI preview
 
-The clip below is a real screen recording: the frozen desktop is turned into
-the in-place editor, and the colour panel is shown with `Q`.
+The clip below is a real screen recording: a rectangle and an arrow are drawn
+on the frozen selection, and the colour panel is opened with `Q`.
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture UI preview" width="880">
 
@@ -28,8 +28,8 @@ the in-place editor, and the colour panel is shown with `Q`.
 | Region selection | Editor |
 |---|---|
 | <img src="docs/screenshots/region-selector.png" width="420" alt="Frozen region selection"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="Annotation editor"> |
-| **Colour / width** | **Standalone editor: shape panel** |
-| <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/shapes.png" width="420" alt="Shape popup"> |
+| **Colour / width** | **Toolbar: shapes and commands** |
+| <img src="docs/screenshots/palette.png" width="420" alt="Colour and line width popup"> | <img src="docs/screenshots/toolbar.png" width="420" alt="Material 3 annotation toolbar"> |
 | **OCR result** | **Native window capture** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="Selectable OCR result panel"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri-native window capture"> |
 | **Editor** | **Settings (Material 3)** |

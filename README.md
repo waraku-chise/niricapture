@@ -14,8 +14,7 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 
 ## 界面预览
 
-下面的动图来自真实录屏：冻结桌面、区域覆盖层直接进入编辑状态，
-并用 `Q` 展示颜色 / 线宽面板。
+下面的动图来自真实录屏：在冻结选区上画矩形和箭头，并用 `Q` 打开颜色 / 线宽面板。
 
 <img src="docs/screenshots/preview.gif" alt="NiriCapture 界面预览" width="880">
 
@@ -27,8 +26,8 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 | 区域选区 | 编辑器 |
 |---|---|
 | <img src="docs/screenshots/region-selector.png" width="420" alt="冻结画面区域选区"> | <img src="docs/screenshots/inline-editor.png" width="420" alt="标注编辑器"> |
-| **颜色 / 线宽** | **独立编辑器：形状面板** |
-| <img src="docs/screenshots/palette.png" width="420" alt="颜色与线宽弹出面板"> | <img src="docs/screenshots/shapes.png" width="420" alt="形状弹出面板"> |
+| **颜色 / 线宽** | **工具栏：形状与命令** |
+| <img src="docs/screenshots/palette.png" width="420" alt="颜色与线宽弹出面板"> | <img src="docs/screenshots/toolbar.png" width="420" alt="Material 3 标注工具栏"> |
 | **OCR 结果** | **Niri 原生窗口截图** |
 | <img src="docs/screenshots/ocr-panel.png" width="420" alt="可选中的 OCR 结果面板"> | <img src="docs/screenshots/native-window.png" width="300" alt="Niri 原生窗口截图"> |
 | **编辑器** | **设置窗口（Material 3）** |

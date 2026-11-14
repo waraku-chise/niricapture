@@ -72,7 +72,7 @@ NiriCapture 是面向 Niri（Wayland）的原生截图与标注工具：区域/�
 ## Evidence on Hand
 
 - `docs/TESTING.md`：实机验证记录，包括 DMS 冻结帧与导出逐像素一致、完全遮挡窗口、非当前工作区窗口、透明窗口、OCR、安装脚本。
-- `docs/screenshots/`：真实截图与录屏预览（部分仍待替换成当前 UI）。
+- `docs/screenshots/`：真实截图与录屏预览，已更新到当前 Material 3 工具栏。
 - `docs/CONFIGURATION.md`：完整配置字段；`docs/EDITOR-ARCHITECTURE.md`：编辑器模块结构。
 - Release 资产（v0.6.2 deb）、`packaging/PKGBUILD`、`install-local.sh --check`。
 - 实机环境：Arch Linux、Niri 26.04、DMS 2.0.0、Qt 6.12、单输出 1920×1080。

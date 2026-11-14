@@ -27,6 +27,11 @@
   the XDG autostart helper and the settings window's “start at login” toggle.
   The settings window is opened from the editor's top bar or `--settings`.
 
+### Documentation
+
+- Refreshed the README screenshots and preview recording for the Material 3
+  toolbar; the obsolete shape-panel screenshot is now a toolbar crop.
+
 ### Material 3 settings window
 
 - Rebuilt `--settings` as an embedded Qt Quick (QQuickWidget) Material 3 UI:
