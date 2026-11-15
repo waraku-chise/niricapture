@@ -34,11 +34,11 @@ Result at the time of writing:
 - A staged `cmake --install` under `/tmp/niricapture-1.0.0-stage/usr`
   installs the `1.0.0` binary, all launcher entries, the Niri snippets,
   licenses and docs.
-- Release assets built from the same tree:
+- GitHub release assets (rebuilt by CI from this tag):
   `niricapture_1.0.0_amd64.deb` (sha256
-  `7b47a1e812455aa45b2ee57082ff211e980c514012f98d40b527857bd9630394`)
+  `6f386e6c2af4dd58599efc2b7e7a465f406b6e0d21107576fe69236c28409938`)
   and `niricapture-1.0.0-archlinux-x86_64.tar.gz` (sha256
-  `c99f39d7c714146cbc86f7cf00287969346978614f9d30a99fb984ec4a1a8d9a`).
+  `6e46df84d7acd05f619ca248fc67a75d9b7290363bf1579ad1b932c48e4e2daf`).
   The deb installs `niricapture-settings.desktop`.
 
 ## Live DMS frozen-frame test
