@@ -1,24 +1,5 @@
 # Changelog
 
-## [0.6.4] — 2026-11-09
-
-- The standalone editor start page no longer uses a card or displays the
-  application name. It shows only the New canvas / Open image actions, with a
-  Quit button at the bottom.
-- Window title is now “Editor” / “编辑器” rather than the product name.
-
-## [0.6.3] — 2026-11-09
-
-### Editor fixes
-
-- The standalone editor's annotation toolbar is now docked to the top border
-  instead of floating over the canvas; the image area is laid out below it.
-- Mosaic and Gaussian blur now render a live preview during drawing and after
-  commit, before the vector layer. Export behavior is unchanged and verified
-  against `renderCapture`.
-- Tests cover the docked toolbar geometry and that mosaic/blur actually change
-  rendered pixels.
-
 ## [1.0.0] — 2026-11-15
 
 ### Launcher entries
@@ -98,6 +79,25 @@
 - `--print-config` prints the normalized v2 JSON.
 - `tests/config-smoke.cpp` covers roundtrip, unknown-field preservation,
   migration, newer-schema rejection and atomic save/reload.
+
+## [0.6.4] — 2026-11-09
+
+- The standalone editor start page no longer uses a card or displays the
+  application name. It shows only the New canvas / Open image actions, with a
+  Quit button at the bottom.
+- Window title is now “Editor” / “编辑器” rather than the product name.
+
+## [0.6.3] — 2026-11-09
+
+### Editor fixes
+
+- The standalone editor's annotation toolbar is now docked to the top border
+  instead of floating over the canvas; the image area is laid out below it.
+- Mosaic and Gaussian blur now render a live preview during drawing and after
+  commit, before the vector layer. Export behavior is unchanged and verified
+  against `renderCapture`.
+- Tests cover the docked toolbar geometry and that mosaic/blur actually change
+  rendered pixels.
 
 ## [0.6.2] — 2026-11-06
 
