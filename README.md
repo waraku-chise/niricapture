@@ -228,7 +228,7 @@ cmake --install build --prefix ~/.local
 Release 中会附带 `niricapture_<version>_amd64.deb`：
 
 ```bash
-sudo apt install ./niricapture_0.6.4_amd64.deb
+sudo apt install ./niricapture_1.0.0_amd64.deb
 ```
 
 该 deb 使用 Qt 6.12 构建，面向 Debian testing/unstable 或提供 Qt 6.12 +
@@ -299,7 +299,7 @@ niricapture --window-id 42 --save
 niricapture --settings   # Material 3 设置窗口
 ```
 
-编辑器顶部的“设置”按钮和命令行都能打开它。左侧导航对应配置文件的各个
+编辑器顶部的“设置”按钮、启动器里的 **NiriCapture 设置** 和命令行都能打开它。左侧导航对应配置文件的各个
 部分：
 
 | 页面 | 内容 |
@@ -484,7 +484,7 @@ make check
 
 ## 状态
 
-版本 `0.6.4`。核心验收路径已实现，并在 Niri 26.04 上测试；DMS 2.0 作为可选
+版本 `1.0.0`。核心验收路径已实现，并在 Niri 26.04 上测试；DMS 2.0 作为可选
 后端也验证过，grim 回退可用。区域/全屏编辑直接在冻结覆盖层中完成；窗口/文件
 编辑使用新的独立新建/打开编辑器。多输出
 合成有合成测试覆盖；实机环境只有一块物理显示器，因此未做真实双屏端到端

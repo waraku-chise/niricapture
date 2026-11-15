@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=NiriCapture Settings
+Name[zh_CN]=NiriCapture 设置
+Comment=Configure tools, palette, canvas, theme, OCR and paths
+Comment[zh_CN]=配置工具栏、调色板、画布、主题、OCR 和保存路径
+Exec=niricapture --settings
+Icon=preferences-system
+Terminal=false
+NoDisplay=false
+Categories=Settings;
+Keywords=settings;preferences;screenshot;annotate;
+StartupNotify=true

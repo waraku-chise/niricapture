@@ -19,7 +19,12 @@
 - Tests cover the docked toolbar geometry and that mosaic/blur actually change
   rendered pixels.
 
-## [Unreleased]
+## [1.0.0] — 2026-11-15
+
+### Launcher entries
+
+- Added a **NiriCapture Settings** desktop entry that runs
+  `niricapture --settings`, installed alongside the editor entry.
 
 ### Removed
 

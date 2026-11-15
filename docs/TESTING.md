@@ -25,6 +25,22 @@ Result at the time of writing:
 - The build uses `-Wall -Wextra -Wpedantic`; `make lint` is a separate,
   slower clang-tidy pass.
 
+## 1.0.0 release build (2026-11-15)
+
+- `make check` passes (Python contracts, offscreen Qt suite, desktop smoke).
+- All three launcher entries pass `desktop-file-validate`; the new
+  `niricapture-settings.desktop` runs `niricapture --settings`.
+- `packaging/install-local.sh --check` passes against a scratch prefix.
+- A staged `cmake --install` under `/tmp/niricapture-1.0.0-stage/usr`
+  installs the `1.0.0` binary, all launcher entries, the Niri snippets,
+  licenses and docs.
+- Release assets built from the same tree:
+  `niricapture_1.0.0_amd64.deb` (sha256
+  `7b47a1e812455aa45b2ee57082ff211e980c514012f98d40b527857bd9630394`)
+  and `niricapture-1.0.0-archlinux-x86_64.tar.gz` (sha256
+  `c99f39d7c714146cbc86f7cf00287969346978614f9d30a99fb984ec4a1a8d9a`).
+  The deb installs `niricapture-settings.desktop`.
+
 ## Live DMS frozen-frame test
 
 1. `niricapture --capture-fullscreen --save` → 1920×1080 PNG.
@@ -273,6 +289,8 @@ honored it.
 
 - `niricapture --settings` stays alive in a normal Wayland session; settings
   fields load from config v2 and save atomically.
+- The `niricapture-settings.desktop` launcher entry runs
+  `niricapture --settings` and passes `desktop-file-validate`.
 - Eyedropper is covered by `tests/tool-smoke.cpp` colour-sampling assertions.
 
 

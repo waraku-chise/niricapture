@@ -34,6 +34,7 @@ paths=(
   "${prefix}/bin/niricapture"
   "${prefix}/share/applications/niricapture.desktop"
   "${prefix}/share/applications/niricapture-editor.desktop"
+  "${prefix}/share/applications/niricapture-settings.desktop"
   "${prefix}/share/niricapture"
   "${prefix}/share/licenses/niricapture"
   "${prefix}/share/doc/niricapture"

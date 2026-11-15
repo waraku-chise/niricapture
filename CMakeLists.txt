@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(niricapture VERSION 0.6.4 LANGUAGES CXX)
+project(niricapture VERSION 1.0.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -257,6 +257,7 @@ install(FILES NOTICE LICENSES/MIT-nirisnap.txt LICENSES/Apache-2.0.txt
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/niricapture"
 )
 install(FILES niricapture.desktop niricapture-editor.desktop
+  niricapture-settings.desktop
   DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 install(FILES packaging/niricapture-keybinds.kdl
