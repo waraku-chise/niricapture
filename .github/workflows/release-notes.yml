@@ -1,0 +1,33 @@
+name: Sync release notes
+
+# Update the GitHub Release body from .github/release-notes/<tag>.md.
+# Pushing a notes file only touches an existing release; missing tags are skipped.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-notes/**.md"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Update release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for file in .github/release-notes/*.md; do
+            tag="v$(basename "$file" .md)"
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes-file "$file"
+            fi
+          done
