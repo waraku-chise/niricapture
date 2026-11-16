@@ -1,14 +1,14 @@
-name: Sync release notes
+name: Sync v1.0.0 release notes
 
-# Update an existing GitHub Release body from .github/release-notes/<tag>.md.
-# The release itself is created by build-linux.yml when a v* tag is pushed.
+# One-off: keep the v1.0.0 release body in sync with its note file.
+# The release itself and its assets are still produced by build-linux.yml
+# when a v* tag is pushed. Future releases can add their own note file + job.
 
 on:
   push:
     branches: [main]
     paths:
-      - ".github/release-notes/**.md"
-      - ".github/workflows/release-notes.yml"
+      - ".github/release-notes/v1.0.0.md"
 
 permissions:
   contents: write
