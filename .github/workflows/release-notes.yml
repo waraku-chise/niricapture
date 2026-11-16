@@ -1,13 +1,14 @@
 name: Sync release notes
 
-# Update the GitHub Release body from .github/release-notes/<tag>.md.
-# Pushing a notes file only touches an existing release; missing tags are skipped.
+# Update an existing GitHub Release body from .github/release-notes/<tag>.md.
+# The release itself is created by build-linux.yml when a v* tag is pushed.
 
 on:
   push:
     branches: [main]
     paths:
       - ".github/release-notes/**.md"
+      - ".github/workflows/release-notes.yml"
 
 permissions:
   contents: write
@@ -20,14 +21,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Update release notes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for file in .github/release-notes/*.md; do
-            tag="v$(basename "$file" .md)"
-            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes-file "$file"
-            fi
-          done
+      - name: Update v1.0.0 release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: NiriCapture 1.0.0
+          body_path: .github/release-notes/v1.0.0.md
+          draft: false
+          prerelease: false
