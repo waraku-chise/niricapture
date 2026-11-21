@@ -112,7 +112,10 @@ enum class AnnotationLayer { Redaction, Default };
  * call on the main thread before pixel capture runs in the background.
  */
 [[nodiscard]] bool probeFocusedMonitor(MonitorInfo &monitor, QString &error);
-/** Runs Niri's native picker and returns its selected window id. */
+/**
+ * Opens Niri's overview, waits for a window to be picked, and returns its id.
+ * Falls back to Niri's native pick-window picker when overview is unavailable.
+ */
 [[nodiscard]] CaptureOutcome
 pickWindowTarget(WindowTarget &window, QString &error,
                  const std::atomic_bool *termination = nullptr);

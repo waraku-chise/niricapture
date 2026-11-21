@@ -111,6 +111,10 @@ for the same still frame. Window capture never uses this fallback.
 
 ### Window: Niri-native independent render
 
+Window capture opens Niri's Overview and shows a top layer-shell hint:
+“Click a window to capture · Esc to cancel”. Click a window to pick it. The selected window is still rendered by
+Niri's compositor-side `screenshot-window` path, never by cropping the desktop.
+
 `niri msg action screenshot-window --id ID --path PATH --write-to-disk true`
 maps to Niri's `Action::ScreenshotWindowById`. Niri looks up the mapped window,
 then calls `Mapped::render` directly into an offscreen texture. It does not read

@@ -53,6 +53,7 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 - 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
   窗口，也不会发生图像跳动。
 - 选区手柄基于完整冻结画面调整：缩小时不是裁剪，之后仍可重新放大。
+- 选区四角/四边的手柄使用对应方向的光标（斜向、水平、垂直），不再总是四向箭头。
 - 界面语言跟随系统；可用 `NIRICAPTURE_LANG=zh_CN` 或 `en` 强制指定。
 - JSON 配置 `~/.config/niricapture/config.json` 可控制工具、快捷键、调色板、
   画布默认值、主题、OCR 语言和截图目录。
@@ -101,7 +102,11 @@ Quickshell 覆盖层），但 NiriCapture 不依赖 Quickshell，也没有使用
 如果 DMS CLI 不可用，区域/整屏截图会回退到 `grim -o OUTPUT -` 获取同一帧静态
 画面。窗口截图**绝不**使用这个回退。
 
-### 窗口截图：Niri 原生独立渲染
+### 窗口截图：Niri overview 选择 + 原生独立渲染
+
+窗口截图先打开 Niri 的 Overview，并在顶部显示一层 layer-shell 提示：
+“点击窗口截图 · Esc 取消”。点击任意窗口选择；选择结果仍由 Niri 的
+compositor-side 渲染生成，和区域截图不同，不会截到其他窗口。
 
 `niri msg action screenshot-window --id ID --path PATH --write-to-disk true`
 对应 Niri 的 `Action::ScreenshotWindowById`。Niri 会查找目标窗口，然后直接调用
@@ -165,7 +170,7 @@ cmake --build build --parallel
 # 区域截图
 ./build/niricapture --capture-region
 
-# 通过 Niri 原生 picker 选择窗口
+# 在 Niri Overview 中点选窗口
 ./build/niricapture --capture-window
 
 # 当前输出 / 全部输出

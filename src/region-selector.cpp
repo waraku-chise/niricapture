@@ -39,6 +39,18 @@ constexpr int kDimAlpha = 120;
 const QColor kPanel(17, 19, 24, 246);
 const QColor kPanelBorder(255, 255, 255, 30);
 
+Qt::CursorShape cursorForHandle(const QString &handle) {
+  if (handle == QStringLiteral("tl") || handle == QStringLiteral("br"))
+    return Qt::SizeFDiagCursor;
+  if (handle == QStringLiteral("tr") || handle == QStringLiteral("bl"))
+    return Qt::SizeBDiagCursor;
+  if (handle == QStringLiteral("t") || handle == QStringLiteral("b"))
+    return Qt::SizeVerCursor;
+  if (handle == QStringLiteral("l") || handle == QStringLiteral("r"))
+    return Qt::SizeHorCursor;
+  return Qt::ArrowCursor;
+}
+
 QString handleAt(const QRectF &selection, const QPointF &point) {
   if (selection.isEmpty())
     return {};
@@ -241,10 +253,15 @@ protected:
       setCursor(Qt::PointingHandCursor);
     else if (!selector_->hasSelection())
       setCursor(Qt::CrossCursor);
-    else if (!handleAt(selector_->selection(), global).isEmpty())
-      setCursor(Qt::SizeAllCursor);
-    else
-      setCursor(Qt::CrossCursor);
+    else {
+      QString handle = handleAt(selector_->selection(), global);
+      if (handle.isEmpty())
+        handle = selector_->activeResizeHandle();
+      if (!handle.isEmpty())
+        setCursor(cursorForHandle(handle));
+      else
+        setCursor(Qt::CrossCursor);
+    }
     event->accept();
   }
 

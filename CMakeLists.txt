@@ -104,6 +104,8 @@ qt_add_executable(niricapture
   src/editor-window.hpp
   src/settings-window.cpp
   src/settings-window.hpp
+  src/window-picker-hint.cpp
+  src/window-picker-hint.hpp
   src/md3.cpp
   src/md3.hpp
   src/settings/settings-bridge.cpp

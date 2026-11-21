@@ -69,6 +69,9 @@ private:
   void finishSelection();
   void updateOwnerOutput();
   [[nodiscard]] RegionOverlay *ownerOverlay() const;
+  [[nodiscard]] QString activeResizeHandle() const {
+    return drag_ == Drag::ResizeSelection ? resizeHandle_ : QString();
+  }
 
   void paintEditor(QPainter &painter, RegionOverlay *overlay);
   void paintSourceEffects(QPainter &painter, RegionOverlay *overlay,

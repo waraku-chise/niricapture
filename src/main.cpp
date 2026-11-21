@@ -9,6 +9,7 @@
 #include "pin.hpp"
 #include "region-selector.hpp"
 #include "settings-window.hpp"
+#include "window-picker-hint.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -415,7 +416,7 @@ int main(int argc, char **argv) {
       QStringLiteral("Freeze all outputs and edit their combined image."));
   const QCommandLineOption windowOption(
       {QStringLiteral("capture-window"), QStringLiteral("capture-windows")},
-      QStringLiteral("Select a window with Niri's native window picker."));
+      QStringLiteral("Pick a window from Niri's overview."));
   const QCommandLineOption regionOption(
       QStringLiteral("capture-region"),
       QStringLiteral("Freeze the desktop and select a region (default)."));
@@ -722,8 +723,17 @@ int main(int argc, char **argv) {
   }
 
   if (mode == CaptureMode::Window) {
-    if (!prepareWindowImage(parser.value(windowIdOption), result,
-                            terminationRequested, error)) {
+    WindowPickerHint pickerHint;
+    const bool showPickerHint = parser.value(windowIdOption).trimmed().isEmpty();
+    if (showPickerHint) {
+      pickerHint.show();
+      QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    }
+    const bool windowPrepared =
+        prepareWindowImage(parser.value(windowIdOption), result,
+                           terminationRequested, error);
+    pickerHint.hide();
+    if (!windowPrepared) {
       if (terminationRequested.load(std::memory_order_acquire))
         return 0;
       if (error.isEmpty())

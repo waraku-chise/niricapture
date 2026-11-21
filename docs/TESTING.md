@@ -354,3 +354,14 @@ honored it.
 - The standalone font action opens the embedded picker, not a portal dialog.
 - The in-place screenshot overlay opens the same picker and remains responsive.
 - Picker labels and buttons are Chinese; `Ctrl+Shift+F` opens it directly.
+
+
+## Window overview picker
+
+- `niricapture --capture-window` opens Niri Overview; clicking a different
+  window captures it and opens the editor with the captured image.
+- `Esc`/empty-space closes Overview and exits without capturing the previously
+  focused window.
+- A layer-shell hint is visible above the Overview.
+- Region-selection handles expose directional resize cursors.
+- `--window-id ID` still bypasses the picker.

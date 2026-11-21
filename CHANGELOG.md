@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Window capture overview picker
+
+- `--capture-window` now opens Niri's Overview instead of the native
+  pick-window picker. Click a window to select it; `Esc`/empty space cancels.
+  The actual capture still uses Niri's compositor-side `screenshot-window`.
+- Falls back to `niri msg pick-window` when Overview IPC is unavailable.
+- Added a top layer-shell hint while the Overview is open.
+- Region-selection handles now show diagonal, horizontal or vertical resize
+  cursors based on the handle position, including during a drag.
+
 ## [1.0.0] — 2026-11-15
 
 ### Launcher entries

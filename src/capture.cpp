@@ -22,6 +22,7 @@
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
@@ -945,8 +946,8 @@ bool probeFocusedMonitor(MonitorInfo &monitor, QString &error) {
   return true;
 }
 
-CaptureOutcome pickWindowTarget(WindowTarget &window, QString &error,
-                                const std::atomic_bool *termination) {
+CaptureOutcome pickWindowTargetNative(WindowTarget &window, QString &error,
+                                         const std::atomic_bool *termination) {
   QProcess process;
   process.setProcessChannelMode(QProcess::SeparateChannels);
   process.start(QStringLiteral("niri"),
@@ -964,8 +965,6 @@ CaptureOutcome pickWindowTarget(WindowTarget &window, QString &error,
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     if (termination && termination->load(std::memory_order_acquire) &&
         !terminationNoticeShown) {
-      // Niri has no IPC cancel action, but closing this pick-window client
-      // disconnects its request and makes the compositor drop the picker.
       process.kill();
       process.waitForFinished(500);
       error.clear();
@@ -1013,6 +1012,238 @@ CaptureOutcome pickWindowTarget(WindowTarget &window, QString &error,
   window = {{}, id, title.isEmpty() ? QStringLiteral("window") : title};
   error.clear();
   return CaptureOutcome::Success;
+}
+
+bool overviewOpen(bool &open, QString &error) {
+  const ProcessResult result =
+      runProcess(QStringLiteral("niri"),
+                 {QStringLiteral("msg"), QStringLiteral("overview-state")});
+  if (!result.finished || result.exitCode != 0) {
+    error = QString::fromUtf8(result.error).trimmed();
+    if (error.isEmpty())
+      error = QStringLiteral("Could not query Niri overview state");
+    return false;
+  }
+  const QString text = QString::fromUtf8(result.output).trimmed();
+  open = text.contains(QStringLiteral("open"), Qt::CaseInsensitive) &&
+         !text.contains(QStringLiteral("closed"), Qt::CaseInsensitive);
+  return true;
+}
+
+bool overviewAction(const QString &action, QString &error) {
+  const ProcessResult result = runProcess(
+      QStringLiteral("niri"),
+      {QStringLiteral("msg"), QStringLiteral("action"), action});
+  if (!result.finished || result.exitCode != 0) {
+    error = QString::fromUtf8(result.error).trimmed();
+    if (error.isEmpty())
+      error = QStringLiteral("Niri overview action failed");
+    return false;
+  }
+  return true;
+}
+
+bool focusedWindowTarget(WindowTarget &window, bool &hasWindow,
+                         QString &error) {
+  const ProcessResult result =
+      runProcess(QStringLiteral("niri"),
+                 {QStringLiteral("msg"), QStringLiteral("-j"),
+                  QStringLiteral("focused-window")});
+  if (!result.finished || result.exitCode != 0) {
+    error = QString::fromUtf8(result.error).trimmed();
+    if (error.isEmpty())
+      error = QStringLiteral("Niri did not report a focused window");
+    return false;
+  }
+  hasWindow = false;
+  if (result.output.trimmed() == QByteArrayLiteral("null"))
+    return true;
+  QJsonParseError parseError;
+  const QJsonDocument document =
+      QJsonDocument::fromJson(result.output, &parseError);
+  if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+    error = QStringLiteral("Could not parse Niri focused window: %1")
+                .arg(parseError.errorString());
+    return false;
+  }
+  const QJsonObject object = document.object();
+  const QString id = unsignedField(result.output, QStringLiteral("id"));
+  if (id.isEmpty()) {
+    error = QStringLiteral("Niri focused window has no valid id");
+    return false;
+  }
+  QString title = object.value(QStringLiteral("title")).toString();
+  if (title.isEmpty())
+    title = object.value(QStringLiteral("app_id")).toString();
+  window = {{}, id, title.isEmpty() ? QStringLiteral("window") : title};
+  hasWindow = true;
+  return true;
+}
+
+CaptureOutcome pickWindowTargetOverview(WindowTarget &window, QString &error,
+                                        const std::atomic_bool *termination,
+                                        bool &supported) {
+  supported = false;
+  bool wasOpen = false;
+  QString stateError;
+  if (!overviewOpen(wasOpen, stateError))
+    return CaptureOutcome::Error;
+
+  // Niri's event stream is the only API that distinguishes a click from
+  // Escape/empty-space cancellation: both close the Overview, but only a
+  // window click changes focus.
+  QProcess events;
+  QByteArray eventBuffer;
+  bool eventStream = false;
+  bool focusChanged = false;
+  bool armed = wasOpen;
+  const auto pumpEvents = [&] {
+    if (!eventStream)
+      return;
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    eventBuffer += events.readAllStandardOutput();
+    int newline = eventBuffer.indexOf('\n');
+    while (newline >= 0) {
+      const QByteArray line = eventBuffer.left(newline);
+      eventBuffer.remove(0, newline + 1);
+      if (line.contains("Overview toggled: true"))
+        armed = true;
+      if (armed && line.contains("Window focus changed: Some("))
+        focusChanged = true;
+      newline = eventBuffer.indexOf('\n');
+    }
+  };
+  const auto stopEvents = [&] {
+    if (eventStream) {
+      events.kill();
+      events.waitForFinished(200);
+      eventStream = false;
+    }
+  };
+
+  events.start(QStringLiteral("niri"),
+               {QStringLiteral("msg"), QStringLiteral("event-stream")});
+  if (events.waitForStarted(1000)) {
+    eventStream = true;
+  } else {
+    events.kill();
+    events.waitForFinished(100);
+  }
+
+  if (!wasOpen) {
+    QString actionError;
+    if (!overviewAction(QStringLiteral("open-overview"), actionError)) {
+      stopEvents();
+      return CaptureOutcome::Error;
+    }
+    QElapsedTimer openedTimer;
+    openedTimer.start();
+    bool opened = false;
+    while (openedTimer.elapsed() < 1500) {
+      pumpEvents();
+      if (termination && termination->load(std::memory_order_acquire)) {
+        QString ignored;
+        overviewAction(QStringLiteral("close-overview"), ignored);
+        stopEvents();
+        error.clear();
+        return CaptureOutcome::Cancelled;
+      }
+      if (!overviewOpen(opened, stateError))
+        break;
+      if (opened) {
+        armed = true;
+        break;
+      }
+      QThread::msleep(40);
+    }
+    if (!opened) {
+      QString ignored;
+      overviewAction(QStringLiteral("close-overview"), ignored);
+      stopEvents();
+      return CaptureOutcome::Error;
+    }
+  }
+  supported = true;
+
+  WindowTarget initial;
+  bool hadInitial = false;
+  QString focusError;
+  if (!focusedWindowTarget(initial, hadInitial, focusError)) {
+    if (!wasOpen) {
+      QString ignored;
+      overviewAction(QStringLiteral("close-overview"), ignored);
+    }
+    stopEvents();
+    return CaptureOutcome::Error;
+  }
+
+  while (true) {
+    pumpEvents();
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    if (termination && termination->load(std::memory_order_acquire)) {
+      if (!wasOpen) {
+        QString ignored;
+        overviewAction(QStringLiteral("close-overview"), ignored);
+      }
+      stopEvents();
+      error.clear();
+      return CaptureOutcome::Cancelled;
+    }
+    bool open = false;
+    if (!overviewOpen(open, stateError)) {
+      if (!wasOpen) {
+        QString ignored;
+        overviewAction(QStringLiteral("close-overview"), ignored);
+      }
+      stopEvents();
+      error = stateError;
+      return CaptureOutcome::Error;
+    }
+    if (!open)
+      break;
+    QThread::msleep(40);
+  }
+
+  // Focus changes can trail the Overview close event; give the stream a short
+  // settle window so a click is not mistaken for a cancellation.
+  QElapsedTimer settle;
+  settle.start();
+  while (eventStream && settle.elapsed() < 200) {
+    pumpEvents();
+    QThread::msleep(20);
+  }
+  pumpEvents();
+  const bool sawFocusChange = focusChanged;
+  stopEvents();
+
+  WindowTarget selected;
+  bool hasSelected = false;
+  if (!focusedWindowTarget(selected, hasSelected, focusError)) {
+    error = focusError;
+    return CaptureOutcome::Error;
+  }
+  if (!hasSelected) {
+    error.clear();
+    return CaptureOutcome::Cancelled;
+  }
+  if (!sawFocusChange && hadInitial &&
+      selected.stableId == initial.stableId) {
+    error.clear();
+    return CaptureOutcome::Cancelled;
+  }
+  window = selected;
+  error.clear();
+  return CaptureOutcome::Success;
+}
+
+CaptureOutcome pickWindowTarget(WindowTarget &window, QString &error,
+                                const std::atomic_bool *termination) {
+  bool overviewSupported = false;
+  const CaptureOutcome overview = pickWindowTargetOverview(
+      window, error, termination, overviewSupported);
+  if (overviewSupported)
+    return overview;
+  return pickWindowTargetNative(window, error, termination);
 }
 
 bool captureMonitorPixels(const MonitorInfo &monitor, CaptureData &capture,
