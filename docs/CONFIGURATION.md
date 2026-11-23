@@ -23,8 +23,8 @@ the settings UI or another writer.
 
 ## Schema and migration
 
-The current schema is `version: 2`. Missing versions are treated as v1 and
-migrated in memory; the next save writes v2. A file declaring a newer schema is
+The current schema is `version: 3`. Missing versions are migrated in memory;
+the next save writes v3. v3 adds the recording section. A file declaring a newer schema is
 rejected with an explicit error, and defaults are used for that process.
 
 Saving uses `QSaveFile` (write to a temporary file, then atomic rename), so a
@@ -35,7 +35,7 @@ and the Qt error string.
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "tools": [
     "select", "pen", "arrow", "line", "rectangle", "ellipse",
     "text", "highlighter", "mosaic", "blur", "marker", "eyedropper"
@@ -79,6 +79,13 @@ and the Qt error string.
     "default_color": "#ff375f",
     "default_width": 4,
     "font": "Neucha"
+  },
+  "recording": {
+    "directory": "",
+    "fps": 60,
+    "codec": "libx264",
+    "audio": false,
+    "countdown": 3
   },
   "ocr": {"languages": ""},
   "paths": {"screenshots": ""}
@@ -144,6 +151,14 @@ Theme colors for the standalone editor. `accent` is used for selected tool
 states, `checker_light`/`checker_dark` for the transparency checkerboard, and
 `default_color`/`default_width` for the initial annotation style, and `font`
 for the initial text font (the toolbar "文字字体" action can override it).
+
+## recording
+
+- `directory`: recording output directory; empty uses `~/Videos/NiriCapture`.
+- `fps`: 1–240.
+- `codec`: passed to `wf-recorder -c` (`libx264` by default).
+- `audio`: pass `--audio` to wf-recorder.
+- `countdown`: countdown seconds before recording, 0–10.
 
 ## ocr
 

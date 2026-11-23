@@ -10,6 +10,8 @@
 #include "region-selector.hpp"
 #include "settings-window.hpp"
 #include "window-picker-hint.hpp"
+#include "recording/runner.hpp"
+#include "recording/session.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -450,6 +452,15 @@ int main(int argc, char **argv) {
   const QCommandLineOption settingsOption(
       QStringLiteral("settings"),
       QStringLiteral("Open the settings window."));
+  const QCommandLineOption recordRegionOption(
+      QStringLiteral("record-region"),
+      QStringLiteral("Select a layer-shell region and record it with wf-recorder."));
+  const QCommandLineOption recordFullscreenOption(
+      QStringLiteral("record-fullscreen"),
+      QStringLiteral("Record the focused output with wf-recorder."));
+  const QCommandLineOption stopRecordingOption(
+      QStringLiteral("stop-recording"),
+      QStringLiteral("Stop the active NiriCapture recording."));
   const QCommandLineOption configOption(
       QStringLiteral("config"),
       QStringLiteral("Use this JSON configuration file."),
@@ -474,6 +485,9 @@ int main(int argc, char **argv) {
   parser.addOption(clipboardOption);
   parser.addOption(editorOption);
   parser.addOption(settingsOption);
+  parser.addOption(recordRegionOption);
+  parser.addOption(recordFullscreenOption);
+  parser.addOption(stopRecordingOption);
   parser.addOption(configOption);
   parser.addOption(printConfigOption);
   parser.addOption(pinOption);
@@ -619,6 +633,22 @@ int main(int argc, char **argv) {
         << "Quick output options cannot be combined with an image input";
     return 2;
   }
+  const bool recordRegion = parser.isSet(recordRegionOption);
+  const bool recordFullscreen = parser.isSet(recordFullscreenOption);
+  const bool stopRecordingRequested = parser.isSet(stopRecordingOption);
+  const int recordRequests = (recordRegion ? 1 : 0) + (recordFullscreen ? 1 : 0);
+  if (recordRequests > 1 ||
+      (recordRequests > 0 && stopRecordingRequested)) {
+    qCritical() << "Choose one of --record-region/--record-fullscreen/--stop-recording";
+    return 2;
+  }
+  if ((recordRequests > 0 || stopRecordingRequested) &&
+      (parser.isSet(editorOption) || parser.isSet(settingsOption) ||
+       requestedModes > 0 || !filePath.isEmpty() || clipboardInput ||
+       parser.isSet(pinOption))) {
+    qCritical() << "Recording options cannot be combined with capture/editor/image options";
+    return 2;
+  }
   if (parser.isSet(editorOption) && parser.isSet(settingsOption)) {
     qCritical() << "--editor cannot be combined with --settings";
     return 2;
@@ -686,6 +716,31 @@ int main(int argc, char **argv) {
     SettingsWindow window;
     window.show();
     return QApplication::exec();
+  }
+
+  if (stopRecordingRequested) {
+    QString stopError;
+    if (!stopRecording(&stopError)) {
+      qCritical().noquote() << stopError;
+      return 1;
+    }
+    return 0;
+  }
+  if (recordRequests > 0) {
+    application.setQuitOnLastWindowClosed(false);
+    const QString runtime = secureRuntimeDirectory();
+    if (runtime.isEmpty()) {
+      qCritical() << "Could not create private runtime directory";
+      return 1;
+    }
+    QLockFile recordingLock(
+        QDir(runtime).filePath(QStringLiteral("recording.instance")));
+    if (!recordingLock.tryLock(100)) {
+      qCritical() << "A NiriCapture recording is already active";
+      return 1;
+    }
+    return runRecording(config, recordRegion ? RecordingMode::Region
+                                             : RecordingMode::Fullscreen);
   }
 
   const QString runtime = secureRuntimeDirectory();

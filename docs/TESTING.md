@@ -367,3 +367,13 @@ honored it.
 - With `XCURSOR_THEME=koishi-cursor`, the cursor loader returns a bitmap cursor
   instead of the Qt fallback; missing themes still fall back cleanly.
 - `--window-id ID` still bypasses the picker.
+
+
+## Recording checks
+
+- `niricapture --record-region` opens a layer-shell selection overlay; releasing
+  a region shows the countdown and starts `wf-recorder`.
+- `--record-fullscreen` hides the countdown indicator before encoding starts.
+- `--stop-recording` sends SIGINT, waits for the session to disappear and the
+  MP4 is playable with a non-zero duration.
+- The recording indicator is placed outside the selected region when possible.

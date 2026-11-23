@@ -46,11 +46,9 @@ bool migrate(QJsonObject &root, int fromVersion, QString *error) {
     return false;
   }
   int version = std::max(1, fromVersion);
-  if (version <= 1) {
-    // v2 only makes the schema explicit. Missing fields already inherit
-    // defaults, so no structural rewrite is needed.
-    version = 2;
-  }
+  // v2 made the schema explicit; v3 adds the recording section. Missing
+  // sections inherit defaults, so both upgrades are in-memory only.
+  version = AppConfig::kCurrentSchemaVersion;
   root.insert(QStringLiteral("version"), version);
   return true;
 }
@@ -124,6 +122,14 @@ QJsonObject AppConfig::toJson() const {
   QJsonObject ocrObject = section(root, QStringLiteral("ocr"));
   ocrObject.insert(QStringLiteral("languages"), ocrLanguages);
   root.insert(QStringLiteral("ocr"), ocrObject);
+
+  QJsonObject recordingObject = section(root, QStringLiteral("recording"));
+  recordingObject.insert(QStringLiteral("directory"), recording.directory);
+  recordingObject.insert(QStringLiteral("fps"), recording.fps);
+  recordingObject.insert(QStringLiteral("codec"), recording.codec);
+  recordingObject.insert(QStringLiteral("audio"), recording.audio);
+  recordingObject.insert(QStringLiteral("countdown"), recording.countdown);
+  root.insert(QStringLiteral("recording"), recordingObject);
 
   QJsonObject pathsObject = section(root, QStringLiteral("paths"));
   pathsObject.insert(QStringLiteral("screenshots"), screenshotDir);
@@ -333,6 +339,22 @@ AppConfig configFromJson(const QByteArray &json, const AppConfig &base,
       editor.value(QStringLiteral("font")).toString().trimmed();
   if (!fontFamily.isEmpty())
     config.theme.fontFamily = fontFamily;
+
+  const QJsonObject recording = section(root, QStringLiteral("recording"));
+  config.recording.directory =
+      recording.value(QStringLiteral("directory")).toString().trimmed();
+  config.recording.fps = std::clamp(
+      recording.value(QStringLiteral("fps")).toInt(config.recording.fps), 1, 240);
+  const QString codec =
+      recording.value(QStringLiteral("codec")).toString().trimmed();
+  if (!codec.isEmpty())
+    config.recording.codec = codec;
+  config.recording.audio =
+      recording.value(QStringLiteral("audio")).toBool(config.recording.audio);
+  config.recording.countdown = std::clamp(
+      recording.value(QStringLiteral("countdown"))
+          .toInt(config.recording.countdown),
+      0, 10);
 
   const QJsonObject ocr = section(root, QStringLiteral("ocr"));
   config.ocrLanguages =

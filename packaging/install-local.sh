@@ -31,7 +31,7 @@ manifest=${build_dir}/install_manifest.txt
 packages=(
   base-devel cmake ninja pkgconf
   qt6-base qt6-declarative layer-shell-qt
-  grim wl-clipboard libnotify
+  grim wl-clipboard libnotify wf-recorder
   tesseract tesseract-data-eng
 )
 

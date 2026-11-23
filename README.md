@@ -49,6 +49,7 @@ NiriCapture 在区域/整屏截图时先冻结桌面，再在所有输出上绘�
 - 取色器可从冻结帧或打开的图片中采样颜色（`I`）。
 - 文字支持自定义字体；工具栏“文字字体”按钮或设置中的默认字体。
 - 智能磁吸：画布/标注边缘与中心、垂直/水平/45° 线，显示参考线；`Alt` 开关。
+- 录屏：layer-shell 选区、倒计时、录制指示器和 `wf-recorder` 后台录制；区域/当前输出。
 - `niricapture --settings` 打开 Material 3 设置窗口（内嵌 Qt Quick）：工具、命令、调色板、画布、主题、OCR 和路径均可编辑，带未保存提示、字段校验与只读保护。
 - 区域截图和当前输出全屏会直接在冻结选区上显示编辑工具栏，不再打开第二个
   窗口，也不会发生图像跳动。
@@ -153,6 +154,7 @@ NiriCapture 使用 Qt 6.8+ 与 LayerShellQt 构建，面向 Wayland/Niri。
 | `wl-clipboard` | 复制/剪贴板输入时需要 | Wayland 剪贴板 |
 | `tesseract` + 语言包 | 可选 | 离线 OCR |
 | `libnotify` | 可选 | 桌面通知 |
+| `wf-recorder` | 录屏时需要 | `--record-region` / `--record-fullscreen` 后端 |
 
 区域/整屏截图需要 `dms` 或 `grim` 至少一个；窗口截图不需要两者。
 `--editor` 的新建/打开图片不调用截图后端。
@@ -285,8 +287,8 @@ binds {
 
 ### 窗口选择
 
-交互式选择使用 Niri 原生 picker：它会高亮窗口并返回稳定 id/title，随后
-NiriCapture 让 Niri 渲染该窗口。脚本用法：
+交互式选择使用 Niri Overview：顶部 layer-shell 提示会显示
+“点击窗口截图 · Esc 取消”，点击窗口后由 Niri 渲染该窗口。脚本用法：
 
 ```bash
 niricapture --list-windows
@@ -296,8 +298,36 @@ niricapture --window-id 42 --save
 `--list-windows` 输出紧凑 JSON，包含稳定 id、标题、应用 id、工作区、焦点、
 浮动状态和窗口尺寸。Niri 的窗口 IPC 只提供布局相对坐标，**不**提供当前滚动
 视口的偏移量，也不提供每个窗口的绝对屏幕位置，因此 NiriCapture 不会假装能够
-在滚动布局上实现像素级准确的自定义 hover 覆盖层。Niri 合成器 picker 才是可靠
-的选择入口。
+在滚动布局上实现像素级准确的自定义 hover 覆盖层。Overview 选择是当前可靠的
+入口。
+
+### 录屏
+
+需要外部 `wf-recorder`：
+
+```bash
+sudo pacman -S --needed wf-recorder
+# Debian/Ubuntu: sudo apt install wf-recorder
+```
+
+```bash
+niricapture --record-region       # layer-shell 选区后录制
+niricapture --record-fullscreen   # 录制当前输出
+niricapture --stop-recording      # 停止并保存
+```
+
+区域录制会显示 layer-shell 选区、倒计时和左上角录制指示器；全屏录制在
+倒计时结束后隐藏指示器，避免把提示录进视频。默认保存到系统视频目录的
+`NiriCapture/`；`recording.directory`、`fps`、`codec`、`audio`、
+`countdown` 可在配置中调整。
+
+Niri 快捷键示例：
+
+```kdl
+Mod+Shift+R { spawn "niricapture" "--record-region"; }
+Mod+Shift+F { spawn "niricapture" "--record-fullscreen"; }
+Mod+Shift+S { spawn "niricapture" "--stop-recording"; }
+```
 
 ### 设置窗口
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Screen recording
+
+- Added `--record-region` and `--record-fullscreen` with a layer-shell
+  selection overlay, countdown and recording indicator.
+- `--stop-recording` finalises the active `wf-recorder` session through a
+  private runtime session file.
+- Added `recording` config: directory, fps, codec, audio and countdown.
+- Recording uses `wf-recorder` as an external encoder; it is installed as an
+  optional runtime dependency.
+- Region/current-output recording, layer-shell countdown/indicator, cross-process
+  session stop and recording config (`recording.*`).
+
 ## [1.1.0] — 2026-11-23
 
 ### Window capture overview picker

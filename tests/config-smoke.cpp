@@ -61,6 +61,12 @@ bool runConfigSmoke(QString &error) {
     error = QStringLiteral("Config OCR/path settings were not applied");
     return false;
   }
+  if (config.recording.fps != 60 ||
+      config.recording.codec != QStringLiteral("libx264") ||
+      config.recording.countdown != 3) {
+    error = QStringLiteral("Recording defaults were not loaded");
+    return false;
+  }
   if (config.schemaVersion() != AppConfig::kCurrentSchemaVersion) {
     error = QStringLiteral("Config schema version was not migrated");
     return false;
@@ -82,7 +88,7 @@ bool runConfigSmoke(QString &error) {
     return false;
   }
   const QJsonObject serialized = preserveConfig.toJson();
-  if (serialized.value(QStringLiteral("version")).toInt() != 2 ||
+  if (serialized.value(QStringLiteral("version")).toInt() != 3 ||
       !serialized.value(QStringLiteral("future_root")).isObject() ||
       !serialized.value(QStringLiteral("canvas"))
            .toObject()

@@ -55,6 +55,8 @@ on the frozen selection, and the colour panel is opened with `Q`.
   command or the settings default.
 - Smart snapping to canvas/annotation edges and centres, vertical/horizontal/
   45° lines, with guide lines. `Alt` toggles it.
+- Region/current-output recording with a layer-shell selector, countdown,
+  recording indicator and `wf-recorder`.
 - `--settings` opens a Material 3 settings window (embedded Qt Quick) for tools, commands, palette, canvas, theme, OCR and paths, with dirty state, validation and a read-only guard.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
@@ -315,6 +317,27 @@ window IPC exposes layout-relative fields but **not** the current scrolling
 viewport offset or absolute screen position of every window, so NiriCapture
 does not pretend it can build a pixel-accurate custom hover overlay across the
 scrolling layout. The compositor picker is the reliable selection surface.
+
+### Recording
+
+Recording uses the external `wf-recorder` encoder:
+
+```bash
+niricapture --record-region
+niricapture --record-fullscreen
+niricapture --stop-recording
+```
+
+The region selector and countdown are layer-shell surfaces. Region recordings
+keep a small `REC` indicator outside the selection; fullscreen recordings hide
+it before encoding starts so it is not captured. The default output directory
+is the system Videos directory + `NiriCapture`.
+
+```kdl
+Mod+Shift+R { spawn "niricapture" "--record-region"; }
+Mod+Shift+F { spawn "niricapture" "--record-fullscreen"; }
+Mod+Shift+S { spawn "niricapture" "--stop-recording"; }
+```
 
 ### Settings window
 

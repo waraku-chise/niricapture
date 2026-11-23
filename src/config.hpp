@@ -37,6 +37,15 @@ struct EditorTheme {
   QString fontFamily = QStringLiteral("Neucha");
 };
 
+struct RecordingConfig {
+  /** Empty means the platform Movies directory + /NiriCapture. */
+  QString directory;
+  int fps = 60;
+  QString codec = QStringLiteral("libx264");
+  bool audio = false;
+  int countdown = 3;
+};
+
 struct AppConfig {
   QStringList tools{QStringLiteral("select"),   QStringLiteral("pen"),
                     QStringLiteral("arrow"),    QStringLiteral("line"),
@@ -64,11 +73,12 @@ struct AppConfig {
   PaletteConfig palette;
   CanvasConfig canvas;
   EditorTheme theme;
+  RecordingConfig recording;
   QString ocrLanguages;
   QString screenshotDir;
   QString path;
 
-  static constexpr int kCurrentSchemaVersion = 2;
+  static constexpr int kCurrentSchemaVersion = 3;
 
   [[nodiscard]] static AppConfig defaults();
   /** Loads config, creating a documented default file when absent. */

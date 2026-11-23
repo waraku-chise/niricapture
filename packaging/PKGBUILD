@@ -20,6 +20,7 @@ optdepends=(
   'dux-shell: DMS frozen-frame backend (grim is the fallback)'
   'tesseract-data-chi_sim: Simplified Chinese OCR'
   'tesseract-data-chi_tra: Traditional Chinese OCR'
+  'wf-recorder: screen recording backend'
 )
 provides=('niricapture')
 conflicts=('niricapture')

@@ -108,6 +108,14 @@ qt_add_executable(niricapture
   src/settings-window.hpp
   src/window-picker-hint.cpp
   src/window-picker-hint.hpp
+  src/recording/session.cpp
+  src/recording/session.hpp
+  src/recording/region-overlay.cpp
+  src/recording/region-overlay.hpp
+  src/recording/indicator.cpp
+  src/recording/indicator.hpp
+  src/recording/runner.cpp
+  src/recording/runner.hpp
   src/md3.cpp
   src/md3.hpp
   src/settings/settings-bridge.cpp
