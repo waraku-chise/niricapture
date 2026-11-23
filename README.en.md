@@ -59,7 +59,8 @@ on the frozen selection, and the colour panel is opened with `Q`.
 - Region and current-output fullscreen captures open the toolbar directly in
   the frozen selection overlay. There is no second window and no image jump.
 - Selection handles resize against the full frozen output: a region can be
-  enlarged again after shrinking, not just cropped smaller.
+  enlarged again after shrinking, not just cropped smaller. Handles use
+  directional resize cursors loaded from the Xcursor theme.
 - UI follows the system locale; `NIRICAPTURE_LANG=zh_CN` or `en` overrides it.
 - JSON config at `~/.config/niricapture/config.json` controls tools, shortcuts,
   palette, canvas defaults, theme, OCR languages and screenshot paths.

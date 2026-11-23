@@ -10,7 +10,9 @@
 - Falls back to `niri msg pick-window` when Overview IPC is unavailable.
 - Added a top layer-shell hint while the Overview is open.
 - Region-selection handles now show diagonal, horizontal or vertical resize
-  cursors based on the handle position, including during a drag.
+  cursors based on the handle position, including during a drag. Cursors are
+  loaded directly from the Xcursor theme (`XCURSOR_THEME`), falling back to
+  Qt standard cursors when a theme file is missing.
 
 ## [1.0.0] — 2026-11-15
 

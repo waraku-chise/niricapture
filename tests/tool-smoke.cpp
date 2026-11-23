@@ -5,6 +5,7 @@
 #include "editor/tool-bar.hpp"
 #include "editor/tool-registry.hpp"
 #include "editor/snap.hpp"
+#include "cursor-theme.hpp"
 #include "editor/tools/builtin-tools.hpp"
 #include "capture.hpp"
 #include "config.hpp"
@@ -387,6 +388,14 @@ bool runEditorToolSmoke(QString &error) {
     QKeyEvent altOn(QEvent::KeyPress, Qt::Key_Alt, Qt::NoModifier);
     if (!check(freeLine.keyPress(&altOn) && freeLine.snapEnabled(),
                "Alt did not re-enable snapping", error))
+      return false;
+  }
+
+  if (qEnvironmentVariableIsSet("XCURSOR_THEME")) {
+    const QCursor custom = themedCursor(QStringLiteral("cross"),
+                                        Qt::CrossCursor);
+    if (!check(custom.shape() != Qt::CrossCursor,
+               "XCURSOR_THEME was not loaded for the custom cursor", error))
       return false;
   }
 

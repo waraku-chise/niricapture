@@ -364,4 +364,6 @@ honored it.
   focused window.
 - A layer-shell hint is visible above the Overview.
 - Region-selection handles expose directional resize cursors.
+- With `XCURSOR_THEME=koishi-cursor`, the cursor loader returns a bitmap cursor
+  instead of the Qt fallback; missing themes still fall back cleanly.
 - `--window-id ID` still bypasses the picker.

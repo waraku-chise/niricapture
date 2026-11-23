@@ -3,6 +3,7 @@
 
 #include "editor/annotation-geometry.hpp"
 #include "editor/font-picker.hpp"
+#include "cursor-theme.hpp"
 #include "i18n.hpp"
 #include "md3.hpp"
 
@@ -39,16 +40,32 @@ constexpr int kDimAlpha = 120;
 const QColor kPanel(17, 19, 24, 246);
 const QColor kPanelBorder(255, 255, 255, 30);
 
-Qt::CursorShape cursorForHandle(const QString &handle) {
+QCursor cursorForHandle(const QString &handle) {
   if (handle == QStringLiteral("tl") || handle == QStringLiteral("br"))
-    return Qt::SizeFDiagCursor;
+    return themedCursor({QStringLiteral("top_left_corner"),
+                         QStringLiteral("nw-resize")},
+                        Qt::SizeFDiagCursor);
   if (handle == QStringLiteral("tr") || handle == QStringLiteral("bl"))
-    return Qt::SizeBDiagCursor;
-  if (handle == QStringLiteral("t") || handle == QStringLiteral("b"))
-    return Qt::SizeVerCursor;
-  if (handle == QStringLiteral("l") || handle == QStringLiteral("r"))
-    return Qt::SizeHorCursor;
-  return Qt::ArrowCursor;
+    return themedCursor({QStringLiteral("top_right_corner"),
+                         QStringLiteral("ne-resize")},
+                        Qt::SizeBDiagCursor);
+  if (handle == QStringLiteral("t"))
+    return themedCursor({QStringLiteral("top_side"),
+                         QStringLiteral("n-resize")},
+                        Qt::SizeVerCursor);
+  if (handle == QStringLiteral("b"))
+    return themedCursor({QStringLiteral("bottom_side"),
+                         QStringLiteral("s-resize")},
+                        Qt::SizeVerCursor);
+  if (handle == QStringLiteral("l"))
+    return themedCursor({QStringLiteral("left_side"),
+                         QStringLiteral("w-resize")},
+                        Qt::SizeHorCursor);
+  if (handle == QStringLiteral("r"))
+    return themedCursor({QStringLiteral("right_side"),
+                         QStringLiteral("e-resize")},
+                        Qt::SizeHorCursor);
+  return QCursor(Qt::ArrowCursor);
 }
 
 QString handleAt(const QRectF &selection, const QPointF &point) {
@@ -106,7 +123,7 @@ public:
     setAutoFillBackground(false);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
-    setCursor(Qt::CrossCursor);
+    setCursor(themedCursor(QStringLiteral("cross"), Qt::CrossCursor));
   }
 
   [[nodiscard]] QString outputName() const { return frame_->monitor.name; }
@@ -250,9 +267,10 @@ protected:
     selector_->setToolbarHover(this, local);
     if (!(event->buttons() & Qt::LeftButton) &&
         selector_->toolbarContains(this, local))
-      setCursor(Qt::PointingHandCursor);
+      setCursor(themedCursor(QStringLiteral("pointer"),
+                             Qt::PointingHandCursor));
     else if (!selector_->hasSelection())
-      setCursor(Qt::CrossCursor);
+      setCursor(themedCursor(QStringLiteral("cross"), Qt::CrossCursor));
     else {
       QString handle = handleAt(selector_->selection(), global);
       if (handle.isEmpty())
@@ -260,7 +278,7 @@ protected:
       if (!handle.isEmpty())
         setCursor(cursorForHandle(handle));
       else
-        setCursor(Qt::CrossCursor);
+        setCursor(themedCursor(QStringLiteral("cross"), Qt::CrossCursor));
     }
     event->accept();
   }

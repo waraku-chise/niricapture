@@ -1,6 +1,7 @@
 #include "window-picker-hint.hpp"
 
 #include "i18n.hpp"
+#include "cursor-theme.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -15,6 +16,9 @@ WindowPickerHint::WindowPickerHint() {
                  Qt::WindowDoesNotAcceptFocus);
   setAttribute(Qt::WA_TranslucentBackground);
   setAttribute(Qt::WA_ShowWithoutActivating);
+  setCursor(themedCursor(QStringList{QStringLiteral("default"),
+                                     QStringLiteral("left_ptr")},
+                         Qt::ArrowCursor));
   resize(430, 56);
 
   QScreen *screen = QGuiApplication::screenAt(QCursor::pos());

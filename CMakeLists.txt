@@ -97,6 +97,8 @@ qt_add_executable(niricapture
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  src/cursor-theme.cpp
+  src/cursor-theme.hpp
   ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
@@ -179,6 +181,8 @@ qt_add_executable(niricapture-smoke
   src/desktop-capture.hpp
   src/region-selector.cpp
   src/region-selector.hpp
+  src/cursor-theme.cpp
+  src/cursor-theme.hpp
   ${NIRICAPTURE_EDITOR_SOURCES}
   src/i18n.cpp
   src/i18n.hpp
