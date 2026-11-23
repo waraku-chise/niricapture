@@ -247,7 +247,7 @@ cmake --install build --prefix ~/.local
 Release assets include `niricapture_<version>_amd64.deb`:
 
 ```bash
-sudo apt install ./niricapture_1.0.0_amd64.deb
+sudo apt install ./niricapture_1.1.0_amd64.deb
 ```
 
 The Debian package is built with Qt 6.12. It targets Debian testing/unstable or
@@ -525,7 +525,7 @@ workspace window, transparent windows, and Chinese/English OCR.
 
 ## Status
 
-Version `1.0.0`. The core acceptance path is implemented and tested on Niri
+Version `1.1.0`. The core acceptance path is implemented and tested on Niri
 26.04; DMS 2.0 is an optional backend and was also tested. Region/fullscreen
 editing is in-place in the frozen overlay;
 window/file editing uses the new standalone New/Open editor. Multi-output composition has

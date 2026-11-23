@@ -93,14 +93,30 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: niricapture-archlinux-x86_64
 
+      - name: Prepare release body
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "RELEASE_NAME=${version}" >> "$GITHUB_ENV"
+          note=".github/release-notes/${GITHUB_REF_NAME}.md"
+          if [[ -f "$note" ]]; then
+            cp -- "$note" release-body.md
+          else
+            printf 'NiriCapture %s\n\nSee CHANGELOG.md for details.\n' "$version" > release-body.md
+          fi
+
       - name: Attach artifact to release
         uses: softprops/action-gh-release@v2
         with:
+          name: NiriCapture ${{ env.RELEASE_NAME }}
+          body_path: release-body.md
           files: |
             niricapture-*.tar.gz
             niricapture_*.deb
