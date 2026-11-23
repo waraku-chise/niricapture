@@ -41,13 +41,21 @@ const QColor kPanel(17, 19, 24, 246);
 const QColor kPanelBorder(255, 255, 255, 30);
 
 QCursor cursorForHandle(const QString &handle) {
-  if (handle == QStringLiteral("tl") || handle == QStringLiteral("br"))
+  if (handle == QStringLiteral("tl"))
     return themedCursor({QStringLiteral("top_left_corner"),
                          QStringLiteral("nw-resize")},
                         Qt::SizeFDiagCursor);
-  if (handle == QStringLiteral("tr") || handle == QStringLiteral("bl"))
+  if (handle == QStringLiteral("br"))
+    return themedCursor({QStringLiteral("bottom_right_corner"),
+                         QStringLiteral("se-resize")},
+                        Qt::SizeFDiagCursor);
+  if (handle == QStringLiteral("tr"))
     return themedCursor({QStringLiteral("top_right_corner"),
                          QStringLiteral("ne-resize")},
+                        Qt::SizeBDiagCursor);
+  if (handle == QStringLiteral("bl"))
+    return themedCursor({QStringLiteral("bottom_left_corner"),
+                         QStringLiteral("sw-resize")},
                         Qt::SizeBDiagCursor);
   if (handle == QStringLiteral("t"))
     return themedCursor({QStringLiteral("top_side"),
