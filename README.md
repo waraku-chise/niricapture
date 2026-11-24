@@ -316,7 +316,7 @@ niricapture --record-fullscreen   # 录制当前输出
 niricapture --stop-recording      # 停止并保存
 ```
 
-区域录制会显示 layer-shell 选区、倒计时和左上角录制指示器；全屏录制在
+区域录制会显示 layer-shell 选区、倒计时和录制指示器（使用 MD3 surface / outline / primary token）；全屏录制在
 倒计时结束后隐藏指示器，避免把提示录进视频。默认保存到系统视频目录的
 `NiriCapture/`；`recording.directory`、`fps`、`codec`、`audio`、
 `countdown` 可在配置中调整。

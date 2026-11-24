@@ -13,6 +13,9 @@
   optional runtime dependency.
 - Added a Material 3 **Recording** settings page for output directory, fps,
   codec, desktop audio and countdown.
+- Layer-shell recording selection, countdown, REC indicator and window-picker
+  hint now use the same MD3 surface/outline/primary tokens as the editor and
+  settings UI.
 - Region/current-output recording, layer-shell countdown/indicator, cross-process
   session stop and recording config (`recording.*`).
 

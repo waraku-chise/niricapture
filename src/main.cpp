@@ -778,7 +778,7 @@ int main(int argc, char **argv) {
   }
 
   if (mode == CaptureMode::Window) {
-    WindowPickerHint pickerHint;
+    WindowPickerHint pickerHint(config.theme);
     const bool showPickerHint = parser.value(windowIdOption).trimmed().isEmpty();
     if (showPickerHint) {
       pickerHint.show();

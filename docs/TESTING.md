@@ -379,3 +379,5 @@ honored it.
 - Opening Settings → 录屏 and saving writes `version: 3` plus a `recording`
   object with the selected directory/fps/codec/audio/countdown.
 - The recording indicator is placed outside the selected region when possible.
+- Recording selection, countdown and REC indicator use the MD3 token colours
+  from the active editor theme.

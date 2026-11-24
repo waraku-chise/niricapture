@@ -2,6 +2,7 @@
 
 #include "i18n.hpp"
 #include "cursor-theme.hpp"
+#include "md3.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -11,7 +12,8 @@
 #include <QScreen>
 #include <QWindow>
 
-WindowPickerHint::WindowPickerHint() {
+WindowPickerHint::WindowPickerHint(const EditorTheme &theme)
+    : tokens_(md3Tokens(theme)) {
   setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
                  Qt::WindowDoesNotAcceptFocus);
   setAttribute(Qt::WA_TranslucentBackground);
@@ -49,14 +51,16 @@ void WindowPickerHint::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
   const QRectF panel = rect().adjusted(1, 1, -1, -1);
-  painter.setPen(QPen(QColor(255, 255, 255, 38), 1));
-  painter.setBrush(QColor(18, 21, 28, 242));
-  painter.drawRoundedRect(panel, 12, 12);
+  QColor surface = tokens_.surfaceContainerHigh;
+  surface.setAlpha(244);
+  painter.setPen(QPen(tokens_.outlineVariant, 1));
+  painter.setBrush(surface);
+  painter.drawRoundedRect(panel, 16, 16);
   QFont font = painter.font();
   font.setPixelSize(14);
   font.setWeight(QFont::Medium);
   painter.setFont(font);
-  painter.setPen(QColor(238, 242, 248));
+  painter.setPen(tokens_.onSurface);
   painter.drawText(
       panel, Qt::AlignCenter,
       ui("Click a window to capture · Esc to cancel",

@@ -1,6 +1,7 @@
 #include "recording/indicator.hpp"
 
 #include "i18n.hpp"
+#include "md3.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -23,8 +24,9 @@ QString clockText(qint64 seconds) {
 }
 } // namespace
 
-RecordingIndicator::RecordingIndicator(QScreen *screen, QRect region)
-    : screen_(screen), region_(region) {
+RecordingIndicator::RecordingIndicator(QScreen *screen, QRect region,
+                                       const EditorTheme &theme)
+    : screen_(screen), tokens_(md3Tokens(theme)), region_(region) {
   setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
                  Qt::WindowDoesNotAcceptFocus |
                  Qt::WindowStaysOnTopHint);
@@ -148,7 +150,6 @@ void RecordingIndicator::paintEvent(QPaintEvent *) {
   painter.drawText(panel.adjusted(14, 0, -12, 0), Qt::AlignVCenter, text_);
 
   painter.setPen(Qt::NoPen);
-  painter.setBrush(recording_ ? QColor(QStringLiteral("#ff3b4f"))
-                              : QColor(QStringLiteral("#f2b84b")));
+  painter.setBrush(recording_ ? tokens_.error : tokens_.primary);
   painter.drawEllipse(QPointF(panel.right() - 18, panel.center().y()), 6, 6);
 }

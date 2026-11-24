@@ -2,6 +2,8 @@
 #pragma once
 
 #include <QRect>
+#include "md3.hpp"
+
 #include <QWidget>
 
 #include <functional>
@@ -10,7 +12,7 @@ class QScreen;
 
 class RecordRegionOverlay final : public QWidget {
 public:
-  explicit RecordRegionOverlay(QScreen *screen);
+  explicit RecordRegionOverlay(QScreen *screen, const EditorTheme &theme = {});
 
   std::function<void(QRect)> selected;
   std::function<void()> cancelled;
@@ -27,6 +29,7 @@ private:
   void finish();
 
   QScreen *screen_ = nullptr;
+  Md3Tokens tokens_;
   QRectF selection_;
   QPointF start_;
   bool selecting_ = false;

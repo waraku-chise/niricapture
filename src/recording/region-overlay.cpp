@@ -2,6 +2,7 @@
 
 #include "cursor-theme.hpp"
 #include "i18n.hpp"
+#include "md3.hpp"
 
 #include <LayerShellQt/Window>
 
@@ -13,7 +14,9 @@
 #include <QTimer>
 #include <QWindow>
 
-RecordRegionOverlay::RecordRegionOverlay(QScreen *screen) : screen_(screen) {
+RecordRegionOverlay::RecordRegionOverlay(QScreen *screen,
+                                         const EditorTheme &theme)
+    : screen_(screen), tokens_(md3Tokens(theme)) {
   setWindowFlags(Qt::Window | Qt::FramelessWindowHint |
                  Qt::WindowStaysOnTopHint);
   setAttribute(Qt::WA_TranslucentBackground);
@@ -57,7 +60,8 @@ QRect RecordRegionOverlay::selectionRect() const {
 void RecordRegionOverlay::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
-  const QColor dim(8, 10, 14, 145);
+  QColor dim = QColor(Qt::black);
+  dim.setAlpha(150);
   const QRect selected = selectionRect();
   if (selected.isEmpty()) {
     painter.fillRect(rect(), dim);
@@ -72,17 +76,19 @@ void RecordRegionOverlay::paintEvent(QPaintEvent *) {
     painter.fillRect(QRect(selected.right() + 1, selected.top(),
                            width() - selected.right() - 1, selected.height()),
                      dim);
-    painter.setPen(QPen(QColor(124, 196, 255), 2));
+    painter.setPen(QPen(tokens_.primary, 2));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(selected.adjusted(0, 0, -1, -1));
     const QString size = QStringLiteral("%1 × %2")
                              .arg(selected.width())
                              .arg(selected.height());
     const QRect label(selected.left() + 10, selected.top() + 10, 150, 28);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(12, 15, 21, 220));
-    painter.drawRoundedRect(label, 5, 5);
-    painter.setPen(Qt::white);
+    painter.setPen(QPen(tokens_.outlineVariant, 1));
+    QColor chip = tokens_.surfaceContainerHigh;
+    chip.setAlpha(236);
+    painter.setBrush(chip);
+    painter.drawRoundedRect(label, 8, 8);
+    painter.setPen(tokens_.onSurface);
     painter.drawText(label, Qt::AlignCenter, size);
   }
 
@@ -99,10 +105,12 @@ void RecordRegionOverlay::paintEvent(QPaintEvent *) {
   const QFontMetricsF metrics(font);
   const qreal hintWidth = metrics.horizontalAdvance(hint) + 36;
   const QRectF hintRect((width() - hintWidth) / 2.0, 26, hintWidth, 42);
-  painter.setPen(QPen(QColor(255, 255, 255, 44), 1));
-  painter.setBrush(QColor(18, 21, 28, 240));
-  painter.drawRoundedRect(hintRect, 10, 10);
-  painter.setPen(QColor(238, 242, 248));
+  painter.setPen(QPen(tokens_.outlineVariant, 1));
+  QColor hintSurface = tokens_.surfaceContainerHigh;
+  hintSurface.setAlpha(244);
+  painter.setBrush(hintSurface);
+  painter.drawRoundedRect(hintRect, 16, 16);
+  painter.setPen(tokens_.onSurface);
   painter.drawText(hintRect, Qt::AlignCenter, hint);
 }
 

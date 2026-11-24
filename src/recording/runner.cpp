@@ -34,7 +34,7 @@ int runRecording(const AppConfig &config, RecordingMode mode) {
 
   QRect region;
   if (mode == RecordingMode::Region) {
-    auto *overlay = new RecordRegionOverlay(screen);
+    auto *overlay = new RecordRegionOverlay(screen, config.theme);
     QEventLoop selectionLoop;
     bool selected = false;
     bool cancelled = false;
@@ -64,7 +64,7 @@ int runRecording(const AppConfig &config, RecordingMode mode) {
   request.fps = config.recording.fps;
   request.audio = config.recording.audio;
 
-  auto *indicator = new RecordingIndicator(screen, region);
+  auto *indicator = new RecordingIndicator(screen, region, config.theme);
   const int countdown = std::clamp(config.recording.countdown, 0, 10);
   indicator->show();
   for (int remaining = countdown; remaining > 0; --remaining) {
