@@ -34,6 +34,7 @@ public:
   Q_INVOKABLE QVariantMap defaults() const;
   Q_INVOKABLE bool openConfigFile();
   Q_INVOKABLE void chooseDirectory(const QString &current);
+  Q_INVOKABLE void chooseRecordingDirectory(const QString &current);
   Q_INVOKABLE void requestClose();
   Q_INVOKABLE void closeWindow();
 
@@ -42,6 +43,7 @@ signals:
   void closeRequested();
   void closeAccepted();
   void directoryChosen(const QString &path);
+  void recordingDirectoryChosen(const QString &path);
 
 private:
   AppConfig config_;

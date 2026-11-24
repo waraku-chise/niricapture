@@ -43,6 +43,7 @@ Rectangle {
             "palette": palettePage.collect(),
             "canvas": canvasPage.collect(),
             "editor": themePage.collect(),
+            "recording": recordingPage.collect(),
             "ocr": { "languages": collected.ocrText },
             "paths": { "screenshots": collected.directory }
         })
@@ -151,6 +152,7 @@ Rectangle {
                         { "label": "调色板", "icon": "palette" },
                         { "label": "画布", "icon": "crop_square" },
                         { "label": "外观", "icon": "brush" },
+                        { "label": "录屏", "icon": "videocam" },
                         { "label": "截图 · 数据", "icon": "folder" }
                     ]
                     delegate: Item {
@@ -282,6 +284,14 @@ Rectangle {
                     readOnly: root.readOnly
                     onEdited: root.handleEdited()
                     onColorRequested: (current) => root.pickThemeColor(current)
+                }
+                RecordingPage {
+                    id: recordingPage
+                    colors: root.colors
+                    bridge: settingsBridge
+                    source: root.configData
+                    readOnly: root.readOnly
+                    onEdited: root.handleEdited()
                 }
                 DataPage {
                     id: dataPage

@@ -18,6 +18,8 @@ bool runConfigSmoke(QString &error) {
                 "background": "white"},
     "editor": {"default_color": "#00ff00", "default_width": 3,
                "font": "DejaVu Sans"},
+    "recording": {"directory": "/tmp/rec", "fps": 30,
+                  "codec": "libx265", "audio": true, "countdown": 0},
     "ocr": {"languages": "eng"},
     "paths": {"screenshots": "/tmp/niricapture-shots"}
   })";
@@ -52,7 +54,11 @@ bool runConfigSmoke(QString &error) {
   }
   if (config.theme.defaultColor != QColor(QStringLiteral("#00ff00")) ||
       config.theme.defaultWidth != 3.0 ||
-      config.theme.fontFamily != QStringLiteral("DejaVu Sans")) {
+      config.theme.fontFamily != QStringLiteral("DejaVu Sans") ||
+      config.recording.directory != QStringLiteral("/tmp/rec") ||
+      config.recording.fps != 30 ||
+      config.recording.codec != QStringLiteral("libx265") ||
+      !config.recording.audio || config.recording.countdown != 0) {
     error = QStringLiteral("Config editor style was not applied");
     return false;
   }
@@ -61,10 +67,10 @@ bool runConfigSmoke(QString &error) {
     error = QStringLiteral("Config OCR/path settings were not applied");
     return false;
   }
-  if (config.recording.fps != 60 ||
-      config.recording.codec != QStringLiteral("libx264") ||
-      config.recording.countdown != 3) {
-    error = QStringLiteral("Recording defaults were not loaded");
+  if (config.recording.fps != 30 ||
+      config.recording.codec != QStringLiteral("libx265") ||
+      !config.recording.audio || config.recording.countdown != 0) {
+    error = QStringLiteral("Recording config was not loaded");
     return false;
   }
   if (config.schemaVersion() != AppConfig::kCurrentSchemaVersion) {

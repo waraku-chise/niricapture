@@ -376,4 +376,6 @@ honored it.
 - `--record-fullscreen` hides the countdown indicator before encoding starts.
 - `--stop-recording` sends SIGINT, waits for the session to disappear and the
   MP4 is playable with a non-zero duration.
+- Opening Settings → 录屏 and saving writes `version: 3` plus a `recording`
+  object with the selected directory/fps/codec/audio/countdown.
 - The recording indicator is placed outside the selected region when possible.

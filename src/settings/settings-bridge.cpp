@@ -79,6 +79,14 @@ QVariantMap serialize(const AppConfig &config) {
   editor.insert(QStringLiteral("font"), config.theme.fontFamily);
   map.insert(QStringLiteral("editor"), editor);
 
+  QVariantMap recording;
+  recording.insert(QStringLiteral("directory"), config.recording.directory);
+  recording.insert(QStringLiteral("fps"), config.recording.fps);
+  recording.insert(QStringLiteral("codec"), config.recording.codec);
+  recording.insert(QStringLiteral("audio"), config.recording.audio);
+  recording.insert(QStringLiteral("countdown"), config.recording.countdown);
+  map.insert(QStringLiteral("recording"), recording);
+
   QVariantMap ocr;
   ocr.insert(QStringLiteral("languages"), config.ocrLanguages);
   map.insert(QStringLiteral("ocr"), ocr);
@@ -299,6 +307,19 @@ QVariantMap SettingsBridge::save(const QVariantMap &values) {
           .toString()
           .trimmed();
 
+  const QVariantMap recording = values.value(QStringLiteral("recording")).toMap();
+  next.recording.directory =
+      recording.value(QStringLiteral("directory")).toString().trimmed();
+  next.recording.fps = std::clamp(
+      recording.value(QStringLiteral("fps")).toInt(), 1, 240);
+  const QString codec =
+      recording.value(QStringLiteral("codec")).toString().trimmed();
+  next.recording.codec = codec.isEmpty() ? QStringLiteral("libx264") : codec;
+  next.recording.audio =
+      recording.value(QStringLiteral("audio")).toBool();
+  next.recording.countdown = std::clamp(
+      recording.value(QStringLiteral("countdown")).toInt(), 0, 10);
+
   QString error;
   if (!next.save(&error))
     return failure(error);
@@ -315,6 +336,13 @@ void SettingsBridge::chooseDirectory(const QString &current) {
       QApplication::activeWindow(), QStringLiteral("选择截图目录"), current);
   if (!directory.isEmpty())
     emit directoryChosen(directory);
+}
+
+void SettingsBridge::chooseRecordingDirectory(const QString &current) {
+  const QString directory = md3ChooseDirectory(
+      QApplication::activeWindow(), QStringLiteral("选择录制目录"), current);
+  if (!directory.isEmpty())
+    emit recordingDirectoryChosen(directory);
 }
 
 bool SettingsBridge::openConfigFile() {

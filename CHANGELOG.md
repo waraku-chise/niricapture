@@ -11,6 +11,8 @@
 - Added `recording` config: directory, fps, codec, audio and countdown.
 - Recording uses `wf-recorder` as an external encoder; it is installed as an
   optional runtime dependency.
+- Added a Material 3 **Recording** settings page for output directory, fps,
+  codec, desktop audio and countdown.
 - Region/current-output recording, layer-shell countdown/indicator, cross-process
   session stop and recording config (`recording.*`).
 

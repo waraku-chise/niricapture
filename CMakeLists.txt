@@ -64,6 +64,7 @@ set(NIRICAPTURE_SETTINGS_QML
   src/settings/qml/CanvasPage.qml
   src/settings/qml/ThemePage.qml
   src/settings/qml/DataPage.qml
+  src/settings/qml/RecordingPage.qml
   src/settings/qml/ColorPopup.qml
   src/settings/qml/Card.qml
   src/settings/qml/ColorField.qml
